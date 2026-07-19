@@ -79,7 +79,7 @@ public final class ModItems {
     private static ToolComponent createEnderPickaxeTool() {
         return new ToolComponent(List.of(
                 ToolComponent.Rule.ofAlwaysDropping(ModTags.ENDER_PICKAXE_FAST, 45.0f),
-                ToolComponent.Rule.deniesDrops(BlockTags.INCORRECT_FOR_DIAMOND_TOOL),
+                ToolComponent.Rule.deniesDrops(Registries.BLOCK.getOrCreateEntryList(BlockTags.INCORRECT_FOR_DIAMOND_TOOL)),
                 ToolComponent.Rule.ofAlwaysDropping(BlockTags.PICKAXE_MINEABLE, 8.0f)
         ), 1.0f, 1);
     }
