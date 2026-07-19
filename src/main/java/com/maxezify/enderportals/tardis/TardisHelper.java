@@ -6,7 +6,6 @@ import com.maxezify.enderportals.ModDimensions;
 import com.maxezify.enderportals.block.TardisDoorBlock;
 import com.maxezify.enderportals.block.entity.TardisDoorBlockEntity;
 import com.maxezify.enderportals.compat.ImmPtlCompat;
-import net.fabricmc.fabric.api.dimension.v1.FabricDimensions;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -248,7 +247,7 @@ public final class TardisHelper {
         }
         BlockPos front = data.interiorDoorPos.offset(data.interiorFacing);
         player.setPortalCooldown(PORTAL_COOLDOWN_TICKS);
-        FabricDimensions.teleport(player, new TeleportTarget(enderWorld, Vec3d.ofBottomCenter(front),
+        player.teleportTo(new TeleportTarget(enderWorld, Vec3d.ofBottomCenter(front),
                 Vec3d.ZERO, data.interiorFacing.asRotation(), 0.0f, TeleportTarget.NO_OP));
         enderWorld.playSound(null, front, SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 0.8f, 0.9f);
     }
@@ -264,7 +263,7 @@ public final class TardisHelper {
         }
         BlockPos front = data.exteriorPos.offset(data.exteriorFacing);
         player.setPortalCooldown(PORTAL_COOLDOWN_TICKS);
-        FabricDimensions.teleport(player, new TeleportTarget(world, Vec3d.ofBottomCenter(front),
+        player.teleportTo(new TeleportTarget(world, Vec3d.ofBottomCenter(front),
                 Vec3d.ZERO, data.exteriorFacing.asRotation(), 0.0f, TeleportTarget.NO_OP));
         world.playSound(null, front, SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 0.8f, 0.9f);
     }
