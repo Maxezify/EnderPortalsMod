@@ -19,6 +19,7 @@ import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.util.Rarity;
 
 import java.util.List;
+import java.util.Optional;
 
 public final class ModItems {
 
@@ -79,7 +80,8 @@ public final class ModItems {
     private static ToolComponent createEnderPickaxeTool() {
         return new ToolComponent(List.of(
                 ToolComponent.Rule.ofAlwaysDropping(ModTags.ENDER_PICKAXE_FAST, 45.0f),
-                ToolComponent.Rule.deniesDrops(Registries.BLOCK.getOrCreateEntryList(BlockTags.INCORRECT_FOR_DIAMOND_TOOL)),
+                new ToolComponent.Rule(Registries.BLOCK.getOrCreateEntryList(BlockTags.INCORRECT_FOR_DIAMOND_TOOL),
+                        Optional.empty(), Optional.of(false)),
                 ToolComponent.Rule.ofAlwaysDropping(BlockTags.PICKAXE_MINEABLE, 8.0f)
         ), 1.0f, 1);
     }
