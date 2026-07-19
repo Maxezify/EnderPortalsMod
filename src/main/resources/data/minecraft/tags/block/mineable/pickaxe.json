@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "enderportals:ender_ore",
+    "enderportals:ender_bricks",
+    "enderportals:inactive_tardis_door"
+  ]
+}

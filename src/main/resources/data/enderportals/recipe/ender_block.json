@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "CC",
+    "CC"
+  ],
+  "key": {
+    "C": { "item": "enderportals:ender_crystal" }
+  },
+  "result": { "id": "enderportals:ender_block", "count": 1 }
+}

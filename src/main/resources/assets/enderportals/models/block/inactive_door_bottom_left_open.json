@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/door_bottom_left_open",
+  "textures": {
+    "bottom": "enderportals:block/tardis_door_bottom",
+    "top": "enderportals:block/tardis_door_top"
+  }
+}

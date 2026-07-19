@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "BB",
+    "BB"
+  ],
+  "key": {
+    "B": { "item": "enderportals:ender_block" }
+  },
+  "result": { "id": "enderportals:ender_bricks", "count": 4 }
+}

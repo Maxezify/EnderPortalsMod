@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CC",
+    "CN",
+    "CC"
+  ],
+  "key": {
+    "C": { "item": "enderportals:ender_crystal" },
+    "N": { "item": "minecraft:nether_star" }
+  },
+  "result": { "id": "enderportals:inactive_tardis_door", "count": 1 }
+}
