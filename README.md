@@ -1,9 +1,9 @@
-# Ender Portals — une porte TARDIS de poche
+# Ender Portals — la Porte de l'Ender, une base de poche
 
-Mod **Minecraft 1.21.1 / Fabric** inspiré de Doctor Who : une porte plus
-grande à l'intérieur qu'à l'extérieur, qui s'ouvre sur **le monde de
-l'Ender** — le paradis des cubes, un monde-caverne où viennent se reposer les
-blocs détruits.
+Mod **Minecraft 1.21.1 / Fabric** : une porte d'obsidienne plus grande à
+l'intérieur qu'à l'extérieur, qui s'ouvre sur **le monde de l'Ender** — le
+paradis des cubes, un monde-caverne où viennent se reposer les blocs
+détruits.
 
 ## La progression
 
@@ -18,7 +18,7 @@ blocs détruits.
    écrasante de la Mace, appliquée à la porte. L'impact annule vos dégâts de
    chute, la foudre tombe : la porte s'éveille et sa salle intérieure est
    taillée dans le monde de l'Ender.
-4. **La Clé du TARDIS** se crafte avec 1 cristal, 1 perle d'Ender et
+4. **La Clé de l'Ender** se crafte avec 1 cristal, 1 perle d'Ender et
    1 lingot d'or. Clic droit sur la porte éveillée pour **lier** la clé.
 5. **La Pioche de l'Ender** (3 cristaux, 2 bâtons) est la seule capable de
    récolter les Blocs de l'Ender — et elle les casse presque instantanément.
@@ -38,9 +38,9 @@ Un monde entièrement souterrain de **Blocs de l'Ender** — gris,
 semi-transparents comme le bloc de miel, doucement luminescents. Au travers
 de la masse translucide, on **entrevoit les blocs-reliques** venus mourir
 ici : pierre, troncs, minerais (jusqu'au diamant), glowstone, éponges…
-Cavernes et tunnels serpentent dans la masse. Chaque TARDIS reçoit sa
-parcelle (espacées de 1024 blocs) : construisez-y base, fermes et stockage —
-les lits et ancres de réapparition y fonctionnent.
+Cavernes et tunnels serpentent dans la masse. Chaque porte éveillée reçoit
+sa parcelle (espacées de 1024 blocs) : construisez-y base, fermes et
+stockage — les lits et ancres de réapparition y fonctionnent.
 
 ## Crafts (grille d'établi)
 
@@ -96,7 +96,8 @@ Notes :
 
 * `src/main/java/com/maxezify/enderportals/`
   * `tardis/` — activation, salle intérieure, matérialisation, traversées,
-    état persistant des TARDIS.
+    état persistant des portes (nommage interne historique « Tardis* »,
+    conservé pour la compatibilité des sauvegardes).
   * `world/EnderWorldChunkGenerator.java` — le générateur du monde-caverne
     et de ses blocs-reliques.
   * `block/`, `item/` — porte inactive/active, bloc de l'Ender, masse, clé,

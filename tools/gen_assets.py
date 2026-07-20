@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Génère les textures PNG + blockstates/modèles de porte du mod Ender Portals."""
+"""Génère les textures PNG + blockstates/modèles de porte du mod Ender Portals.
+
+Style « Obsidienne & vide » : palettes limitées, taches quantifiées façon
+stone vanilla, fondus verticaux dithérés, contours sombres.
+"""
 import json
 import os
 import random
@@ -58,22 +62,66 @@ def jitter(c, amount):
     return tuple(max(0, min(255, v + rng.randint(-amount, amount))) for v in c[:3]) + (c[3],)
 
 
+def blob_noise(w, h, seed, scale=3):
+    """Bruit en taches (valeur lissée), dans [0,1) — le grain « stone »."""
+    r = random.Random(seed)
+    gw, gh = w // scale + 2, h // scale + 2
+    grid = [[r.random() for _ in range(gw)] for _ in range(gh)]
+    out = []
+    for y in range(h):
+        gy, fy = divmod(y, scale)
+        fy /= scale
+        row = []
+        for x in range(w):
+            gx, fx = divmod(x, scale)
+            fx /= scale
+            v = (grid[gy][gx] * (1 - fx) * (1 - fy)
+                 + grid[gy][gx + 1] * fx * (1 - fy)
+                 + grid[gy + 1][gx] * (1 - fx) * fy
+                 + grid[gy + 1][gx + 1] * fx * fy)
+            row.append(min(0.999, max(0.0, v)))
+        out.append(row)
+    return out
+
+
+def shade(palette, v):
+    return palette[int(v * len(palette))]
+
+
+# ---------------------------------------------------------------- palettes
+
+# Bloc de l'Ender : gris froids sombres, translucides, grain « stone ».
+P_ENDER = [(64, 66, 76, 210), (76, 79, 89, 210), (89, 92, 102, 210), (101, 104, 115, 210)]
+
+# Obsidienne : noirs violacés, rehauts visibles comme la texture vanilla.
+OBS = [(24, 19, 41, 255), (37, 29, 62, 255), (52, 41, 87, 255), (70, 55, 113, 255)]
+OBS_DARKEST = (10, 8, 18, 255)
+
+# Le vide : fondu du noir profond vers le violet sombre, étoiles discrètes.
+VOID_BOTTOM = (8, 5, 16)
+VOID_TOP = (27, 17, 48)
+SPECK_TEAL = (22, 74, 66, 255)
+SPECK_VIOLET = (63, 42, 99, 255)
+
+# Œil : violet pâle, clin d'œil aux yeux des cadres de portail de l'End.
+EYE_PALE = (172, 144, 214, 255)
+EYE_CORE = (208, 184, 240, 255)
+
+HANDLE = (82, 205, 184, 255)
+HANDLE_D = (30, 108, 95, 255)
+
+
 # ---------------------------------------------------------------- blocs
 
 def tex_ender_block():
-    base = (104, 108, 118, 210)
+    """Façon stone vanilla : taches irrégulières, fondu léger, pas d'éclats."""
+    noise = blob_noise(16, 16, seed=777, scale=3)
     px = canvas(16, 16)
     for y in range(16):
         for x in range(16):
-            put(px, x, y, jitter(base, 7))
-    for i in range(16):  # bord légèrement plus sombre, façon bloc de miel
-        for (x, y) in ((i, 0), (i, 15), (0, i), (15, i)):
-            r, g, b, a = px[y][x]
-            put(px, x, y, (max(0, r - 20), max(0, g - 20), max(0, b - 16), min(255, a + 20)))
-    # petits éclats discrets
-    for _ in range(6):
-        x, y = rng.randint(2, 13), rng.randint(2, 13)
-        put(px, x, y, (168, 173, 185, 225))
+            v = noise[y][x] - 0.10 * (y / 15.0)  # fondu léger, plus sombre en bas
+            v = min(0.999, max(0.0, v))
+            put(px, x, y, shade(P_ENDER, v))
     write_png(f"{ASSETS}/textures/block/ender_block.png", 16, 16, px)
 
 
@@ -111,37 +159,72 @@ def tex_ender_ore():
     write_png(f"{ASSETS}/textures/block/ender_ore.png", 16, 16, px)
 
 
-TARDIS_BLUE = (23, 48, 102, 255)
-TARDIS_DARK = (13, 28, 66, 255)
-TARDIS_LIGHT = (44, 78, 145, 255)
-WINDOW = (214, 226, 240, 255)
-WINDOW_FRAME = (10, 20, 48, 255)
+# ---------------------------------------------------------------- la porte
+
+DOOR_NOISE = blob_noise(16, 32, seed=4242, scale=3)
+
+
+def void_color(g, x):
+    """Couleur du panneau de vide à la ligne globale g (0 = haut, 31 = bas)."""
+    t = 1.0 - g / 31.0  # 1 en haut, 0 en bas
+    base = tuple(int(VOID_BOTTOM[i] + (VOID_TOP[i] - VOID_BOTTOM[i]) * t) for i in range(3))
+    # dithering léger pour le fondu
+    d = DOOR_NOISE[g][x]
+    base = tuple(max(0, min(255, c + int((d - 0.5) * 10))) for c in base)
+    return base + (255,)
+
+
+def paint_door_half(px, ox, oy, top_half):
+    """Une moitié de porte 16×16 : cadre obsidienne + panneau de vide."""
+    row0 = 0 if top_half else 16
+    for ly in range(16):
+        g = row0 + ly
+        for x in range(16):
+            frame = x < 2 or x > 13 or g < 2 or g > 29
+            if frame:
+                # biais vers les nuances claires : le cadre doit se détacher du vide
+                put(px, ox + x, oy + ly, shade(OBS, 0.25 + DOOR_NOISE[g][x] * 0.74))
+            else:
+                put(px, ox + x, oy + ly, void_color(g, x))
+    # liseré intérieur sombre du cadre
+    for ly in range(16):
+        g = row0 + ly
+        if 2 <= g <= 29:
+            put(px, ox + 2, oy + ly, OBS_DARKEST)
+            put(px, ox + 13, oy + ly, OBS_DARKEST)
+    if top_half:
+        for x in range(2, 14):
+            put(px, ox + x, oy + 2, OBS_DARKEST)
+        # étoiles discrètes du vide
+        for (sx, sy) in ((5, 7), (10, 11), (7, 13)):
+            put(px, ox + sx, oy + sy, SPECK_TEAL)
+        put(px, ox + 11, oy + 6, SPECK_VIOLET)
+        # l'œil, en haut au centre
+        put(px, ox + 7, oy + 4, EYE_PALE)
+        put(px, ox + 8, oy + 4, EYE_PALE)
+        put(px, ox + 7, oy + 5, EYE_CORE)
+        put(px, ox + 8, oy + 5, EYE_CORE)
+        put(px, ox + 6, oy + 5, EYE_PALE)
+        put(px, ox + 9, oy + 5, EYE_PALE)
+        put(px, ox + 7, oy + 6, EYE_PALE)
+        put(px, ox + 8, oy + 6, EYE_PALE)
+    else:
+        for x in range(2, 14):
+            put(px, ox + x, oy + 13, OBS_DARKEST)
+        # poignée sarcelle à droite
+        put(px, ox + 12, oy + 1, HANDLE)
+        put(px, ox + 12, oy + 2, HANDLE_D)
+        # étoiles discrètes
+        put(px, ox + 5, oy + 5, SPECK_VIOLET)
+        put(px, ox + 9, oy + 8, SPECK_TEAL)
 
 
 def paint_door_top(px, ox=0, oy=0):
-    rect(px, ox, oy, ox + 15, oy + 15, TARDIS_BLUE)
-    outline(px, ox, oy, ox + 15, oy + 15, TARDIS_DARK)
-    # fenêtre à 4 carreaux
-    rect(px, ox + 3, oy + 2, ox + 12, oy + 8, WINDOW_FRAME)
-    rect(px, ox + 4, oy + 3, ox + 7, oy + 5, WINDOW)
-    rect(px, ox + 9, oy + 3, ox + 12, oy + 5, WINDOW)
-    rect(px, ox + 4, oy + 7, ox + 7, oy + 8, jitter(WINDOW, 6))
-    rect(px, ox + 9, oy + 7, ox + 12, oy + 8, jitter(WINDOW, 6))
-    put(px, ox + 8, oy + 3, WINDOW_FRAME)
-    # panneau sous la fenêtre
-    outline(px, ox + 3, oy + 10, ox + 12, oy + 14, TARDIS_DARK)
-    rect(px, ox + 4, oy + 11, ox + 11, oy + 13, TARDIS_LIGHT)
+    paint_door_half(px, ox, oy, True)
 
 
 def paint_door_bottom(px, ox=0, oy=0):
-    rect(px, ox, oy, ox + 15, oy + 15, TARDIS_BLUE)
-    outline(px, ox, oy, ox + 15, oy + 15, TARDIS_DARK)
-    for y0 in (1, 9):
-        outline(px, ox + 3, oy + y0, ox + 12, oy + y0 + 5, TARDIS_DARK)
-        rect(px, ox + 4, oy + y0 + 1, ox + 11, oy + y0 + 4, TARDIS_LIGHT)
-    # poignée dorée
-    put(px, ox + 13, oy + 7, (222, 177, 45, 255))
-    put(px, ox + 13, oy + 8, (176, 135, 26, 255))
+    paint_door_half(px, ox, oy, False)
 
 
 def tex_doors():
@@ -159,22 +242,26 @@ def tex_door_entity_sheet():
     # avant : haut (0..15,0..15) + bas (0..15,16..31)
     paint_door_top(px, 0, 0)
     paint_door_bottom(px, 0, 16)
-    # arrière : copie assombrie en (16..31, 0..31)
+    # dos et flancs : panneau d'obsidienne plein (16..31, 0..31)
+    back_noise = blob_noise(16, 32, seed=515, scale=3)
     for y in range(32):
         for x in range(16):
-            r, g, b, a = px[y][x]
-            put(px, 16 + x, y, (max(0, r - 18), max(0, g - 18), max(0, b - 14), a))
-    # chants : bande bleu sombre (32..35, 0..31)
-    rect(px, 32, 0, 35, 31, TARDIS_DARK)
-    for y in range(0, 32, 3):
-        put(px, 33, y, jitter(TARDIS_BLUE, 6))
-    # voile de vortex (48..63, 48..63)
-    for y in range(48, 64):
-        for x in range(48, 64):
-            put(px, x, y, jitter((6, 8, 24, 235), 4))
-    for _ in range(9):  # étoiles du vortex
-        x, y = rng.randint(49, 62), rng.randint(49, 62)
-        put(px, x, y, (170, 190, 235, 255))
+            c = shade(OBS, back_noise[y][x] * 0.75)  # un peu plus sombre
+            put(px, 16 + x, y, c)
+    outline(px, 16, 0, 31, 31, OBS_DARKEST)
+    # chants : bande obsidienne sombre (32..35, 0..31)
+    for y in range(32):
+        for x in range(32, 36):
+            put(px, x, y, shade(OBS[:2] + OBS[:1], DOOR_NOISE[y][x - 32]))
+    # voile de vide (48..63, 48..63) : surface de portail de l'End
+    veil_noise = blob_noise(16, 16, seed=909, scale=4)
+    for y in range(16):
+        for x in range(16):
+            v = veil_noise[y][x]
+            base = (10 + int(v * 12), 6 + int(v * 8), 20 + int(v * 20), 240)
+            put(px, 48 + x, 48 + y, base)
+    for (sx, sy) in ((51, 50), (58, 53), (54, 57), (60, 60), (50, 60), (56, 51)):
+        put(px, sx, sy, SPECK_TEAL if (sx + sy) % 2 == 0 else SPECK_VIOLET)
     write_png(f"{ASSETS}/textures/entity/tardis_door.png", 64, 64, px)
 
 
@@ -215,25 +302,61 @@ def tex_ender_crystal():
 
 
 def tex_tardis_key():
+    """Clé dorée vanilla-style, à 45°, gemme sarcelle sertie dans l'anneau."""
+    GOLD_L = (252, 225, 112, 255)
+    GOLD = (233, 177, 45, 255)
+    GOLD_D = (180, 126, 20, 255)
+    GOLD_DD = (122, 83, 12, 255)
+    GEM = (93, 206, 186, 255)
+    GEM_D = (27, 124, 108, 255)
+    OUT = (43, 32, 12, 255)
+
+    fill = {}
+
+    def p(x, y, c):
+        if 0 <= x < 16 and 0 <= y < 16:
+            fill[(x, y)] = c
+
+    # tige diagonale (2 px de large), de l'anneau vers la pointe en haut à droite
+    for i in range(9):
+        x, y = 5 + i, 10 - i
+        p(x, y, GOLD)
+        p(x + 1, y, GOLD_D)
+    # éclats sur l'arête haut-gauche de la tige
+    p(7, 7, GOLD_L)
+    p(10, 4, GOLD_L)
+    p(13, 2, GOLD_L)
+    # panneton : deux dents vers le bas-droite, près de la pointe
+    p(13, 4, GOLD_D)
+    p(14, 5, GOLD_DD)
+    p(11, 6, GOLD_D)
+    p(12, 7, GOLD_DD)
+    # anneau autour de (4,11)
+    for dx in range(-3, 4):
+        for dy in range(-3, 4):
+            d2 = dx * dx + dy * dy
+            if 3 <= d2 <= 8:
+                shine = (dx + dy) < 0
+                if d2 >= 7:
+                    c = GOLD_D if shine else GOLD_DD
+                else:
+                    c = GOLD if shine else GOLD_D
+                p(4 + dx, 11 + dy, c)
+    p(2, 9, GOLD_L)
+    # gemme sertie au centre de l'anneau
+    p(4, 11, GEM)
+    p(5, 12, GEM_D)
+
     px = canvas(16, 16)
-    gold = (222, 177, 45, 255)
-    gold_d = (160, 122, 22, 255)
-    gold_l = (250, 224, 130, 255)
-    # anneau
-    outline(px, 2, 5, 6, 9, gold)
-    put(px, 2, 5, gold_d)
-    put(px, 6, 9, gold_d)
-    put(px, 3, 6, gold_l)
-    # tige
-    for x in range(7, 14):
-        put(px, x, 7, gold)
-        put(px, x, 8, gold_d)
-    # dents
-    put(px, 11, 9, gold)
-    put(px, 13, 9, gold)
-    put(px, 13, 10, gold_d)
-    # éclat "vortex"
-    put(px, 4, 7, (64, 224, 205, 255))
+    for (x, y), c in fill.items():
+        put(px, x, y, c)
+    # contour sombre automatique, façon items vanilla
+    for y in range(16):
+        for x in range(16):
+            if px[y][x][3] == 0 and any(
+                    (x + dx, y + dy) in fill
+                    for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                put(px, x, y, OUT)
     write_png(f"{ASSETS}/textures/item/tardis_key.png", 16, 16, px)
 
 
@@ -247,7 +370,6 @@ def tex_ender_pickaxe():
     for i in range(9):  # manche
         put(px, 3 + i, 13 - i, handle)
         put(px, 4 + i, 13 - i, handle_d)
-    # tête en arc
     head = [(2, 4), (3, 3), (4, 2), (5, 2), (6, 1), (7, 1), (8, 1), (9, 1),
             (10, 2), (11, 2), (12, 3), (13, 4), (2, 5), (13, 5)]
     for (x, y) in head:
@@ -260,44 +382,64 @@ def tex_ender_pickaxe():
 
 
 def tex_inactive_door_item():
+    """Icône : porte obsidienne miniature au panneau de vide."""
     px = canvas(16, 16)
-    rect(px, 4, 1, 11, 14, TARDIS_BLUE)
-    outline(px, 4, 1, 11, 14, TARDIS_DARK)
-    rect(px, 6, 3, 9, 5, WINDOW)
-    outline(px, 6, 3, 9, 5, WINDOW_FRAME)
-    outline(px, 6, 8, 9, 12, TARDIS_DARK)
-    rect(px, 7, 9, 8, 11, TARDIS_LIGHT)
-    put(px, 10, 7, (222, 177, 45, 255))
+    noise = blob_noise(16, 16, seed=333, scale=3)
+    for y in range(1, 15):
+        for x in range(4, 12):
+            frame = x < 5 or x > 10 or y < 2 or y > 13
+            if frame:
+                put(px, x, y, shade(OBS, 0.25 + noise[y][x] * 0.74))
+            else:
+                t = 1.0 - y / 15.0
+                base = tuple(int(VOID_BOTTOM[i] + (VOID_TOP[i] - VOID_BOTTOM[i]) * t)
+                             for i in range(3))
+                put(px, x, y, base + (255,))
+    outline(px, 4, 1, 11, 14, OBS_DARKEST)
+    put(px, 7, 4, EYE_PALE)
+    put(px, 8, 4, EYE_PALE)
+    put(px, 7, 5, EYE_CORE)
+    put(px, 8, 5, EYE_PALE)
+    put(px, 10, 8, HANDLE)
+    put(px, 6, 10, SPECK_TEAL)
     write_png(f"{ASSETS}/textures/item/inactive_tardis_door.png", 16, 16, px)
 
 
 def tex_icon():
     s = 128
-    px = canvas(s, s, (10, 12, 26, 255))
-    for _ in range(70):  # étoiles
+    px = canvas(s, s, (10, 8, 20, 255))
+    for _ in range(70):  # étoiles violettes discrètes
         x, y = rng.randint(0, s - 1), rng.randint(0, s - 1)
-        put(px, x, y, (170, 190, 235, 255))
-    # halo turquoise
+        put(px, x, y, (98, 76, 150, 255))
+    # halo sarcelle autour de la porte
     for y in range(s):
         for x in range(s):
             d = ((x - 64) ** 2 + (y - 66) ** 2) ** 0.5
             if 34 < d < 46:
                 r, g, b, a = px[y][x]
-                put(px, x, y, (min(255, r + 18), min(255, g + 60), min(255, b + 55), 255))
-    # porte
-    rect(px, 40, 22, 88, 110, TARDIS_BLUE)
-    outline(px, 40, 22, 88, 110, TARDIS_DARK)
-    outline(px, 41, 23, 87, 109, TARDIS_DARK)
-    # fenêtre
-    rect(px, 48, 30, 80, 50, WINDOW_FRAME)
-    rect(px, 50, 32, 63, 48, WINDOW)
-    rect(px, 66, 32, 78, 48, WINDOW)
-    # panneaux
-    for y0 in (56, 84):
-        outline(px, 48, y0, 80, y0 + 22, TARDIS_DARK)
-        rect(px, 50, y0 + 2, 78, y0 + 20, TARDIS_LIGHT)
-    put(px, 84, 68, (222, 177, 45, 255))
-    put(px, 84, 69, (222, 177, 45, 255))
+                put(px, x, y, (min(255, r + 10), min(255, g + 52), min(255, b + 46), 255))
+    # porte obsidienne
+    noise = blob_noise(64, 96, seed=808, scale=8)
+    for y in range(22, 111):
+        for x in range(40, 89):
+            frame = x < 48 or x > 80 or y < 30 or y > 102
+            if frame:
+                put(px, x, y, shade(OBS, noise[y - 22][x - 40]))
+            else:
+                t = 1.0 - (y - 30) / 72.0
+                base = tuple(int(VOID_BOTTOM[i] + (VOID_TOP[i] - VOID_BOTTOM[i]) * t)
+                             for i in range(3))
+                put(px, x, y, base + (255,))
+    outline(px, 40, 22, 88, 110, OBS_DARKEST)
+    outline(px, 47, 29, 81, 103, OBS_DARKEST)
+    # l'œil
+    rect(px, 60, 38, 68, 42, EYE_PALE)
+    rect(px, 62, 39, 66, 41, EYE_CORE)
+    # étoiles dans le vide
+    for (sx, sy) in ((55, 60), (72, 52), (64, 80), (52, 92), (76, 88)):
+        rect(px, sx, sy, sx + 1, sy + 1, SPECK_TEAL)
+    put(px, 78, 66, HANDLE)
+    put(px, 78, 67, HANDLE)
     write_png(f"{ASSETS}/icon.png", s, s, px)
 
 

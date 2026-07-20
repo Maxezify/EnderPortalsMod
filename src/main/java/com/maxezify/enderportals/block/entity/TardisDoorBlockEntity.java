@@ -101,8 +101,12 @@ public class TardisDoorBlockEntity extends BlockEntity {
             return;
         }
         if (door.dematerializing && door.age - door.dematStart >= FADE_OUT_TICKS) {
-            world.setBlockState(pos.up(), Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL);
-            world.setBlockState(pos, Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL);
+            // FORCE_STATE court-circuite les shape updates : sans lui, la moitié
+            // orpheline serait retirée via Block#replace → breakBlock, qui joue
+            // les particules et le son de casse du bloc.
+            int flags = Block.NOTIFY_LISTENERS | Block.FORCE_STATE;
+            world.setBlockState(pos.up(), Blocks.AIR.getDefaultState(), flags);
+            world.setBlockState(pos, Blocks.AIR.getDefaultState(), flags);
         }
     }
 

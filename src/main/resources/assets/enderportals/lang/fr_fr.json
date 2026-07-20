@@ -4,15 +4,15 @@
   "block.enderportals.ender_ore": "Minerai de l'Ender",
   "block.enderportals.ender_block": "Bloc de l'Ender",
   "block.enderportals.ender_bricks": "Briques de l'Ender",
-  "block.enderportals.inactive_tardis_door": "Porte du TARDIS inactive",
-  "block.enderportals.tardis_door": "Porte du TARDIS",
+  "block.enderportals.inactive_tardis_door": "Porte de l'Ender inactive",
+  "block.enderportals.tardis_door": "Porte de l'Ender",
 
   "item.enderportals.ender_crystal": "Cristal de l'Ender",
-  "item.enderportals.tardis_key": "Clé du TARDIS",
+  "item.enderportals.tardis_key": "Clé de l'Ender",
   "item.enderportals.ender_pickaxe": "Pioche de l'Ender",
 
   "enderportals.tooltip.key_unbound": "Clic droit sur une porte éveillée pour lier la clé",
-  "enderportals.tooltip.key_bound": "Liée au TARDIS %s",
+  "enderportals.tooltip.key_bound": "Liée à la porte %s",
 
   "enderportals.message.not_falling": "L'impact est trop faible : frappez la porte en chutant d'au moins %s blocs (chute actuelle : %s).",
   "enderportals.message.activated": "§bLa porte s'éveille… Le vortex la traverse. Liez maintenant une clé (clic droit).",

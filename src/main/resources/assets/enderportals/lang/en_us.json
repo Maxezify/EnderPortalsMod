@@ -4,15 +4,15 @@
   "block.enderportals.ender_ore": "Ender Ore",
   "block.enderportals.ender_block": "Ender Block",
   "block.enderportals.ender_bricks": "Ender Bricks",
-  "block.enderportals.inactive_tardis_door": "Inactive TARDIS Door",
-  "block.enderportals.tardis_door": "TARDIS Door",
+  "block.enderportals.inactive_tardis_door": "Inactive Ender Door",
+  "block.enderportals.tardis_door": "Ender Door",
 
   "item.enderportals.ender_crystal": "Ender Crystal",
-  "item.enderportals.tardis_key": "TARDIS Key",
+  "item.enderportals.tardis_key": "Ender Key",
   "item.enderportals.ender_pickaxe": "Ender Pickaxe",
 
   "enderportals.tooltip.key_unbound": "Right-click an awakened door to bind this key",
-  "enderportals.tooltip.key_bound": "Bound to TARDIS %s",
+  "enderportals.tooltip.key_bound": "Bound to door %s",
 
   "enderportals.message.not_falling": "The impact is too weak: strike the door while falling at least %s blocks (current fall: %s).",
   "enderportals.message.activated": "§bThe door awakens… The vortex flows through it. Now bind a key (right-click).",

@@ -10,6 +10,7 @@ import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
@@ -56,12 +57,15 @@ public final class ImmPtlCompat {
             }
             Vec3d exteriorCenter = doorwayCenter(data.exteriorPos, data.exteriorFacing);
             Vec3d interiorCenter = doorwayCenter(data.interiorDoorPos, data.interiorFacing);
-            double rotation = data.interiorFacing.asRotation() - data.exteriorFacing.asRotation();
+            // La traversée mappe la direction d'entrée (−facing extérieur) sur la
+            // direction de sortie (+facing intérieur), d'où le +180°.
+            double rotation = MathHelper.wrapDegrees(
+                    data.interiorFacing.asRotation() - data.exteriorFacing.asRotation() + 180.0);
 
             UUID outer = spawnPortal(exteriorWorld, exteriorCenter, data.exteriorFacing,
                     ModDimensions.ENDER_WORLD, interiorCenter, rotation);
             UUID inner = spawnPortal(enderWorld, interiorCenter, data.interiorFacing,
-                    data.exteriorWorld, exteriorCenter, -rotation);
+                    data.exteriorWorld, exteriorCenter, MathHelper.wrapDegrees(-rotation));
 
             data.portalIds.add(outer);
             data.portalIds.add(inner);
@@ -132,7 +136,7 @@ public final class ImmPtlCompat {
                 new Class<?>[]{Vec3d.class, Vec3d.class, double.class, double.class},
                 axisW, axisH, 0.9, 2.0);
 
-        applyRotationIfPossible(portalClass, portal, rotationDegrees);
+        applyRotation(portalClass, portal, rotationDegrees);
 
         if (!world.spawnEntity(portal)) {
             throw new IllegalStateException("Le monde a refusé le portail");
@@ -141,31 +145,28 @@ public final class ImmPtlCompat {
     }
 
     /**
-     * La rotation (quand les deux portes ne regardent pas dans la même
-     * direction) est un bonus : on n'échoue jamais à cause d'elle.
+     * Applique la rotation du portail. Sans elle la vue serait inversée :
+     * en cas d'échec on préfère lever l'exception et laisser
+     * {@link #tryCreatePortals} retomber sur la téléportation classique.
      */
-    private static void applyRotationIfPossible(Class<?> portalClass, Entity portal, double degrees) {
-        if (Math.abs(degrees) < 0.01) {
+    private static void applyRotation(Class<?> portalClass, Entity portal, double degrees) throws Exception {
+        if (Math.abs(MathHelper.wrapDegrees(degrees)) < 0.01) {
             return;
         }
-        try {
-            Class<?> quaternionClass = Class.forName("qouteall.q_misc_util.my_util.DQuaternion");
-            Object rotation = quaternionClass
-                    .getMethod("rotationByDegrees", Vec3d.class, double.class)
-                    .invoke(null, new Vec3d(0.0, 1.0, 0.0), degrees);
-            for (String methodName : new String[]{"setRotationTransformation", "setRotation", "setRotationTransformationD"}) {
-                try {
-                    portalClass.getMethod(methodName, quaternionClass).invoke(portal, rotation);
-                    return;
-                } catch (NoSuchMethodException ignored) {
-                    // On tente le nom suivant.
-                }
+        Class<?> quaternionClass = Class.forName("qouteall.q_misc_util.my_util.DQuaternion");
+        Object rotation = quaternionClass
+                .getMethod("rotationByDegrees", Vec3d.class, double.class)
+                .invoke(null, new Vec3d(0.0, 1.0, 0.0), degrees);
+        for (String methodName : new String[]{"setRotationTransformation", "setRotation", "setRotationTransformationD"}) {
+            try {
+                portalClass.getMethod(methodName, quaternionClass).invoke(portal, rotation);
+                return;
+            } catch (NoSuchMethodException ignored) {
+                // On tente le nom suivant.
             }
-            Field field = portalClass.getField("rotation");
-            field.set(portal, rotation);
-        } catch (Throwable ignored) {
-            // Sans rotation, le portail reste fonctionnel — la vue est juste décalée.
         }
+        Field field = portalClass.getField("rotation");
+        field.set(portal, rotation);
     }
 
     private static Object staticFieldValue(Class<?> owner, String... names) throws Exception {
