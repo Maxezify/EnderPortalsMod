@@ -65,7 +65,7 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
             return;
         }
         Direction facing = state.get(TardisDoorBlock.FACING);
-        boolean open = state.get(TardisDoorBlock.OPEN);
+        float openAnim = door.getOpenAnim(tickDelta);
         // Pendant les fondus, la porte irradie légèrement.
         int lightCoord = alpha < 1.0f ? LightmapTextureManager.MAX_LIGHT_COORDINATE : light;
 
@@ -79,20 +79,17 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
         // La coque du caisson : dos, flancs, plafond, plancher.
         drawShell(matrices, buffer, alpha, lightCoord, overlay);
 
-        // Voile de vortex dans l'embrasure ouverte.
-        if (open && !IMMPTL_LOADED) {
-            drawVoidVeil(matrices, buffer, alpha, lightCoord, overlay);
+        // Voile de vortex dans l'embrasure, au rythme de l'ouverture.
+        if (openAnim > 0.02f && !IMMPTL_LOADED) {
+            drawVoidVeil(matrices, buffer, alpha * openAnim, lightCoord, overlay);
         }
 
-        // Panneau de porte à l'avant, sur charnière (bord gauche) quand elle est ouverte.
-        matrices.push();
-        if (open) {
-            matrices.translate(-0.5, 0.0, 0.40);
-            matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-105.0f));
-            matrices.translate(0.5, 0.0, -0.40);
+        // Le panneau ne bat pas : il se dissout dans le vide à l'ouverture,
+        // pour ne jamais chevaucher le plan du portail ni les blocs voisins.
+        float panelAlpha = alpha * (1.0f - openAnim);
+        if (panelAlpha > 0.02f) {
+            drawPanel(matrices, buffer, panelAlpha, lightCoord, overlay);
         }
-        drawPanel(matrices, buffer, alpha, lightCoord, overlay);
-        matrices.pop();
 
         matrices.pop();
     }

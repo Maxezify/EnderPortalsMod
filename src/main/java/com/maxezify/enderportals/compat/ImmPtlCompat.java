@@ -132,9 +132,11 @@ public final class ImmPtlCompat {
         // axisW × axisH doit pointer vers l'extérieur de la porte (= facing).
         Vec3d axisW = Vec3d.of(facing.rotateYCounterclockwise().getVector());
         Vec3d axisH = new Vec3d(0.0, 1.0, 0.0);
+        // 0,8 × 1,9 : le plan du portail doit tenir dans l'embrasure du caisson
+        // (parois à ±0,44, plancher/plafond à 0,03/1,97) sans les traverser.
         invoke(portalClass, portal, "setOrientationAndSize",
                 new Class<?>[]{Vec3d.class, Vec3d.class, double.class, double.class},
-                axisW, axisH, 0.9, 2.0);
+                axisW, axisH, 0.8, 1.9);
 
         applyRotation(portalClass, portal, rotationDegrees);
 

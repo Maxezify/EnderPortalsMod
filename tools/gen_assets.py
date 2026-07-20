@@ -142,21 +142,23 @@ def tex_ender_bricks():
 
 
 def tex_ender_ore():
-    stone = (221, 223, 165, 255)
-    px = canvas(16, 16)
-    for y in range(16):
-        for x in range(16):
-            put(px, x, y, jitter(stone, 8))
+    """Surcouche seule : cristaux sarcelle façon ores vanilla, fond transparent.
+    La base du bloc est la texture end_stone vanilla, référencée par le modèle."""
     crystal = (64, 224, 205, 255)
+    light = (170, 248, 238, 255)
     dark = (23, 130, 120, 255)
-    for cx, cy in ((3, 4), (11, 3), (6, 10), (12, 11), (8, 6)):
+    edge = (14, 78, 70, 255)
+    px = canvas(16, 16)
+    # amas en croix, ombrés bas-droite comme les minerais 1.17+
+    for cx, cy in ((3, 4), (11, 3), (6, 10), (12, 12), (8, 6)):
         put(px, cx, cy, crystal)
-        put(px, cx + 1, cy, jitter(crystal, 12))
-        put(px, cx, cy + 1, jitter(crystal, 12))
-        put(px, cx + 1, cy + 1, dark)
         put(px, cx - 1, cy, dark)
-        put(px, cx, cy - 1, dark)
-    write_png(f"{ASSETS}/textures/block/ender_ore.png", 16, 16, px)
+        put(px, cx, cy - 1, light)
+        put(px, cx + 1, cy, crystal)
+        put(px, cx, cy + 1, dark)
+        put(px, cx + 1, cy + 1, edge)
+        put(px, cx - 1, cy - 1, edge)
+    write_png(f"{ASSETS}/textures/block/ender_ore_overlay.png", 16, 16, px)
 
 
 # ---------------------------------------------------------------- la porte

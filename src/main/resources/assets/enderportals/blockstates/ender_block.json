@@ -1,5 +1,18 @@
 {
   "variants": {
-    "": { "model": "enderportals:block/ender_block" }
+    "": [
+      { "model": "enderportals:block/ender_block" },
+      { "model": "enderportals:block/ender_block", "y": 90 },
+      { "model": "enderportals:block/ender_block", "y": 180 },
+      { "model": "enderportals:block/ender_block", "y": 270 },
+      { "model": "enderportals:block/ender_block", "x": 90 },
+      { "model": "enderportals:block/ender_block", "x": 90, "y": 90 },
+      { "model": "enderportals:block/ender_block", "x": 90, "y": 180 },
+      { "model": "enderportals:block/ender_block", "x": 90, "y": 270 },
+      { "model": "enderportals:block/ender_block", "x": 180 },
+      { "model": "enderportals:block/ender_block", "x": 180, "y": 90 },
+      { "model": "enderportals:block/ender_block", "x": 180, "y": 180 },
+      { "model": "enderportals:block/ender_block", "x": 180, "y": 270 }
+    ]
   }
 }

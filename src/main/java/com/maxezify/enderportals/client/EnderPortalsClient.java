@@ -16,6 +16,8 @@ public class EnderPortalsClient implements ClientModInitializer {
     public void onInitializeClient() {
         BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.ENDER_BLOCK, RenderLayer.getTranslucent());
         BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.INACTIVE_TARDIS_DOOR, RenderLayer.getCutout());
+        // La surcouche de cristaux du minerai est transparente (base end stone vanilla).
+        BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.ENDER_ORE, RenderLayer.getCutoutMipped());
 
         BlockEntityRendererFactories.register(ModBlockEntities.TARDIS_DOOR, TardisDoorRenderer::new);
     }
