@@ -214,23 +214,6 @@ def tex_ender_crystal():
     write_png(f"{ASSETS}/textures/item/ender_crystal.png", 16, 16, px)
 
 
-def tex_sledgehammer():
-    px = canvas(16, 16)
-    handle = (124, 84, 44, 255)
-    handle_d = (86, 56, 28, 255)
-    steel = (150, 155, 165, 255)
-    steel_d = (96, 100, 110, 255)
-    steel_l = (205, 210, 220, 255)
-    for i in range(10):  # manche en diagonale
-        put(px, 3 + i, 14 - i, handle)
-        put(px, 4 + i, 14 - i, handle_d)
-    # tête massive en haut à droite
-    rect(px, 9, 1, 15, 6, steel)
-    outline(px, 9, 1, 15, 6, steel_d)
-    rect(px, 10, 2, 11, 3, steel_l)
-    write_png(f"{ASSETS}/textures/item/sledgehammer.png", 16, 16, px)
-
-
 def tex_tardis_key():
     px = canvas(16, 16)
     gold = (222, 177, 45, 255)
@@ -370,7 +353,6 @@ def main():
     tex_doors()
     tex_door_entity_sheet()
     tex_ender_crystal()
-    tex_sledgehammer()
     tex_tardis_key()
     tex_ender_pickaxe()
     tex_inactive_door_item()

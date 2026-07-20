@@ -8,6 +8,7 @@ import net.minecraft.block.DoorBlock;
 import net.minecraft.block.enums.DoubleBlockHalf;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.ItemStack;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -15,12 +16,14 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 
 /**
  * La porte inactive : une porte "normale" (posable, cassable à la pioche).
- * Frappée à la masse alors qu'elle domine un vide d'au moins
- * {@link EnderPortalsMod#ACTIVATION_HEIGHT} blocs, elle s'éveille et devient
- * un TARDIS.
+ * Pour l'éveiller, il faut reproduire l'attaque écrasante de la Mace :
+ * chuter d'au moins {@link EnderPortalsMod#ACTIVATION_FALL_DISTANCE} blocs
+ * et la frapper à la Mace pendant la chute. L'impact absorbe les dégâts de
+ * chute du joueur.
  */
 public class InactiveTardisDoorBlock extends DoorBlock {
 
@@ -29,44 +32,34 @@ public class InactiveTardisDoorBlock extends DoorBlock {
     }
 
     /**
-     * Rituel de la masse. Retourne true si la porte s'est éveillée.
+     * Rituel de la Mace. Retourne true si la porte s'est éveillée.
      */
-    public static boolean tryActivate(ServerWorld world, BlockPos pos, ServerPlayerEntity player, ItemStack hammer) {
+    public static boolean tryActivate(ServerWorld world, BlockPos pos, ServerPlayerEntity player, ItemStack mace) {
         BlockState state = world.getBlockState(pos);
         if (!(state.getBlock() instanceof InactiveTardisDoorBlock)) {
             return false;
         }
         BlockPos base = state.get(DoorBlock.HALF) == DoubleBlockHalf.UPPER ? pos.down() : pos;
 
-        int clearance = maxDropAround(world, base);
-        if (clearance < EnderPortalsMod.ACTIVATION_HEIGHT) {
-            player.sendMessage(Text.translatable("enderportals.message.not_high_enough",
-                    EnderPortalsMod.ACTIVATION_HEIGHT, clearance), true);
-            world.playSound(null, base, SoundEvents.BLOCK_ANVIL_LAND, SoundCategory.BLOCKS, 0.6f, 0.5f);
+        float fall = player.fallDistance;
+        if (fall < EnderPortalsMod.ACTIVATION_FALL_DISTANCE) {
+            player.sendMessage(Text.translatable("enderportals.message.not_falling",
+                    (int) EnderPortalsMod.ACTIVATION_FALL_DISTANCE, (int) fall), true);
+            world.playSound(null, base, SoundEvents.ITEM_MACE_SMASH_AIR, SoundCategory.PLAYERS, 0.8f, 0.9f);
             return false;
         }
 
+        // L'impact absorbe la chute, comme l'attaque écrasante de la Mace.
+        player.fallDistance = 0.0f;
+
+        Vec3d impact = Vec3d.ofBottomCenter(base);
+        world.playSound(null, base, SoundEvents.ITEM_MACE_SMASH_GROUND_HEAVY, SoundCategory.PLAYERS, 1.2f, 0.8f);
+        world.spawnParticles(ParticleTypes.GUST_EMITTER_LARGE, impact.getX(), impact.getY(), impact.getZ(),
+                1, 0.0, 0.0, 0.0, 0.0);
+
         Direction facing = world.getBlockState(base).get(DoorBlock.FACING);
         TardisHelper.activate(world, base, facing, player);
-        hammer.damage(10, player, EquipmentSlot.MAINHAND);
+        mace.damage(10, player, EquipmentSlot.MAINHAND);
         return true;
-    }
-
-    /**
-     * Plus grande hauteur d'air libre sous les quatre colonnes voisines de la
-     * base de la porte (la porte doit trôner au sommet d'un pilier).
-     */
-    private static int maxDropAround(ServerWorld world, BlockPos base) {
-        int best = 0;
-        for (Direction dir : Direction.Type.HORIZONTAL) {
-            BlockPos.Mutable cursor = base.offset(dir).mutableCopy();
-            int drop = 0;
-            while (cursor.getY() > world.getBottomY() && world.getBlockState(cursor).isAir()) {
-                drop++;
-                cursor.move(Direction.DOWN);
-            }
-            best = Math.max(best, drop);
-        }
-        return best;
     }
 }

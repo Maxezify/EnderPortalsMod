@@ -12,10 +12,12 @@ blocs détruits.
    (Fortune fonctionne, Silk Touch ramasse le minerai).
 2. **La Porte inactive** se crafte avec 5 cristaux et une **nether star**.
    C'est une porte normale : elle se pose et se récupère à la pioche.
-3. **La Masse** se crafte avec 5 cristaux et 2 bâtons. Placez la porte
-   inactive au sommet d'un pilier dominant un vide d'au moins **20 blocs**,
-   puis frappez-la à la masse (clic gauche). La foudre tombe : la porte
-   s'éveille et sa salle intérieure est taillée dans le monde de l'Ender.
+3. **Le rituel de la Mace** : munissez-vous d'une **Mace vanilla** (heavy
+   core + breeze rod), posez la porte où vous voulez, sautez d'au moins
+   **20 blocs** et frappez-la (clic gauche) **pendant la chute** — l'attaque
+   écrasante de la Mace, appliquée à la porte. L'impact annule vos dégâts de
+   chute, la foudre tombe : la porte s'éveille et sa salle intérieure est
+   taillée dans le monde de l'Ender.
 4. **La Clé du TARDIS** se crafte avec 1 cristal, 1 perle d'Ender et
    1 lingot d'or. Clic droit sur la porte éveillée pour **lier** la clé.
 5. **La Pioche de l'Ender** (3 cristaux, 2 bâtons) est la seule capable de
@@ -43,14 +45,17 @@ les lits et ancres de réapparition y fonctionnent.
 ## Crafts (grille d'établi)
 
 ```
-Porte inactive        Masse                 Clé                  Pioche de l'Ender
-C C                   C C C                 C                    C C C
-C N                   C S C                 P                    . S .
-C C                   . S .                 G                    . S .
+Porte inactive        Clé                  Pioche de l'Ender
+C C                   C                    C C C
+C N                   P                    . S .
+C C                   G                    . S .
 
 C = Cristal de l'Ender   N = Nether Star   S = Bâton
 P = Perle d'Ender        G = Lingot d'or
 ```
+
+Le rituel d'éveil demande en plus une **Mace vanilla** (elle n'est pas
+consommée, juste un peu usée à chaque éveil).
 
 Bonus : 4 cristaux → 1 Bloc de l'Ender ; 4 Blocs de l'Ender → 4 Briques de l'Ender.
 

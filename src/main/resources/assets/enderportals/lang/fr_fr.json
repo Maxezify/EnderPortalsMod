@@ -8,21 +8,19 @@
   "block.enderportals.tardis_door": "Porte du TARDIS",
 
   "item.enderportals.ender_crystal": "Cristal de l'Ender",
-  "item.enderportals.sledgehammer": "Masse",
   "item.enderportals.tardis_key": "Clé du TARDIS",
   "item.enderportals.ender_pickaxe": "Pioche de l'Ender",
 
-  "enderportals.tooltip.sledgehammer": "Frappez une porte inactive perchée à 20 blocs du sol…",
   "enderportals.tooltip.key_unbound": "Clic droit sur une porte éveillée pour lier la clé",
   "enderportals.tooltip.key_bound": "Liée au TARDIS %s",
 
-  "enderportals.message.not_high_enough": "La porte doit dominer un vide d'au moins %s blocs (actuellement %s).",
+  "enderportals.message.not_falling": "L'impact est trop faible : frappez la porte en chutant d'au moins %s blocs (chute actuelle : %s).",
   "enderportals.message.activated": "§bLa porte s'éveille… Le vortex la traverse. Liez maintenant une clé (clic droit).",
   "enderportals.message.key_bound": "§bLa clé vibre : elle est liée à cette porte.",
   "enderportals.message.key_unbound": "Cette clé n'est liée à aucune porte.",
   "enderportals.message.wrong_key": "Cette clé ne correspond pas à cette porte.",
   "enderportals.message.locked": "La porte est verrouillée. Il vous faut sa clé.",
-  "enderportals.message.door_hint": "Cette porte dort. Frappez-la à la masse, en hauteur.",
+  "enderportals.message.door_hint": "Cette porte dort. Frappez-la à la Mace en plein vol, après 20 blocs de chute.",
   "enderportals.message.no_space": "Pas la place de matérialiser la porte ici.",
   "enderportals.message.already_inside": "Le vortex refuse : vous êtes déjà de l'autre côté.",
   "enderportals.message.tardis_dismissed": "La porte se dématérialise dans le monde extérieur.",

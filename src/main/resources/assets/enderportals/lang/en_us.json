@@ -8,21 +8,19 @@
   "block.enderportals.tardis_door": "TARDIS Door",
 
   "item.enderportals.ender_crystal": "Ender Crystal",
-  "item.enderportals.sledgehammer": "Sledgehammer",
   "item.enderportals.tardis_key": "TARDIS Key",
   "item.enderportals.ender_pickaxe": "Ender Pickaxe",
 
-  "enderportals.tooltip.sledgehammer": "Strike an inactive door perched 20 blocks above the ground…",
   "enderportals.tooltip.key_unbound": "Right-click an awakened door to bind this key",
   "enderportals.tooltip.key_bound": "Bound to TARDIS %s",
 
-  "enderportals.message.not_high_enough": "The door must overlook a drop of at least %s blocks (currently %s).",
+  "enderportals.message.not_falling": "The impact is too weak: strike the door while falling at least %s blocks (current fall: %s).",
   "enderportals.message.activated": "§bThe door awakens… The vortex flows through it. Now bind a key (right-click).",
   "enderportals.message.key_bound": "§bThe key hums: it is bound to this door.",
   "enderportals.message.key_unbound": "This key is not bound to any door.",
   "enderportals.message.wrong_key": "This key does not fit this door.",
   "enderportals.message.locked": "The door is locked. You need its key.",
-  "enderportals.message.door_hint": "This door is dormant. Strike it with the sledgehammer, up high.",
+  "enderportals.message.door_hint": "This door is dormant. Smash it with a Mace mid-air, after a 20-block fall.",
   "enderportals.message.no_space": "No room to materialise the door here.",
   "enderportals.message.already_inside": "The vortex refuses: you are already on the other side.",
   "enderportals.message.tardis_dismissed": "The door dematerialises in the outside world.",

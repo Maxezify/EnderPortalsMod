@@ -1,7 +1,6 @@
 {
   "replace": false,
   "values": [
-    "enderportals:ender_pickaxe",
-    "enderportals:sledgehammer"
+    "enderportals:ender_pickaxe"
   ]
 }

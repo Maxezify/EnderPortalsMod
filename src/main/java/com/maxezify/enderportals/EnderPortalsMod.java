@@ -9,6 +9,7 @@ import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
@@ -27,10 +28,11 @@ public class EnderPortalsMod implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     /**
-     * Hauteur de chute libre (en blocs) requise autour de la porte inactive
-     * pour que le coup de masse puisse l'initialiser.
+     * Distance de chute (en blocs) que le joueur doit accumuler avant de
+     * frapper la porte inactive à la masse pour l'initialiser — la mécanique
+     * de l'attaque écrasante de la Mace, appliquée à la porte.
      */
-    public static final int ACTIVATION_HEIGHT = 20;
+    public static final float ACTIVATION_FALL_DISTANCE = 20.0f;
 
     public static Identifier id(String path) {
         return Identifier.of(MOD_ID, path);
@@ -47,7 +49,7 @@ public class EnderPortalsMod implements ModInitializer {
 
         registerItemGroup();
         registerEndOreGeneration();
-        registerSledgehammerRitual();
+        registerMaceRitual();
 
         LOGGER.info("Ender Portals initialisé — le vortex vous attend.");
     }
@@ -58,7 +60,6 @@ public class EnderPortalsMod implements ModInitializer {
                 .displayName(Text.translatable("itemGroup.enderportals.main"))
                 .entries((context, entries) -> {
                     entries.add(ModItems.ENDER_CRYSTAL);
-                    entries.add(ModItems.SLEDGEHAMMER);
                     entries.add(ModItems.TARDIS_KEY);
                     entries.add(ModItems.ENDER_PICKAXE);
                     entries.add(ModItems.INACTIVE_TARDIS_DOOR);
@@ -77,10 +78,14 @@ public class EnderPortalsMod implements ModInitializer {
                 RegistryKey.of(RegistryKeys.PLACED_FEATURE, id("ender_ore")));
     }
 
-    private static void registerSledgehammerRitual() {
+    /**
+     * L'attaque écrasante de la Mace vanilla, appliquée à la porte inactive :
+     * frappée en pleine chute, elle s'éveille.
+     */
+    private static void registerMaceRitual() {
         AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
             if (world.getBlockState(pos).isOf(ModBlocks.INACTIVE_TARDIS_DOOR)
-                    && player.getStackInHand(hand).isOf(ModItems.SLEDGEHAMMER)) {
+                    && player.getStackInHand(hand).isOf(Items.MACE)) {
                 if (!world.isClient && player instanceof ServerPlayerEntity serverPlayer) {
                     InactiveTardisDoorBlock.tryActivate((ServerWorld) world, pos, serverPlayer,
                             player.getStackInHand(hand));
