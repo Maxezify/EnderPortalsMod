@@ -61,7 +61,7 @@ def jitter(c, amount):
 # ---------------------------------------------------------------- blocs
 
 def tex_ender_block():
-    base = (138, 143, 155, 170)
+    base = (104, 108, 118, 210)
     px = canvas(16, 16)
     for y in range(16):
         for x in range(16):
@@ -69,11 +69,11 @@ def tex_ender_block():
     for i in range(16):  # bord légèrement plus sombre, façon bloc de miel
         for (x, y) in ((i, 0), (i, 15), (0, i), (15, i)):
             r, g, b, a = px[y][x]
-            put(px, x, y, (max(0, r - 22), max(0, g - 22), max(0, b - 18), min(255, a + 25)))
-    # petits éclats clairs
+            put(px, x, y, (max(0, r - 20), max(0, g - 20), max(0, b - 16), min(255, a + 20)))
+    # petits éclats discrets
     for _ in range(6):
         x, y = rng.randint(2, 13), rng.randint(2, 13)
-        put(px, x, y, (205, 210, 220, 190))
+        put(px, x, y, (168, 173, 185, 225))
     write_png(f"{ASSETS}/textures/block/ender_block.png", 16, 16, px)
 
 

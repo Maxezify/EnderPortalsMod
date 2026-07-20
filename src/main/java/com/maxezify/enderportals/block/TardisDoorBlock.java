@@ -48,9 +48,6 @@ public class TardisDoorBlock extends Block implements BlockEntityProvider {
     public static final EnumProperty<DoubleBlockHalf> HALF = Properties.DOUBLE_BLOCK_HALF;
     public static final BooleanProperty OPEN = Properties.OPEN;
 
-    private static final VoxelShape SHAPE_NS = Block.createCuboidShape(0.0, 0.0, 5.0, 16.0, 16.0, 11.0);
-    private static final VoxelShape SHAPE_EW = Block.createCuboidShape(5.0, 0.0, 0.0, 11.0, 16.0, 16.0);
-
     public TardisDoorBlock(Settings settings) {
         super(settings);
         setDefaultState(getStateManager().getDefaultState()
@@ -71,12 +68,13 @@ public class TardisDoorBlock extends Block implements BlockEntityProvider {
 
     @Override
     protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        return state.get(FACING).getAxis() == Direction.Axis.X ? SHAPE_EW : SHAPE_NS;
+        // Le TARDIS occupe un bloc entier d'épaisseur : un vrai caisson.
+        return VoxelShapes.fullCube();
     }
 
     @Override
     protected VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        return state.get(OPEN) ? VoxelShapes.empty() : getOutlineShape(state, world, pos, context);
+        return state.get(OPEN) ? VoxelShapes.empty() : VoxelShapes.fullCube();
     }
 
     @Override

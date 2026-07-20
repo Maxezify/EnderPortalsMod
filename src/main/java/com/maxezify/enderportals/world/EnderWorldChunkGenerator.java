@@ -82,7 +82,7 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
             Blocks.GOLD_BLOCK.getDefaultState());
 
     /** Une relique tous les ~N blocs pleins. */
-    private static final int RELIC_RARITY = 96;
+    private static final int RELIC_RARITY = 256;
 
     public EnderWorldChunkGenerator(BiomeSource biomeSource) {
         super(biomeSource);

@@ -76,17 +76,20 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
 
         VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getEntityTranslucent(TEXTURE));
 
+        // La coque du caisson : dos, flancs, plafond, plancher.
+        drawShell(matrices, buffer, alpha, lightCoord, overlay);
+
         // Voile de vortex dans l'embrasure ouverte.
         if (open && !IMMPTL_LOADED) {
             drawVoidVeil(matrices, buffer, alpha, lightCoord, overlay);
         }
 
-        // Panneau de porte, sur charnière (bord gauche) quand elle est ouverte.
+        // Panneau de porte à l'avant, sur charnière (bord gauche) quand elle est ouverte.
         matrices.push();
         if (open) {
-            matrices.translate(-0.5, 0.0, 0.375);
+            matrices.translate(-0.5, 0.0, 0.40);
             matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-105.0f));
-            matrices.translate(0.5, 0.0, -0.375);
+            matrices.translate(0.5, 0.0, -0.40);
         }
         drawPanel(matrices, buffer, alpha, lightCoord, overlay);
         matrices.pop();
@@ -94,11 +97,32 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
         matrices.pop();
     }
 
-    /** Panneau 16×32×2 px, plaqué vers l'avant du bloc (z ≈ +0.375). */
+    /** Coque du caisson (un bloc d'épaisseur), faces intérieures comprises. */
+    private static void drawShell(MatrixStack matrices, VertexConsumer buffer, float alpha, int light, int overlay) {
+        MatrixStack.Entry entry = matrices.peek();
+        float w = 0.44f; // parois légèrement en retrait des bords du bloc
+        // Dos.
+        doubleQuad(buffer, entry, 0.5f, 0.0f, -w, -0.5f, 0.0f, -w, -0.5f, 2.0f, -w, 0.5f, 2.0f, -w,
+                BACK_U0, FRONT_V1, BACK_U1, FRONT_V0, alpha, light, overlay, 0, 0, -1);
+        // Flanc gauche.
+        doubleQuad(buffer, entry, -w, 0.0f, -0.5f, -w, 0.0f, 0.5f, -w, 2.0f, 0.5f, -w, 2.0f, -0.5f,
+                BACK_U0, FRONT_V1, BACK_U1, FRONT_V0, alpha, light, overlay, -1, 0, 0);
+        // Flanc droit.
+        doubleQuad(buffer, entry, w, 0.0f, 0.5f, w, 0.0f, -0.5f, w, 2.0f, -0.5f, w, 2.0f, 0.5f,
+                BACK_U0, FRONT_V1, BACK_U1, FRONT_V0, alpha, light, overlay, 1, 0, 0);
+        // Plafond.
+        doubleQuad(buffer, entry, -0.5f, 1.97f, 0.5f, 0.5f, 1.97f, 0.5f, 0.5f, 1.97f, -0.5f, -0.5f, 1.97f, -0.5f,
+                EDGE_U0, EDGE_V1, EDGE_U1, EDGE_V0, alpha, light, overlay, 0, 1, 0);
+        // Plancher.
+        doubleQuad(buffer, entry, -0.5f, 0.03f, -0.5f, 0.5f, 0.03f, -0.5f, 0.5f, 0.03f, 0.5f, -0.5f, 0.03f, 0.5f,
+                EDGE_U0, EDGE_V1, EDGE_U1, EDGE_V0, alpha, light, overlay, 0, 1, 0);
+    }
+
+    /** Panneau 16×32×2 px, plaqué vers l'avant du caisson (z ≈ +0.40). */
     private static void drawPanel(MatrixStack matrices, VertexConsumer buffer, float alpha, int light, int overlay) {
         float x0 = -0.5f, x1 = 0.5f;
         float y0 = 0.0f, y1 = 2.0f;
-        float z0 = 0.3125f, z1 = 0.4375f;
+        float z0 = 0.34f, z1 = 0.46f;
         MatrixStack.Entry entry = matrices.peek();
 
         // Face avant (+Z) et arrière (−Z).
@@ -122,13 +146,26 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
     private static void drawVoidVeil(MatrixStack matrices, VertexConsumer buffer, float alpha, int light, int overlay) {
         float x0 = -0.44f, x1 = 0.44f;
         float y0 = 0.03f, y1 = 1.97f;
-        float z = 0.38f;
+        float z = 0.40f;
         float veilAlpha = Math.min(1.0f, alpha) * 0.9f;
         MatrixStack.Entry entry = matrices.peek();
         quad(buffer, entry, x0, y0, z, x1, y0, z, x1, y1, z, x0, y1, z,
                 VOID_U0, VOID_V1, VOID_U1, VOID_V0, veilAlpha, light, overlay, 0, 0, 1);
         quad(buffer, entry, x1, y0, z, x0, y0, z, x0, y1, z, x1, y1, z,
                 VOID_U0, VOID_V1, VOID_U1, VOID_V0, veilAlpha, light, overlay, 0, 0, -1);
+    }
+
+    /** Quadrilatère dessiné sur ses deux faces (extérieur et intérieur du caisson). */
+    private static void doubleQuad(VertexConsumer buffer, MatrixStack.Entry entry,
+                                   float ax, float ay, float az, float bx, float by, float bz,
+                                   float cx, float cy, float cz, float dx, float dy, float dz,
+                                   float u0, float v0, float u1, float v1,
+                                   float alpha, int light, int overlay,
+                                   float nx, float ny, float nz) {
+        quad(buffer, entry, ax, ay, az, bx, by, bz, cx, cy, cz, dx, dy, dz,
+                u0, v0, u1, v1, alpha, light, overlay, nx, ny, nz);
+        quad(buffer, entry, dx, dy, dz, cx, cy, cz, bx, by, bz, ax, ay, az,
+                u0, v0, u1, v1, alpha, light, overlay, -nx, -ny, -nz);
     }
 
     /**
