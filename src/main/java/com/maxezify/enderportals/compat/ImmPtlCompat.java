@@ -152,7 +152,7 @@ public final class ImmPtlCompat {
      * {@link #tryCreatePortals} retomber sur la téléportation classique.
      */
     private static void applyRotation(Class<?> portalClass, Entity portal, double degrees) throws Exception {
-        if (Math.abs(MathHelper.wrapDegrees(degrees)) < 0.01) {
+        if (Math.abs(MathHelper.wrapDegrees(degrees)) < 1.0) {
             return;
         }
         Class<?> quaternionClass = Class.forName("qouteall.q_misc_util.my_util.DQuaternion");

@@ -1,7 +1,6 @@
 package com.maxezify.enderportals.block.entity;
 
 import com.maxezify.enderportals.ModBlockEntities;
-import com.maxezify.enderportals.block.TardisDoorBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -37,9 +36,8 @@ public class TardisDoorBlockEntity extends BlockEntity {
     private boolean dematerializing;
     private int dematStart;
 
-    /** Fondu d'ouverture du panneau, côté client uniquement (non sauvegardé). */
-    private float openAnim = -1.0f;
-    private float lastOpenAnim;
+    /** Un portail Immersive Portals couvre-t-il l'embrasure ? (synchronisé) */
+    private boolean portalActive;
 
     public TardisDoorBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.TARDIS_DOOR, pos, state);
@@ -74,14 +72,16 @@ public class TardisDoorBlockEntity extends BlockEntity {
         return dematerializing;
     }
 
-    /**
-     * Avancement lissé du fondu d'ouverture du panneau (0 fermé, 1 ouvert).
-     */
-    public float getOpenAnim(float tickDelta) {
-        if (openAnim < 0.0f) {
-            return getCachedState().get(TardisDoorBlock.OPEN) ? 1.0f : 0.0f;
+    public boolean isPortalActive() {
+        return portalActive;
+    }
+
+    /** Appelé côté serveur quand les portails Immersive Portals apparaissent/disparaissent. */
+    public void setPortalActive(boolean portalActive) {
+        if (this.portalActive != portalActive) {
+            this.portalActive = portalActive;
+            sync();
         }
-        return MathHelper.lerp(tickDelta, lastOpenAnim, openAnim);
     }
 
     /**
@@ -105,15 +105,6 @@ public class TardisDoorBlockEntity extends BlockEntity {
     public static void tick(World world, BlockPos pos, BlockState state, TardisDoorBlockEntity door) {
         door.age++;
         if (world.isClient) {
-            // Fondu d'ouverture du panneau (dissolution dans le vide).
-            float target = state.get(TardisDoorBlock.OPEN) ? 1.0f : 0.0f;
-            if (door.openAnim < 0.0f) {
-                door.openAnim = target;
-                door.lastOpenAnim = target;
-            } else {
-                door.lastOpenAnim = door.openAnim;
-                door.openAnim += MathHelper.clamp(target - door.openAnim, -0.12f, 0.12f);
-            }
             boolean fading = door.dematerializing || door.age < FADE_IN_TICKS;
             if (fading && world.random.nextInt(2) == 0) {
                 world.addParticle(ParticleTypes.REVERSE_PORTAL,
@@ -149,6 +140,7 @@ public class TardisDoorBlockEntity extends BlockEntity {
         age = nbt.getInt("Age");
         dematerializing = nbt.getBoolean("Dematerializing");
         dematStart = nbt.getInt("DematStart");
+        portalActive = nbt.getBoolean("PortalActive");
     }
 
     @Override
@@ -162,6 +154,7 @@ public class TardisDoorBlockEntity extends BlockEntity {
         nbt.putInt("Age", dematerializing ? age : Math.min(age, FADE_IN_TICKS));
         nbt.putBoolean("Dematerializing", dematerializing);
         nbt.putInt("DematStart", dematStart);
+        nbt.putBoolean("PortalActive", portalActive);
     }
 
     @Override

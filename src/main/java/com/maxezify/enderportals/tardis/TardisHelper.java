@@ -144,6 +144,7 @@ public final class TardisHelper {
         if (open) {
             ImmPtlCompat.tryCreatePortals(server, data);
         }
+        updatePortalFlags(server, data);
         return true;
     }
 
@@ -170,6 +171,7 @@ public final class TardisHelper {
             }
         }
         data.deployed = false;
+        updatePortalFlags(server, data);
         TardisStateManager.get(server).markDirty();
     }
 
@@ -194,6 +196,27 @@ public final class TardisHelper {
             ImmPtlCompat.tryCreatePortals(server, data);
         } else {
             ImmPtlCompat.removePortals(server, data);
+        }
+        updatePortalFlags(server, data);
+    }
+
+    /**
+     * Reporte {@code data.immptlActive} sur les block entities des deux
+     * portes : le client affiche le voile de vide dans l'embrasure ouverte
+     * uniquement quand aucun portail Immersive Portals ne la couvre.
+     */
+    private static void updatePortalFlags(MinecraftServer server, TardisData data) {
+        boolean active = data.immptlActive;
+        if (data.deployed) {
+            ServerWorld world = server.getWorld(data.exteriorWorld);
+            if (world != null && world.getBlockEntity(data.exteriorPos) instanceof TardisDoorBlockEntity door) {
+                door.setPortalActive(active);
+            }
+        }
+        ServerWorld enderWorld = server.getWorld(ModDimensions.ENDER_WORLD);
+        if (enderWorld != null && data.interiorDoorPos != null
+                && enderWorld.getBlockEntity(data.interiorDoorPos) instanceof TardisDoorBlockEntity door) {
+            door.setPortalActive(active);
         }
     }
 
