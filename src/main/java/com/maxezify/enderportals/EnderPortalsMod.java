@@ -44,6 +44,7 @@ public class EnderPortalsMod implements ModInitializer {
         ModItems.init();
         ModBlockEntities.init();
         ModComponents.init();
+        ModRecipes.init();
 
         Registry.register(Registries.CHUNK_GENERATOR, id("ender_world"), EnderWorldChunkGenerator.CODEC);
 
