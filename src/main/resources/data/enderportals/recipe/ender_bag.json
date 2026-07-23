@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    { "item": "minecraft:bundle" },
+    { "item": "minecraft:ender_chest" }
+  ],
+  "result": { "id": "enderportals:ender_bag", "count": 1 }
+}

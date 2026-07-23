@@ -62,6 +62,25 @@ public class TardisStateManager extends PersistentState {
         return null;
     }
 
+    /** Lie le centraliseur posé à la parcelle du joueur (le dernier posé gagne). */
+    public void setCentralizer(UUID owner, BlockPos pos) {
+        TardisData data = findByOwner(owner);
+        if (data != null) {
+            data.centralizerPos = pos;
+            markDirty();
+        }
+    }
+
+    /** Rompt le lien d'un centraliseur cassé à cette position, s'il existait. */
+    public void clearCentralizer(BlockPos pos) {
+        for (TardisData data : tardises.values()) {
+            if (pos.equals(data.centralizerPos)) {
+                data.centralizerPos = null;
+                markDirty();
+            }
+        }
+    }
+
     private static BlockPos plotOrigin(int plot) {
         return new BlockPos(plot * PLOT_SPACING + 8, PLOT_Y, 8);
     }

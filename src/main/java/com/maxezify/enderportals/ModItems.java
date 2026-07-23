@@ -1,5 +1,7 @@
 package com.maxezify.enderportals;
 
+import com.maxezify.enderportals.item.CentralizerBlockItem;
+import com.maxezify.enderportals.item.EnderBagItem;
 import com.maxezify.enderportals.item.EnderToolMaterial;
 import com.maxezify.enderportals.item.TardisKeyItem;
 import net.minecraft.component.DataComponentTypes;
@@ -49,6 +51,13 @@ public final class ModItems {
 
     public static final Item ENDER_BRICKS = register("ender_bricks",
             new BlockItem(ModBlocks.ENDER_BRICKS, new Item.Settings()));
+
+    public static final Item CENTRALIZER = register("centralizer",
+            new CentralizerBlockItem(ModBlocks.CENTRALIZER, new Item.Settings().rarity(Rarity.RARE)));
+
+    /** Le Sac de l'Ender — en seconde main, range la ligne du haut dans la base. */
+    public static final Item ENDER_BAG = register("ender_bag",
+            new EnderBagItem(new Item.Settings().maxCount(1).rarity(Rarity.RARE)));
 
     /**
      * Outil de la pioche de l'Ender : très rapide sur les blocs de l'Ender

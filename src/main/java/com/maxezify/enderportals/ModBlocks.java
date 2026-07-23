@@ -1,5 +1,6 @@
 package com.maxezify.enderportals;
 
+import com.maxezify.enderportals.block.CentralizerBlock;
 import com.maxezify.enderportals.block.EnderBlock;
 import com.maxezify.enderportals.block.InactiveTardisDoorBlock;
 import com.maxezify.enderportals.block.TardisDoorBlock;
@@ -74,6 +75,18 @@ public final class ModBlocks {
                     .nonOpaque()
                     .luminance(state -> state.get(TardisDoorBlock.OPEN) ? 7 : 0)
                     .pistonBehavior(PistonBehavior.BLOCK)
+                    .sounds(BlockSoundGroup.METAL)));
+
+    /**
+     * Centraliseur d'objet — machine à voyants clignotants, posable uniquement
+     * dans le monde de l'Ender. Sert de point de collecte au Sac de l'Ender.
+     */
+    public static final Block CENTRALIZER = register("centralizer", new CentralizerBlock(
+            AbstractBlock.Settings.create()
+                    .mapColor(MapColor.DEEPSLATE_GRAY)
+                    .strength(4.0f, 9.0f)
+                    .requiresTool()
+                    .luminance(state -> 8)
                     .sounds(BlockSoundGroup.METAL)));
 
     private static Block register(String name, Block block) {

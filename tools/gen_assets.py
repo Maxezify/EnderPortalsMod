@@ -430,6 +430,90 @@ def tex_inactive_door_item():
     write_png(f"{ASSETS}/textures/item/inactive_tardis_door.png", 16, 16, px)
 
 
+def tex_centralizer():
+    """Cabinet d'ordinateur obsidienne : panneau de voyants sarcelle/violet
+    sur les 4 côtés, grille métal sur le dessus/dessous."""
+    metal = [(52, 55, 63, 255), (66, 70, 79, 255), (82, 86, 96, 255)]
+    lamp_off = (26, 30, 38, 255)
+    teal = (64, 224, 205, 255)
+    violet = (150, 110, 210, 255)
+    amber = (240, 176, 64, 255)
+    lamps = [teal, violet, amber]
+
+    # --- côté : panneau sombre + rangées de voyants ---
+    side = canvas(16, 16)
+    noise = blob_noise(16, 16, seed=5150, scale=4)
+    for y in range(16):
+        for x in range(16):
+            put(side, x, y, shade(OBS, 0.2 + noise[y][x] * 0.5))
+    outline(side, 0, 0, 15, 15, OBS_DARKEST)
+    # bandeau de voyants (grille 2px) + quelques allumés
+    for ry, gy in enumerate(range(3, 13, 3)):
+        for rx, gx in enumerate(range(3, 14, 2)):
+            on = (rx * 3 + ry * 5) % 4 == 0
+            c = lamps[(rx + ry) % 3] if on else lamp_off
+            put(side, gx, gy, c)
+            put(side, gx, gy + 1, OBS_DARKEST)
+    # rail lumineux bas
+    for x in range(2, 14):
+        put(side, x, 14, shade(metal, 0.5))
+    write_png(f"{ASSETS}/textures/block/centralizer_side.png", 16, 16, side)
+
+    # --- dessus/dessous : grille d'aération métal ---
+    top = canvas(16, 16)
+    for y in range(16):
+        for x in range(16):
+            shine = 0.35 + 0.35 * ((x // 2 + y // 2) % 2)
+            put(top, x, y, shade(metal, shine))
+    outline(top, 0, 0, 15, 15, OBS_DARKEST)
+    for y in range(2, 15, 3):
+        for x in range(2, 14):
+            put(top, x, y, lamp_off)
+    put(top, 8, 8, teal)
+    write_png(f"{ASSETS}/textures/block/centralizer_top.png", 16, 16, top)
+
+
+def tex_ender_bag():
+    """Sac sombre bombé, cordon serré, œil de l'Ender sarcelle sur le rabat."""
+    cloth = [(30, 26, 46, 255), (42, 35, 62, 255), (55, 46, 82, 255)]
+    tie = (70, 58, 40, 255)
+    teal = (72, 214, 196, 255)
+    teal_d = (26, 120, 108, 255)
+    pale = (170, 248, 238, 255)
+    out = (12, 10, 20, 255)
+    px = canvas(16, 16)
+    noise = blob_noise(16, 16, seed=3690, scale=3)
+    # corps du sac : ovale bombé (lignes 5..15)
+    body = [
+        (5, 4, 10), (4, 5, 11), (3, 6, 12), (3, 7, 12), (2, 8, 13),
+        (2, 9, 13), (2, 10, 13), (2, 11, 13), (3, 12, 12), (3, 13, 12), (4, 14, 11),
+    ]
+    for (x0, y, x1) in body:
+        for x in range(x0, x1 + 1):
+            put(px, x, y, shade(cloth, noise[y][x]))
+    # goulot / cordon (lignes 2..4)
+    for x in range(6, 10):
+        put(px, x, 2, tie)
+        put(px, x, 3, shade(cloth, 0.7))
+    put(px, 5, 3, tie)
+    put(px, 10, 3, tie)
+    # ombre bas
+    for x in range(4, 12):
+        put(px, x, 14, shade(cloth, 0.1))
+    # œil de l'Ender sur le rabat
+    put(px, 7, 8, teal); put(px, 8, 8, teal)
+    put(px, 7, 9, teal); put(px, 8, 9, teal)
+    put(px, 6, 8, teal_d); put(px, 9, 9, teal_d)
+    put(px, 7, 8, pale)
+    # contour sombre auto
+    fill = {(x, y) for y in range(16) for x in range(16) if px[y][x][3] > 0}
+    for (x, y) in list(fill):
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            if (x + dx, y + dy) not in fill and 0 <= x + dx < 16 and 0 <= y + dy < 16:
+                put(px, x + dx, y + dy, out)
+    write_png(f"{ASSETS}/textures/item/ender_bag.png", 16, 16, px)
+
+
 def tex_icon():
     s = 128
     px = canvas(s, s, (10, 8, 20, 255))
@@ -517,6 +601,8 @@ def main():
     tex_tardis_key()
     tex_ender_pickaxe()
     tex_inactive_door_item()
+    tex_centralizer()
+    tex_ender_bag()
     tex_icon()
     door_blockstate()
     door_models()

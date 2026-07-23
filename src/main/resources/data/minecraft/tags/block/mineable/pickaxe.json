@@ -3,6 +3,7 @@
   "values": [
     "enderportals:ender_ore",
     "enderportals:ender_bricks",
-    "enderportals:inactive_tardis_door"
+    "enderportals:inactive_tardis_door",
+    "enderportals:centralizer"
   ]
 }

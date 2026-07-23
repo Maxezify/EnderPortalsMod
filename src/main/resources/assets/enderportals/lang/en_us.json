@@ -31,5 +31,12 @@
   "enderportals.book.page4": "§5The Ritual§0\n\nOnly a colossal impact can awaken it.\n\nTake a §cMace§0, climb at least §c20 blocks§0, jump — and strike the door mid-air.\n\nThe impact will absorb your fall. Lightning will do the rest.",
   "enderportals.book.page5": "§5The Key§0\n\nCraft (vertical):\n§bCrystal§0\n§3Ender Pearl§0\n§6Gold Ingot§0\n\nRight-click the awakened door: the key binds.\nRight-click the ground: the door materialises.\nOn the door: open, then dematerialise.",
   "enderportals.book.page6": "§5The Ender Pickaxe§0\n\nCraft: 3 crystals in a row, 2 sticks.\n\nIt alone can carve §7Ender Blocks§0, shattering them like glass.\n\n4 crystals = 1 Ender Block\n4 Blocks = 4 Ender Bricks.",
-  "enderportals.book.page7": "§5Your pocket base§0\n\nBehind the door: your room, carved in the endless cavern. Beds and anchors work there.\n\nOne door per person — and the vortex refuses to awaken a door within the door.\n\nSafe travels."
+  "enderportals.book.page7": "§5Your pocket base§0\n\nBehind the door: your room, carved in the endless cavern. Beds and anchors work there.\n\nOne door per person — and the vortex refuses to awaken a door within the door.\n\nSafe travels.",
+  "block.enderportals.centralizer": "Item Centralizer",
+  "item.enderportals.ender_bag": "Ender Bag",
+  "enderportals.tooltip.ender_bag": "In the offhand, right-click: stores your top inventory row into your base (costs XP)",
+  "enderportals.message.centralizer_here": "The Centralizer can only be placed in the Ender world.",
+  "enderportals.message.no_centralizer": "No linked Centralizer: place one in your Ender base.",
+  "enderportals.message.no_chest": "No chest is attached to the Centralizer.",
+  "enderportals.message.not_enough_xp": "Not enough experience to store."
 }

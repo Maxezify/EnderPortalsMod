@@ -46,6 +46,10 @@ public class TardisData {
     public final List<UUID> portalIds = new ArrayList<>();
     public boolean immptlActive;
 
+    /** Centraliseur d'objet du joueur, dans le monde de l'Ender (ou null). */
+    @Nullable
+    public BlockPos centralizerPos;
+
     public TardisData(UUID id, int plotIndex) {
         this.id = id;
         this.plotIndex = plotIndex;
@@ -73,6 +77,9 @@ public class TardisData {
         }
         nbt.put("Portals", portals);
         nbt.putBoolean("ImmptlActive", immptlActive);
+        if (centralizerPos != null) {
+            putPos(nbt, "Centralizer", centralizerPos);
+        }
         return nbt;
     }
 
@@ -90,6 +97,8 @@ public class TardisData {
             data.portalIds.add(((NbtCompound) element).getUuid("Id"));
         }
         data.immptlActive = nbt.getBoolean("ImmptlActive");
+        data.centralizerPos = nbt.contains("Centralizer", NbtElement.INT_ARRAY_TYPE)
+                ? getPos(nbt, "Centralizer") : null;
         return data;
     }
 

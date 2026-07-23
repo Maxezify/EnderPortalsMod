@@ -67,6 +67,8 @@ public class EnderPortalsMod implements ModInitializer {
                     entries.add(ModItems.ENDER_ORE);
                     entries.add(ModItems.ENDER_BLOCK);
                     entries.add(ModItems.ENDER_BRICKS);
+                    entries.add(ModItems.CENTRALIZER);
+                    entries.add(ModItems.ENDER_BAG);
                 })
                 .build();
         Registry.register(Registries.ITEM_GROUP, id("main"), group);

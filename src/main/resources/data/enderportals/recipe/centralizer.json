@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "IRI",
+    "IEI",
+    "III"
+  ],
+  "key": {
+    "I": { "item": "minecraft:iron_block" },
+    "R": { "item": "minecraft:redstone_block" },
+    "E": { "item": "minecraft:ender_chest" }
+  },
+  "result": { "id": "enderportals:centralizer", "count": 1 }
+}

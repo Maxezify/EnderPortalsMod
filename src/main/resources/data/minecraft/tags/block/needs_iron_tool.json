@@ -2,6 +2,7 @@
   "replace": false,
   "values": [
     "enderportals:ender_ore",
-    "enderportals:inactive_tardis_door"
+    "enderportals:inactive_tardis_door",
+    "enderportals:centralizer"
   ]
 }
