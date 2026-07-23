@@ -38,5 +38,8 @@
   "enderportals.message.centralizer_here": "Le Centraliseur ne peut être posé que dans le monde de l'Ender.",
   "enderportals.message.no_centralizer": "Aucun Centraliseur relié : posez-en un dans votre base de l'Ender.",
   "enderportals.message.no_chest": "Aucun coffre n'est collé au Centraliseur.",
-  "enderportals.message.not_enough_xp": "Pas assez d'expérience pour ranger."
+  "enderportals.message.not_enough_xp": "Pas assez d'expérience pour ranger.",
+  "enderportals.message.chests_full": "Les coffres du Centraliseur sont pleins.",
+  "enderportals.book.page8": "§5Le Centraliseur§0\n\nUne machine aux voyants d'un autre âge. Craft : 8 blocs de fer autour d'un coffre de l'Ender, un bloc de redstone en haut.\n\nPosez-le dans votre base de l'Ender et collez-lui des coffres — de coffre en coffre, le réseau grandit.",
+  "enderportals.book.page9": "§5Le Sac de l'Ender§0\n\nCraft : un sac et un coffre de l'Ender.\n\nEn §bseconde main§0, clic droit : la ligne du haut de votre inventaire file dans les coffres du Centraliseur, où que vous soyez.\n\nChaque case rangée coûte un peu d'§aexpérience§0. Coffres pleins ou trop peu d'XP : rien ne part."
 }

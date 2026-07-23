@@ -73,6 +73,12 @@ public final class CentralizerLogic {
             neutral(player);
             return;
         }
+        // Coffres pleins (aucune place pour aucun objet candidat) : message
+        // dédié, vérifié avant tout prélèvement d'XP.
+        if (!hasAnyRoom(chests, inv)) {
+            full(player);
+            return;
+        }
         if (getXpPoints(player) < XP_COST_PER_SLOT * candidates) {
             fail(player, "enderportals.message.not_enough_xp");
             return;
@@ -96,13 +102,44 @@ public final class CentralizerLogic {
         inv.markDirty();
 
         if (moved == 0) {
-            neutral(player);
+            // Filet de sécurité : hasAnyRoom garantit normalement moved >= 1.
+            full(player);
             return;
         }
         // Force la synchronisation de l'inventaire modifié vers le client.
         player.currentScreenHandler.sendContentUpdates();
         player.addExperience(-XP_COST_PER_SLOT * moved);
         success(player);
+    }
+
+    /**
+     * Le réseau a-t-il de la place pour au moins un objet de la ligne du haut ?
+     * Lecture seule, court-circuit dès la première place trouvée.
+     */
+    private static boolean hasAnyRoom(List<Inventory> chests, PlayerInventory inv) {
+        for (int slot = ROW_START; slot <= ROW_END; slot++) {
+            ItemStack stack = inv.getStack(slot);
+            if (stack.isEmpty()) {
+                continue;
+            }
+            for (Inventory chest : chests) {
+                int size = chest.size();
+                for (int i = 0; i < size; i++) {
+                    if (!chest.isValid(i, stack)) {
+                        continue;
+                    }
+                    ItemStack slotStack = chest.getStack(i);
+                    if (slotStack.isEmpty()) {
+                        return true;
+                    }
+                    if (ItemStack.areItemsAndComponentsEqual(slotStack, stack)
+                            && slotStack.getCount() < Math.min(chest.getMaxCountPerStack(), slotStack.getMaxCount())) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     // ------------------------------------------------------------------
@@ -220,16 +257,24 @@ public final class CentralizerLogic {
 
     private static void success(ServerPlayerEntity player) {
         ServerWorld world = player.getServerWorld();
+        // Mystique (chime d'améthyste + rangement du coffre de l'Ender).
         world.playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.BLOCK_BARREL_CLOSE, SoundCategory.PLAYERS, 0.7f, 1.3f);
+                SoundEvents.BLOCK_ENDER_CHEST_CLOSE, SoundCategory.PLAYERS, 0.6f, 1.1f);
         world.playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.ENTITY_ITEM_PICKUP, SoundCategory.PLAYERS, 0.6f, 1.0f);
+                SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.PLAYERS, 0.5f, 1.4f);
     }
 
     private static void fail(ServerPlayerEntity player, String messageKey) {
         player.getServerWorld().playSound(null, player.getX(), player.getY(), player.getZ(),
                 SoundEvents.BLOCK_ANVIL_LAND, SoundCategory.PLAYERS, 0.5f, 0.5f);
         player.sendMessage(Text.translatable(messageKey), true);
+    }
+
+    /** Coffres pleins : son grave dédié + message. */
+    private static void full(ServerPlayerEntity player) {
+        player.getServerWorld().playSound(null, player.getX(), player.getY(), player.getZ(),
+                SoundEvents.BLOCK_ANVIL_LAND, SoundCategory.PLAYERS, 0.6f, 0.6f);
+        player.sendMessage(Text.translatable("enderportals.message.chests_full"), true);
     }
 
     private static void neutral(ServerPlayerEntity player) {
