@@ -5,7 +5,6 @@ import com.maxezify.enderportals.block.InactiveTardisDoorBlock;
 import com.maxezify.enderportals.block.TardisDoorBlock;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockSetType;
 import net.minecraft.block.ExperienceDroppingBlock;
 import net.minecraft.block.MapColor;
 import net.minecraft.block.piston.PistonBehavior;
@@ -51,17 +50,16 @@ public final class ModBlocks {
                     .sounds(BlockSoundGroup.DEEPSLATE_BRICKS)));
 
     /**
-     * Porte du TARDIS inactive — se pose et se casse normalement à la pioche.
-     * Un coup de masse en hauteur l'éveille.
+     * Porte de l'Ender inactive — caisson dormant de deux blocs, posable et
+     * cassable à la pioche. Un coup de Mace en pleine chute l'éveille.
      */
     public static final Block INACTIVE_TARDIS_DOOR = register("inactive_tardis_door",
-            new InactiveTardisDoorBlock(BlockSetType.IRON,
-                    AbstractBlock.Settings.create()
-                            .mapColor(MapColor.BLUE)
-                            .strength(5.0f, 1200.0f)
-                            .requiresTool()
-                            .nonOpaque()
-                            .sounds(BlockSoundGroup.METAL)));
+            new InactiveTardisDoorBlock(AbstractBlock.Settings.create()
+                    .mapColor(MapColor.BLUE)
+                    .strength(5.0f, 1200.0f)
+                    .requiresTool()
+                    .pistonBehavior(PistonBehavior.BLOCK)
+                    .sounds(BlockSoundGroup.DEEPSLATE_BRICKS)));
 
     /**
      * Porte du TARDIS active — indestructible, elle se matérialise et se

@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "enderportals:block/inactive_door_side",
+    "north": "enderportals:block/tardis_door_bottom",
+    "south": "enderportals:block/inactive_door_side",
+    "east": "enderportals:block/inactive_door_side",
+    "west": "enderportals:block/inactive_door_side",
+    "up": "enderportals:block/inactive_door_top",
+    "down": "enderportals:block/inactive_door_top"
+  }
+}

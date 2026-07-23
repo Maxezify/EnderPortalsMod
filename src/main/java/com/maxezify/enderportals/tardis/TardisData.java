@@ -9,6 +9,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +23,10 @@ public class TardisData {
 
     public final UUID id;
     public final int plotIndex;
+
+    /** Le joueur qui a éveillé cette porte — une seule porte par personne. */
+    @Nullable
+    public UUID ownerUuid;
 
     /** Porte intérieure (moitié basse), dans le monde de l'Ender. */
     public BlockPos interiorDoorPos;
@@ -50,6 +55,9 @@ public class TardisData {
         NbtCompound nbt = new NbtCompound();
         nbt.putUuid("Id", id);
         nbt.putInt("Plot", plotIndex);
+        if (ownerUuid != null) {
+            nbt.putUuid("Owner", ownerUuid);
+        }
         putPos(nbt, "Interior", interiorDoorPos);
         nbt.putString("InteriorFacing", interiorFacing.getName());
         nbt.putString("ExteriorWorld", exteriorWorld.getValue().toString());
@@ -70,6 +78,7 @@ public class TardisData {
 
     public static TardisData fromNbt(NbtCompound nbt) {
         TardisData data = new TardisData(nbt.getUuid("Id"), nbt.getInt("Plot"));
+        data.ownerUuid = nbt.containsUuid("Owner") ? nbt.getUuid("Owner") : null;
         data.interiorDoorPos = getPos(nbt, "Interior");
         data.interiorFacing = directionOrDefault(nbt.getString("InteriorFacing"), Direction.SOUTH);
         data.exteriorWorld = RegistryKey.of(RegistryKeys.WORLD, Identifier.of(nbt.getString("ExteriorWorld")));

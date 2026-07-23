@@ -126,19 +126,42 @@ def tex_ender_block():
 
 
 def tex_ender_bricks():
-    mortar = (72, 75, 84, 255)
-    brick = (121, 126, 138, 255)
+    """Façon stone bricks vanilla : 2 rangées de gros pavés, joints sombres,
+    grain en taches et rehaut haut-gauche par pavé."""
+    mortar = (46, 48, 56, 255)
+    palette = [(88, 92, 102, 255), (99, 103, 113, 255), (110, 114, 124, 255)]
+    highlight = (124, 128, 139, 255)
+    noise = blob_noise(16, 16, seed=1212, scale=3)
     px = canvas(16, 16, mortar)
-    for row in range(4):
-        y0 = row * 4
-        offset = 0 if row % 2 == 0 else 4
-        for col in range(3):
-            x0 = (offset + col * 8) % 16
-            for y in range(y0 + 1, y0 + 4):
-                for dx in range(7):
-                    x = (x0 + dx) % 16
-                    put(px, x, y, jitter(brick, 6))
+    # (x0, y0, x1, y1) intérieurs des pavés ; joints d'1 px autour.
+    bricks = [(0, 0, 6, 6), (8, 0, 15, 6), (0, 8, 2, 14), (4, 8, 12, 14), (14, 8, 15, 14)]
+    for (bx0, by0, bx1, by1) in bricks:
+        for y in range(by0, by1 + 1):
+            for x in range(bx0, bx1 + 1):
+                put(px, x, y, shade(palette, noise[y][x]))
+        # rehaut sur l'arête haute, ombre sur l'arête basse
+        for x in range(bx0, bx1 + 1):
+            put(px, x, by0, highlight if noise[by0][x] > 0.35 else palette[2])
+            put(px, x, by1, palette[0])
     write_png(f"{ASSETS}/textures/block/ender_bricks.png", 16, 16, px)
+
+
+def tex_inactive_door_sides():
+    """Flancs/dos et chants du caisson inactif : obsidienne pleine."""
+    noise = blob_noise(16, 16, seed=2727, scale=3)
+    side = canvas(16, 16)
+    for y in range(16):
+        for x in range(16):
+            put(side, x, y, shade(OBS, 0.25 + noise[y][x] * 0.74))
+    outline(side, 0, 0, 15, 15, OBS_DARKEST)
+    write_png(f"{ASSETS}/textures/block/inactive_door_side.png", 16, 16, side)
+
+    top = canvas(16, 16)
+    for y in range(16):
+        for x in range(16):
+            put(top, x, y, shade(OBS[:2], noise[15 - y][x]))
+    outline(top, 0, 0, 15, 15, OBS_DARKEST)
+    write_png(f"{ASSETS}/textures/block/inactive_door_top.png", 16, 16, top)
 
 
 def tex_ender_ore():
@@ -448,24 +471,15 @@ def tex_icon():
 # ---------------------------------------------------------------- JSON portes
 
 def door_blockstate():
-    """Blockstate vanilla-style pour la porte inactive (32 variantes)."""
-    base_y = {"east": 0, "south": 90, "west": 180, "north": 270}
+    """Blockstate du caisson inactif : 4 orientations × 2 moitiés."""
+    base_y = {"north": 0, "east": 90, "south": 180, "west": 270}
     variants = {}
     for facing, y in base_y.items():
-        for half in ("lower", "upper"):
-            part = "bottom" if half == "lower" else "top"
-            for hinge in ("left", "right"):
-                for is_open in ("false", "true"):
-                    key = f"facing={facing},half={half},hinge={hinge},open={is_open}"
-                    model = f"enderportals:block/inactive_door_{part}_{hinge}"
-                    rot = y
-                    if is_open == "true":
-                        model += "_open"
-                        rot = (y + 90) % 360 if hinge == "left" else (y - 90) % 360
-                    entry = {"model": model}
-                    if rot:
-                        entry["y"] = rot
-                    variants[key] = entry
+        for half, model in (("lower", "inactive_door_lower"), ("upper", "inactive_door_upper")):
+            entry = {"model": f"enderportals:block/{model}"}
+            if y:
+                entry["y"] = y
+            variants[f"facing={facing},half={half}"] = entry
     path = f"{ASSETS}/blockstates/inactive_tardis_door.json"
     with open(path, "w") as f:
         json.dump({"variants": variants}, f, indent=2, sort_keys=True)
@@ -473,26 +487,29 @@ def door_blockstate():
 
 
 def door_models():
-    for part in ("bottom", "top"):
-        for hinge in ("left", "right"):
-            for suffix in ("", "_open"):
-                name = f"inactive_door_{part}_{hinge}{suffix}"
-                parent = f"minecraft:block/door_{part}_{hinge}{suffix}"
-                path = f"{ASSETS}/models/block/{name}.json"
-                with open(path, "w") as f:
-                    json.dump({
-                        "parent": parent,
-                        "textures": {
-                            "bottom": "enderportals:block/tardis_door_bottom",
-                            "top": "enderportals:block/tardis_door_top",
-                        },
-                    }, f, indent=2)
-                print("json", path)
+    """Deux cubes pleins : face nord = porte, reste = obsidienne."""
+    for half, front in (("lower", "tardis_door_bottom"), ("upper", "tardis_door_top")):
+        path = f"{ASSETS}/models/block/inactive_door_{half}.json"
+        with open(path, "w") as f:
+            json.dump({
+                "parent": "minecraft:block/cube",
+                "textures": {
+                    "particle": "enderportals:block/inactive_door_side",
+                    "north": f"enderportals:block/{front}",
+                    "south": "enderportals:block/inactive_door_side",
+                    "east": "enderportals:block/inactive_door_side",
+                    "west": "enderportals:block/inactive_door_side",
+                    "up": "enderportals:block/inactive_door_top",
+                    "down": "enderportals:block/inactive_door_top",
+                },
+            }, f, indent=2)
+        print("json", path)
 
 
 def main():
     tex_ender_block()
     tex_ender_bricks()
+    tex_inactive_door_sides()
     tex_ender_ore()
     tex_doors()
     tex_door_entity_sheet()

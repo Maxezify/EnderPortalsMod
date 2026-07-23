@@ -36,9 +36,10 @@ public class TardisStateManager extends PersistentState {
                 .getOrCreate(TYPE, "enderportals_tardis");
     }
 
-    public TardisData createTardis() {
+    public TardisData createTardis(UUID owner) {
         int plot = nextPlot++;
         TardisData data = new TardisData(UUID.randomUUID(), plot);
+        data.ownerUuid = owner;
         data.interiorDoorPos = plotOrigin(plot);
         tardises.put(data.id, data);
         markDirty();
@@ -48,6 +49,17 @@ public class TardisStateManager extends PersistentState {
     @Nullable
     public TardisData getTardis(UUID id) {
         return tardises.get(id);
+    }
+
+    /** La porte déjà éveillée par ce joueur, s'il en a une. */
+    @Nullable
+    public TardisData findByOwner(UUID owner) {
+        for (TardisData data : tardises.values()) {
+            if (owner.equals(data.ownerUuid)) {
+                return data;
+            }
+        }
+        return null;
     }
 
     private static BlockPos plotOrigin(int plot) {

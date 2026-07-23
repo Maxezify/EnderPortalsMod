@@ -75,8 +75,8 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
 
         matrices.push();
         matrices.translate(0.5, 0.0, 0.5);
-        // +Z local = avant de la porte (aligné sur le FACING logique).
-        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0f - facing.asRotation()));
+        // Orientation validée en jeu (v4) : +Z local = avant de la porte.
+        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-facing.asRotation()));
         MatrixStack.Entry entry = matrices.peek();
 
         // Hors fondu : couche opaque (cutout), profondeur nette, zéro tri translucide.
