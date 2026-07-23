@@ -143,6 +143,11 @@ public class TardisKeyItem extends Item {
         }
         BlockPos clicked = context.getBlockPos();
         BlockPos base = world.getBlockState(clicked).isReplaceable() ? clicked : clicked.offset(context.getSide());
+        // Respecte la spawn protection, le mode aventure et les mods de claim.
+        if (!world.canPlayerModifyAt(player, base) || !world.canPlayerModifyAt(player, base.up())) {
+            player.sendMessage(Text.translatable("enderportals.message.protected"), true);
+            return;
+        }
         Direction facing = player.getHorizontalFacing().getOpposite();
         TardisHelper.deployExterior(server, data, world, base, facing, false, player);
     }

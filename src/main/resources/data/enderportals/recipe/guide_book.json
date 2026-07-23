@@ -1,0 +1,38 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CCC",
+    "CBC",
+    "CCC"
+  ],
+  "key": {
+    "C": { "item": "enderportals:ender_crystal" },
+    "B": { "item": "minecraft:book" }
+  },
+  "result": {
+    "id": "minecraft:written_book",
+    "count": 1,
+    "components": {
+      "minecraft:custom_name": {
+        "translate": "item.enderportals.guide_book",
+        "italic": false,
+        "color": "aqua"
+      },
+      "minecraft:written_book_content": {
+        "title": "Guide de la Porte de l'Ender",
+        "author": "Le Vortex",
+        "generation": 0,
+        "pages": [
+          { "translate": "enderportals.book.page1" },
+          { "translate": "enderportals.book.page2" },
+          { "translate": "enderportals.book.page3" },
+          { "translate": "enderportals.book.page4" },
+          { "translate": "enderportals.book.page5" },
+          { "translate": "enderportals.book.page6" },
+          { "translate": "enderportals.book.page7" }
+        ]
+      }
+    }
+  }
+}

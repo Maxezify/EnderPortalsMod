@@ -59,6 +59,19 @@ consommée, juste un peu usée à chaque éveil).
 
 Bonus : 4 cristaux → 1 Bloc de l'Ender ; 4 Blocs de l'Ender → 4 Briques de l'Ender.
 
+**Le Guide de la Porte de l'Ender** : 8 cristaux autour d'un livre → un
+livre écrit contenant le lore et tous les crafts, traduit dans la langue du
+jeu (FR/EN).
+
+## Compatibilité
+
+Le mod est conçu pour cohabiter sereinement avec d'autres mods : aucun
+mixin, tags vanilla additifs uniquement, événements Fabric standards ciblés
+sur ses propres blocs, générateur de dimension auto-contenu et thread-safe,
+intégration Immersive Portals par réflexion avec repli automatique. La clé
+et le rituel respectent la spawn protection, le mode aventure et les mods
+de protection de terrain branchés sur `canPlayerModifyAt`.
+
 ## Immersive Portals (optionnel, expérimental)
 
 Le mod fonctionne seul (traversée par contact avec l'embrasure ouverte).

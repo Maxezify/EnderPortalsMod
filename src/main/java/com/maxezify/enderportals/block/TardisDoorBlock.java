@@ -107,7 +107,7 @@ public class TardisDoorBlock extends Block implements BlockEntityProvider {
         if (world.isClient || !state.get(OPEN) || !(entity instanceof ServerPlayerEntity player)) {
             return;
         }
-        if (player.hasPortalCooldown()) {
+        if (player.hasPortalCooldown() || player.isSpectator()) {
             return;
         }
         BlockPos base = state.get(HALF) == DoubleBlockHalf.UPPER ? pos.down() : pos;

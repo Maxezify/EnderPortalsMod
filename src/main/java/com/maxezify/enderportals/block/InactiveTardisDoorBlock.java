@@ -129,6 +129,11 @@ public class InactiveTardisDoorBlock extends Block {
             world.playSound(null, base, SoundEvents.BLOCK_ANVIL_LAND, SoundCategory.BLOCKS, 0.6f, 0.5f);
             return false;
         }
+        // Respecte la spawn protection, le mode aventure et les mods de claim.
+        if (!world.canPlayerModifyAt(player, base)) {
+            player.sendMessage(Text.translatable("enderportals.message.protected"), true);
+            return false;
+        }
 
         float fall = player.fallDistance;
         if (fall < EnderPortalsMod.ACTIVATION_FALL_DISTANCE) {

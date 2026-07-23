@@ -58,9 +58,13 @@ public final class ImmPtlCompat {
             Vec3d exteriorCenter = doorwayCenter(data.exteriorPos, data.exteriorFacing);
             Vec3d interiorCenter = doorwayCenter(data.interiorDoorPos, data.interiorFacing);
             // La traversée mappe la direction d'entrée (−facing extérieur) sur la
-            // direction de sortie (+facing intérieur), d'où le +180°.
+            // direction de sortie (+facing intérieur), d'où le +180°. Le signe est
+            // inversé car le yaw Minecraft est horaire (vu de dessus) alors que la
+            // rotation autour de l'axe +Y est anti-horaire — validé en jeu : sans
+            // cette inversion, les portes face est/ouest montraient la salle à
+            // l'envers (nord/sud étant insensibles au signe).
             double rotation = MathHelper.wrapDegrees(
-                    data.interiorFacing.asRotation() - data.exteriorFacing.asRotation() + 180.0);
+                    data.exteriorFacing.asRotation() - data.interiorFacing.asRotation() + 180.0);
 
             UUID outer = spawnPortal(exteriorWorld, exteriorCenter, data.exteriorFacing,
                     ModDimensions.ENDER_WORLD, interiorCenter, rotation);
