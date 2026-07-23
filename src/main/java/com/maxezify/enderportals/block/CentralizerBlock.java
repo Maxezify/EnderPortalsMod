@@ -5,14 +5,12 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.particle.DustParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Vector3f;
 
 /**
  * Le Centraliseur d'objet : une machine façon gros ordinateur des années 50,
@@ -23,9 +21,6 @@ import org.joml.Vector3f;
  * accolés.
  */
 public class CentralizerBlock extends Block {
-
-    private static final Vector3f TEAL = new Vector3f(0.30f, 0.86f, 0.78f);
-    private static final Vector3f VIOLET = new Vector3f(0.44f, 0.30f, 0.66f);
 
     public CentralizerBlock(Settings settings) {
         super(settings);
@@ -49,15 +44,14 @@ public class CentralizerBlock extends Block {
 
     @Override
     public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
-        // Voyants clignotants : de petites étincelles colorées surgissent au
-        // hasard sur les faces du bloc.
+        // Voyants clignotants : de petites étincelles colorées (sarcelle via
+        // SCRAPE, violet via WITCH) surgissent au hasard sur les faces.
         for (int i = 0; i < 2; i++) {
-            double x = pos.getX() + edgeOrFace(random);
-            double y = pos.getY() + 0.15 + random.nextDouble() * 0.7;
-            double z = pos.getZ() + edgeOrFace(random);
-            DustParticleEffect dust = new DustParticleEffect(
-                    random.nextBoolean() ? TEAL : VIOLET, 0.9f);
-            world.addParticle(dust, x, y, z, 0.0, 0.0, 0.0);
+            world.addParticle(random.nextBoolean() ? ParticleTypes.SCRAPE : ParticleTypes.WITCH,
+                    pos.getX() + edgeOrFace(random),
+                    pos.getY() + 0.15 + random.nextDouble() * 0.7,
+                    pos.getZ() + edgeOrFace(random),
+                    0.0, 0.0, 0.0);
         }
         if (random.nextInt(6) == 0) {
             world.addParticle(ParticleTypes.ELECTRIC_SPARK,

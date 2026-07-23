@@ -19,7 +19,7 @@ public class CentralizerBlockItem extends BlockItem {
     }
 
     @Override
-    protected ActionResult place(ItemPlacementContext context) {
+    public ActionResult place(ItemPlacementContext context) {
         if (!context.getWorld().getRegistryKey().equals(ModDimensions.ENDER_WORLD)) {
             PlayerEntity player = context.getPlayer();
             if (player != null && !context.getWorld().isClient) {
