@@ -33,3 +33,27 @@ type = "optional"
 versionRange = "*"
 ordering = "AFTER"
 side = "BOTH"
+
+# Rangements : compat via la capability IItemHandler (aucune dépendance de
+# compilation). Ces déclarations optionnelles ne servent qu'à l'ordre de
+# chargement — le Centraliseur les charge après pour exposer/lire leur réseau.
+[[dependencies.enderportals]]
+modId = "sophisticatedstorage"
+type = "optional"
+versionRange = "*"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.enderportals]]
+modId = "sophisticatedbackpacks"
+type = "optional"
+versionRange = "*"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.enderportals]]
+modId = "toms_storage"
+type = "optional"
+versionRange = "*"
+ordering = "AFTER"
+side = "BOTH"

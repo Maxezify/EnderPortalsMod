@@ -10,11 +10,13 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.ItemHandlerHelper;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -24,18 +26,32 @@ import java.util.Set;
 
 /**
  * La mécanique du Sac de l'Ender : retrouver le Centraliseur du joueur dans le
- * monde de l'Ender, parcourir le réseau de coffres qui lui est accolé, et y
+ * monde de l'Ender, parcourir le réseau de rangements qui lui est accolé, et y
  * ranger la ligne du haut de l'inventaire contre un peu d'expérience.
+ *
+ * <p>Le réseau est collecté via la capability {@link IItemHandler} de NeoForge
+ * (et non plus le seul coffre vanilla) : tout rangement qui l'expose est
+ * reconnu — coffres/tonneaux vanilla, Sophisticated Storage/Backpacks, Tom's
+ * Storage, drawers, etc. L'insertion passe par {@link ItemHandlerHelper}, donc
+ * elle respecte les filtres et upgrades propres à chaque rangement.</p>
  */
 public final class CentralizerLogic {
 
     /** Coût en points d'expérience par case rangée. */
     private static final int XP_COST_PER_SLOT = 3;
-    /** Garde-fou sur la taille du réseau de coffres exploré. */
-    private static final int MAX_CHESTS = 256;
+    /** Garde-fou sur la taille du réseau de rangements exploré. */
+    private static final int MAX_STORAGES = 256;
     /** Cases 9 à 17 : la rangée du haut du rangement principal. */
     private static final int ROW_START = 9;
     private static final int ROW_END = 17;
+
+    /**
+     * Garde de ré-entrance : si un bloc agrégateur voisin (p. ex. un Inventory
+     * Connector de Tom's) interroge la capability du Centraliseur pendant que
+     * l'on résout déjà son réseau sur ce thread, on renvoie un réseau vide au
+     * lieu de récurser — ce qui casse toute boucle mutuelle entre agrégateurs.
+     */
+    private static final ThreadLocal<Boolean> RESOLVING = ThreadLocal.withInitial(() -> false);
 
     public static void deposit(ServerPlayer player) {
         MinecraftServer server = player.getServer();
@@ -56,8 +72,8 @@ public final class CentralizerLogic {
             return;
         }
 
-        List<Container> chests = collectChests(enderWorld, centralizer);
-        if (chests.isEmpty()) {
+        List<IItemHandler> storages = collectHandlers(enderWorld, centralizer);
+        if (storages.isEmpty()) {
             fail(player, "enderportals.message.no_chest");
             return;
         }
@@ -73,9 +89,9 @@ public final class CentralizerLogic {
             neutral(player);
             return;
         }
-        // Coffres pleins (aucune place pour aucun objet candidat) : message
+        // Rangements pleins (aucune place pour aucun objet candidat) : message
         // dédié, vérifié avant tout prélèvement d'XP.
-        if (!hasAnyRoom(chests, inv)) {
+        if (!hasAnyRoom(storages, inv)) {
             full(player);
             return;
         }
@@ -91,12 +107,10 @@ public final class CentralizerLogic {
                 continue;
             }
             int before = stack.getCount();
-            insert(chests, stack);
-            if (stack.getCount() != before) {
+            ItemStack remainder = insert(storages, stack, false);
+            if (remainder.getCount() != before) {
                 moved++;
-                if (stack.isEmpty()) {
-                    inv.setItem(slot, ItemStack.EMPTY);
-                }
+                inv.setItem(slot, remainder);
             }
         }
         inv.setChanged();
@@ -114,116 +128,88 @@ public final class CentralizerLogic {
 
     /**
      * Le réseau a-t-il de la place pour au moins un objet de la ligne du haut ?
-     * Lecture seule, court-circuit dès la première place trouvée.
+     * Insertion simulée, court-circuit dès la première place trouvée.
      */
-    private static boolean hasAnyRoom(List<Container> chests, Inventory inv) {
+    private static boolean hasAnyRoom(List<IItemHandler> storages, Inventory inv) {
         for (int slot = ROW_START; slot <= ROW_END; slot++) {
             ItemStack stack = inv.getItem(slot);
             if (stack.isEmpty()) {
                 continue;
             }
-            for (Container chest : chests) {
-                int size = chest.getContainerSize();
-                for (int i = 0; i < size; i++) {
-                    if (!chest.canPlaceItem(i, stack)) {
-                        continue;
-                    }
-                    ItemStack slotStack = chest.getItem(i);
-                    if (slotStack.isEmpty()) {
-                        return true;
-                    }
-                    if (ItemStack.isSameItemSameComponents(slotStack, stack)
-                            && slotStack.getCount() < Math.min(chest.getMaxStackSize(), slotStack.getMaxStackSize())) {
-                        return true;
-                    }
-                }
+            if (insert(storages, stack, true).getCount() < stack.getCount()) {
+                return true;
             }
         }
         return false;
     }
 
-    // ------------------------------------------------------------------
-    // Réseau de coffres
-    // ------------------------------------------------------------------
-
-    private static List<Container> collectChests(ServerLevel level, BlockPos centralizer) {
-        List<Container> result = new ArrayList<>();
-        Set<BlockPos> visited = new HashSet<>();
-        ArrayDeque<BlockPos> queue = new ArrayDeque<>();
-
-        // Amorce : les coffres directement collés à une face du centraliseur.
-        for (Direction dir : Direction.values()) {
-            BlockPos p = centralizer.relative(dir);
-            if (level.getBlockEntity(p) instanceof ChestBlockEntity) {
-                queue.add(p);
+    /**
+     * Insère {@code stack} à travers les rangements du réseau et retourne le
+     * reliquat. {@code stack} n'est pas modifié ({@link ItemHandlerHelper}
+     * renvoie une copie). En mode réel ({@code simulate=false}), l'appelant
+     * remplace la pile d'origine par le reliquat.
+     */
+    private static ItemStack insert(List<IItemHandler> storages, ItemStack stack, boolean simulate) {
+        ItemStack remaining = stack;
+        for (IItemHandler handler : storages) {
+            if (remaining.isEmpty()) {
+                break;
             }
+            remaining = ItemHandlerHelper.insertItem(handler, remaining, simulate);
         }
-        while (!queue.isEmpty() && result.size() < MAX_CHESTS) {
-            BlockPos p = queue.poll();
-            if (!visited.add(p)) {
-                continue;
+        return remaining;
+    }
+
+    // ------------------------------------------------------------------
+    // Réseau de rangements (capability IItemHandler)
+    // ------------------------------------------------------------------
+
+    /**
+     * Parcourt le réseau de rangements accolé au Centraliseur : BFS sur les
+     * blocs voisins, en récoltant tout {@link IItemHandler} exposé (côté
+     * {@code null}). Le flood ne se propage qu'à travers les blocs qui exposent
+     * un handler. Les blocs Centraliseur sont ignorés — cela évite d'agréger un
+     * Centraliseur dans un autre et toute récursion via le Centraliseur-port.
+     */
+    public static List<IItemHandler> collectHandlers(Level level, BlockPos centralizer) {
+        if (RESOLVING.get()) {
+            return List.of();
+        }
+        RESOLVING.set(true);
+        try {
+            List<IItemHandler> result = new ArrayList<>();
+            Set<BlockPos> visited = new HashSet<>();
+            ArrayDeque<BlockPos> queue = new ArrayDeque<>();
+
+            // Le Centraliseur ne se collecte jamais lui-même.
+            visited.add(centralizer);
+            for (Direction dir : Direction.values()) {
+                queue.add(centralizer.relative(dir));
             }
-            if (level.getBlockEntity(p) instanceof ChestBlockEntity chest) {
-                result.add(chest);
+            while (!queue.isEmpty() && result.size() < MAX_STORAGES) {
+                BlockPos p = queue.poll();
+                if (!visited.add(p)) {
+                    continue;
+                }
+                // Un autre Centraliseur n'est pas un rangement : on ne le traverse pas.
+                if (level.getBlockState(p).is(ModBlocks.CENTRALIZER.get())) {
+                    continue;
+                }
+                IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK, p, null);
+                if (handler == null) {
+                    continue;
+                }
+                result.add(handler);
                 for (Direction dir : Direction.values()) {
                     BlockPos n = p.relative(dir);
-                    if (!visited.contains(n) && level.getBlockEntity(n) instanceof ChestBlockEntity) {
+                    if (!visited.contains(n)) {
                         queue.add(n);
                     }
                 }
             }
-        }
-        return result;
-    }
-
-    // ------------------------------------------------------------------
-    // Insertion (fusion sur piles existantes, puis cases vides)
-    // ------------------------------------------------------------------
-
-    private static void insert(List<Container> targets, ItemStack stack) {
-        for (Container inv : targets) {
-            if (stack.isEmpty()) {
-                return;
-            }
-            mergeInto(inv, stack);
-        }
-    }
-
-    private static void mergeInto(Container inv, ItemStack stack) {
-        int size = inv.getContainerSize();
-        boolean changed = false;
-
-        for (int i = 0; i < size && !stack.isEmpty(); i++) {
-            if (!inv.canPlaceItem(i, stack)) {
-                continue;
-            }
-            ItemStack slotStack = inv.getItem(i);
-            if (slotStack.isEmpty() || !ItemStack.isSameItemSameComponents(slotStack, stack)) {
-                continue;
-            }
-            int max = Math.min(inv.getMaxStackSize(), slotStack.getMaxStackSize());
-            int space = max - slotStack.getCount();
-            if (space > 0) {
-                int add = Math.min(space, stack.getCount());
-                slotStack.grow(add);
-                stack.shrink(add);
-                changed = true;
-            }
-        }
-        for (int i = 0; i < size && !stack.isEmpty(); i++) {
-            if (!inv.canPlaceItem(i, stack) || !inv.getItem(i).isEmpty()) {
-                continue;
-            }
-            int max = Math.min(inv.getMaxStackSize(), stack.getMaxStackSize());
-            int add = Math.min(max, stack.getCount());
-            ItemStack placed = stack.copy();
-            placed.setCount(add);
-            inv.setItem(i, placed);
-            stack.shrink(add);
-            changed = true;
-        }
-        if (changed) {
-            inv.setChanged();
+            return result;
+        } finally {
+            RESOLVING.set(false);
         }
     }
 
@@ -270,7 +256,7 @@ public final class CentralizerLogic {
         player.displayClientMessage(Component.translatable(messageKey), true);
     }
 
-    /** Coffres pleins : son grave dédié + message. */
+    /** Rangements pleins : son grave dédié + message. */
     private static void full(ServerPlayer player) {
         player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(),
                 SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 0.6f, 0.6f);

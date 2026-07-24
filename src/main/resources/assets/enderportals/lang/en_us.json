@@ -37,9 +37,9 @@
   "enderportals.tooltip.ender_bag": "In the offhand, right-click: stores your top inventory row into your base (costs XP)",
   "enderportals.message.centralizer_here": "The Centralizer can only be placed in the Ender world.",
   "enderportals.message.no_centralizer": "No linked Centralizer: place one in your Ender base.",
-  "enderportals.message.no_chest": "No chest is attached to the Centralizer.",
+  "enderportals.message.no_chest": "No storage is attached to the Centralizer.",
   "enderportals.message.not_enough_xp": "Not enough experience to store.",
-  "enderportals.message.chests_full": "The Centralizer's chests are full.",
+  "enderportals.message.chests_full": "The Centralizer's storage network is full.",
   "enderportals.book.page8": "§5The Centralizer§0\n\nA machine of blinking lights from another age. Craft: 8 iron blocks around an ender chest, a redstone block on top.\n\nPlace it in your Ender base and attach chests — chest to chest, the network grows.",
   "enderportals.book.page9": "§5The Ender Bag§0\n\nCraft: a bundle and an ender chest.\n\nIn your §boffhand§0, right-click: the top row of your inventory flies into the Centralizer's chests, wherever you are.\n\nEach stored slot costs a little §aXP§0. Full chests or too little XP: nothing leaves."
 }
