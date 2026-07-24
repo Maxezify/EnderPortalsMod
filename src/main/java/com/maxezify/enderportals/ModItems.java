@@ -5,7 +5,6 @@ import com.maxezify.enderportals.item.EnderBagItem;
 import com.maxezify.enderportals.item.EnderToolMaterial;
 import com.maxezify.enderportals.item.TardisKeyItem;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -63,12 +62,9 @@ public final class ModItems {
      */
     private static Tool createEnderPickaxeTool() {
         return new Tool(List.of(
-                Tool.Rule.minesAndDrops(
-                        BuiltInRegistries.BLOCK.getOrCreateTag(ModTags.ENDER_PICKAXE_FAST), 45.0f),
-                Tool.Rule.deniesDrops(
-                        BuiltInRegistries.BLOCK.getOrCreateTag(BlockTags.INCORRECT_FOR_DIAMOND_TOOL)),
-                Tool.Rule.minesAndDrops(
-                        BuiltInRegistries.BLOCK.getOrCreateTag(BlockTags.MINEABLE_WITH_PICKAXE), 8.0f)
+                Tool.Rule.minesAndDrops(ModTags.ENDER_PICKAXE_FAST, 45.0f),
+                Tool.Rule.deniesDrops(BlockTags.INCORRECT_FOR_DIAMOND_TOOL),
+                Tool.Rule.minesAndDrops(BlockTags.MINEABLE_WITH_PICKAXE, 8.0f)
         ), 1.0f, 1);
     }
 
