@@ -174,11 +174,11 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
                                float x, float y, float z, float u, float v,
                                float alpha, int light, int overlay,
                                float nx, float ny, float nz) {
-        buffer.vertex(entry.pose(), x, y, z)
-                .color(1.0f, 1.0f, 1.0f, alpha)
-                .uv(u, v)
-                .overlay(overlay)
-                .uv2(light)
-                .normal(entry, nx, ny, nz);
+        buffer.addVertex(entry.pose(), x, y, z)
+                .setColor(1.0f, 1.0f, 1.0f, alpha)
+                .setUv(u, v)
+                .setOverlay(overlay)
+                .setLight(light)
+                .setNormal(entry, nx, ny, nz);
     }
 }
