@@ -32,8 +32,12 @@ import java.util.UUID;
  */
 public final class ImmPtlCompat {
 
-    private static final boolean LOADED = ModList.get().isLoaded("imm_ptl_core")
-            || ModList.get().isLoaded("immersive_portals");
+    // modIds réels de la version NeoForge (ImmersivePortalsModForNeo) :
+    // immersive_portals_core (fournit la classe Portal), imm_ptl (parapluie),
+    // q_misc_util (DQuaternion). On garde les anciens ids Fabric en repli.
+    private static final boolean LOADED = ModList.get().isLoaded("immersive_portals_core")
+            || ModList.get().isLoaded("imm_ptl")
+            || ModList.get().isLoaded("imm_ptl_core");
 
     /** Passe à true au premier échec de réflexion : on n'insiste pas. */
     private static boolean broken;

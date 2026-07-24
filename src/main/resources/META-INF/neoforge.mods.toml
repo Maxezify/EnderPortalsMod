@@ -28,7 +28,7 @@ ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.enderportals]]
-modId = "imm_ptl_core"
+modId = "imm_ptl"
 type = "optional"
 versionRange = "*"
 ordering = "AFTER"

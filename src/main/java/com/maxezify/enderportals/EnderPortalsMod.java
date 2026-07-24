@@ -1,6 +1,7 @@
 package com.maxezify.enderportals;
 
 import com.maxezify.enderportals.block.InactiveTardisDoorBlock;
+import com.maxezify.enderportals.compat.ImmPtlCompat;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -44,6 +45,7 @@ public class EnderPortalsMod {
         NeoForge.EVENT_BUS.addListener(this::onLeftClickBlock);
 
         LOGGER.info("Ender Portals (NeoForge) initialisé — le vortex vous attend.");
+        LOGGER.info("Immersive Portals détecté : {}", ImmPtlCompat.isLoaded());
     }
 
     /**
