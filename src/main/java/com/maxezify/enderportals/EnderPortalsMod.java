@@ -2,8 +2,6 @@ package com.maxezify.enderportals;
 
 import com.maxezify.enderportals.block.InactiveTardisDoorBlock;
 import com.maxezify.enderportals.compat.ImmPtlCompat;
-import com.maxezify.enderportals.tardis.CentralizerLogic;
-import com.maxezify.enderportals.tardis.NetworkItemHandler;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -11,8 +9,6 @@ import net.minecraft.world.InteractionHand;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import org.slf4j.Logger;
@@ -46,25 +42,10 @@ public class EnderPortalsMod {
         ModRegistries.CHUNK_GENERATORS.register(modBus);
         ModRegistries.CREATIVE_TABS.register(modBus);
 
-        modBus.addListener(this::registerCapabilities);
-
         NeoForge.EVENT_BUS.addListener(this::onLeftClickBlock);
 
         LOGGER.info("Ender Portals (NeoForge) initialisé — le vortex vous attend.");
         LOGGER.info("Immersive Portals détecté : {}", ImmPtlCompat.isLoaded());
-    }
-
-    /**
-     * Le « Centraliseur-port » : le Centraliseur expose un {@link
-     * net.neoforged.neoforge.items.IItemHandler} agrégeant tous les rangements
-     * de son réseau. Un Storage Terminal (Tom's) ou un Storage Controller
-     * (Sophisticated) branché dessus voit alors toute la base de poche.
-     */
-    private void registerCapabilities(RegisterCapabilitiesEvent event) {
-        event.registerBlock(Capabilities.ItemHandler.BLOCK,
-                (level, pos, state, blockEntity, side) -> new NetworkItemHandler(
-                        () -> CentralizerLogic.collectHandlers(level, pos), level::getGameTime),
-                ModBlocks.CENTRALIZER.get());
     }
 
     /**

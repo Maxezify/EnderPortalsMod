@@ -45,14 +45,6 @@ public final class CentralizerLogic {
     private static final int ROW_START = 9;
     private static final int ROW_END = 17;
 
-    /**
-     * Garde de ré-entrance : si un bloc agrégateur voisin (p. ex. un Inventory
-     * Connector de Tom's) interroge la capability du Centraliseur pendant que
-     * l'on résout déjà son réseau sur ce thread, on renvoie un réseau vide au
-     * lieu de récurser — ce qui casse toute boucle mutuelle entre agrégateurs.
-     */
-    private static final ThreadLocal<Boolean> RESOLVING = ThreadLocal.withInitial(() -> false);
-
     public static void deposit(ServerPlayer player) {
         MinecraftServer server = player.getServer();
         if (server == null) {
@@ -165,52 +157,57 @@ public final class CentralizerLogic {
     // ------------------------------------------------------------------
 
     /**
-     * Parcourt le réseau de rangements accolé au Centraliseur : BFS sur les
+     * Parcourt le réseau de rangements accolé au Transmetteur : BFS sur les
      * blocs voisins, en récoltant tout {@link IItemHandler} exposé (côté
-     * {@code null}). Le flood ne se propage qu'à travers les blocs qui exposent
-     * un handler. Les blocs Centraliseur sont ignorés — cela évite d'agréger un
-     * Centraliseur dans un autre et toute récursion via le Centraliseur-port.
+     * {@code null}) — y compris le handler d'un Connecteur d'inventaire (Tom's)
+     * ou d'un contrôleur (Sophisticated), dans lequel le dépôt est alors
+     * relayé. Le flood ne se propage qu'à travers les blocs qui exposent un
+     * handler ; un autre Transmetteur n'est jamais traversé.
      */
-    public static List<IItemHandler> collectHandlers(Level level, BlockPos centralizer) {
-        if (RESOLVING.get()) {
-            return List.of();
-        }
-        RESOLVING.set(true);
-        try {
-            List<IItemHandler> result = new ArrayList<>();
-            Set<BlockPos> visited = new HashSet<>();
-            ArrayDeque<BlockPos> queue = new ArrayDeque<>();
+    private static List<IItemHandler> collectHandlers(Level level, BlockPos centralizer) {
+        List<IItemHandler> result = new ArrayList<>();
+        Set<BlockPos> visited = new HashSet<>();
+        ArrayDeque<BlockPos> queue = new ArrayDeque<>();
 
-            // Le Centraliseur ne se collecte jamais lui-même.
-            visited.add(centralizer);
-            for (Direction dir : Direction.values()) {
-                queue.add(centralizer.relative(dir));
-            }
-            while (!queue.isEmpty() && result.size() < MAX_STORAGES) {
-                BlockPos p = queue.poll();
-                if (!visited.add(p)) {
-                    continue;
-                }
-                // Un autre Centraliseur n'est pas un rangement : on ne le traverse pas.
-                if (level.getBlockState(p).is(ModBlocks.CENTRALIZER.get())) {
-                    continue;
-                }
-                IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK, p, null);
-                if (handler == null) {
-                    continue;
-                }
-                result.add(handler);
-                for (Direction dir : Direction.values()) {
-                    BlockPos n = p.relative(dir);
-                    if (!visited.contains(n)) {
-                        queue.add(n);
-                    }
-                }
-            }
-            return result;
-        } finally {
-            RESOLVING.set(false);
+        // Le Transmetteur ne se collecte jamais lui-même.
+        visited.add(centralizer);
+        for (Direction dir : Direction.values()) {
+            queue.add(centralizer.relative(dir));
         }
+        while (!queue.isEmpty() && result.size() < MAX_STORAGES) {
+            BlockPos p = queue.poll();
+            if (!visited.add(p)) {
+                continue;
+            }
+            if (level.getBlockState(p).is(ModBlocks.CENTRALIZER.get())) {
+                continue;
+            }
+            IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK, p, null);
+            if (handler == null) {
+                continue;
+            }
+            // Déduplication par référence : un double coffre expose le même
+            // handler des deux moitiés — on ne le compte qu'une fois.
+            if (!containsSame(result, handler)) {
+                result.add(handler);
+            }
+            for (Direction dir : Direction.values()) {
+                BlockPos n = p.relative(dir);
+                if (!visited.contains(n)) {
+                    queue.add(n);
+                }
+            }
+        }
+        return result;
+    }
+
+    private static boolean containsSame(List<IItemHandler> handlers, IItemHandler handler) {
+        for (IItemHandler h : handlers) {
+            if (h == handler) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // ------------------------------------------------------------------

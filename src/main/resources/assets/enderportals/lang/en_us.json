@@ -32,15 +32,15 @@
   "enderportals.book.page5": "§5The Key§0\n\nCraft (vertical):\n§bCrystal§0\n§3Ender Pearl§0\n§6Gold Ingot§0\n\nRight-click the awakened door: the key binds.\nRight-click the ground: the door materialises.\nOn the door: open, then dematerialise.",
   "enderportals.book.page6": "§5The Ender Pickaxe§0\n\nCraft: 3 crystals in a row, 2 sticks.\n\nIt alone can carve §7Ender Blocks§0, shattering them like glass.\n\n4 crystals = 1 Ender Block\n4 Blocks = 4 Ender Bricks.",
   "enderportals.book.page7": "§5Your pocket base§0\n\nBehind the door: your room, carved in the endless cavern. Beds and anchors work there.\n\nOne door per person — and the vortex refuses to awaken a door within the door.\n\nSafe travels.",
-  "block.enderportals.centralizer": "Item Centralizer",
+  "block.enderportals.centralizer": "Item Transmitter",
   "item.enderportals.ender_bag": "Ender Bag",
   "enderportals.tooltip.ender_bag": "In the offhand, right-click: stores your top inventory row into your base (costs XP)",
-  "enderportals.message.centralizer_here": "The Centralizer can only be placed in the Ender world.",
-  "enderportals.message.no_centralizer": "No linked Centralizer: place one in your Ender base.",
-  "enderportals.message.no_chest": "No storage is attached to the Centralizer.",
+  "enderportals.message.centralizer_here": "The Item Transmitter can only be placed in the Ender world.",
+  "enderportals.message.no_centralizer": "No linked Transmitter: place one in your Ender base.",
+  "enderportals.message.no_chest": "No storage is attached to the Transmitter.",
   "enderportals.message.not_enough_xp": "Not enough experience to store.",
-  "enderportals.message.chests_full": "The Centralizer's storage network is full.",
-  "enderportals.book.page8": "§5The Centralizer§0\n\nA machine of blinking lights from another age. Craft: 8 iron blocks around an ender chest, a redstone block on top.\n\nPlace it in your Ender base and attach any storage — chest, barrel, backpack — block to block, the network grows.",
+  "enderportals.message.chests_full": "The Transmitter's storage network is full.",
+  "enderportals.book.page8": "§5The Item Transmitter§0\n\nA machine of blinking lights from another age. Craft: 8 iron blocks around an ender chest, a redstone block on top.\n\nPlace it in your Ender base and attach any storage — chest, barrel, backpack — block to block, the network grows.",
   "enderportals.book.page9": "§5The Ender Bag§0\n\nCraft: a bundle and an ender chest.\n\nIn your §boffhand§0, right-click: the top row of your inventory flies into your base's storage network, wherever you are.\n\nEach stored slot costs a little §aXP§0. Network full or too little XP: nothing leaves.",
-  "enderportals.book.page10": "§5The Great Network§0\n\nThe Centralizer speaks the common tongue of storage. Sophisticated, Tom's and more all answer to it, and filters sort your goods on their own.\n\nWire a terminal to the Centralizer: your whole pocket base opens before you."
+  "enderportals.book.page10": "§5The Great Network§0\n\nThe Transmitter speaks the common tongue of storage: barrels, backpacks — Sophisticated, Tom's — all answer, and filters sort on their own.\n\nStick it to a Tom's Inventory Connector: the Bag pours into the whole network, counted right."
 }

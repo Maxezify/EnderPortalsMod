@@ -42,26 +42,26 @@ Cavernes et tunnels serpentent dans la masse. Chaque porte éveillée reçoit
 sa parcelle (espacées de 1024 blocs) : construisez-y base, fermes et
 stockage — les lits et ancres de réapparition y fonctionnent.
 
-## Le stockage : Centraliseur & Sac de l'Ender
+## Le stockage : Transmetteur d'objet & Sac de l'Ender
 
 Deux objets transforment votre base de poche en **entrepôt distant** :
 
-* **Le Centraliseur** (posable uniquement dans le monde de l'Ender) fédère
-  tout un **réseau de rangements** accolés — de bloc en bloc, le réseau
+* **Le Transmetteur d'objet** (posable uniquement dans le monde de l'Ender)
+  fédère tout un **réseau de rangements** accolés — de bloc en bloc, le réseau
   grandit.
 * **Le Sac de l'Ender**, porté en **seconde main**, envoie d'un clic droit la
   **rangée du haut** de votre inventaire dans ce réseau, où que vous soyez
   dans le monde. Chaque case rangée coûte un peu d'**expérience** (3 points) ;
   réseau plein ou XP insuffisante, rien ne part.
 
-Le Centraliseur reconnaît **tout rangement exposant un inventaire** (voir
+Le Transmetteur reconnaît **tout rangement exposant un inventaire** (voir
 [Compatibilité rangement](#compatibilité-rangement)) — pas seulement les
 coffres vanilla.
 
 ## Crafts (grille d'établi)
 
 ```
-Porte inactive     Clé              Pioche de l'Ender     Centraliseur
+Porte inactive     Clé              Pioche de l'Ender     Transmetteur
 C C                C                C C C                 I R I
 C N                P                . S .                 I E I
 C C                G                . S .                 I I I
@@ -85,7 +85,7 @@ compatibilité rangement, traduit dans la langue du jeu (FR/EN).
 ## Compatibilité rangement
 
 La compatibilité passe par la **capability `IItemHandler`** de NeoForge —
-l'interface d'inventaire standard. Le Centraliseur/Sac fonctionne donc avec
+l'interface d'inventaire standard. Le Transmetteur/Sac fonctionne donc avec
 **tout mod de rangement** qui l'expose, sans aucune dépendance de compilation :
 
 * **Sophisticated Storage** — coffres, tonneaux, shulkers de tous tiers, et le
@@ -98,17 +98,21 @@ Comme l'insertion passe par `ItemHandlerHelper`, elle **respecte les filtres
 et upgrades** de chaque rangement : un tonneau Sophisticated filtré fait le
 **tri automatique** de ce que vous déversez.
 
-### Le Centraliseur-port
+### Pont de dépôt (Transmetteur + réseau)
 
-Le Centraliseur **expose lui-même** un inventaire agrégé de tout son réseau.
-Branchez-y un **Storage Terminal (Tom's)** via un Inventory Connector, ou un
-**Storage Controller (Sophisticated)** : l'outil voit alors **toute votre base
-de poche** d'un coup. La vue est rafraîchie une fois par tick (jamais périmée)
-et protégée contre les boucles entre agrégateurs voisins.
+Le Transmetteur ne remplace pas votre mod de rangement : il **s'y branche**.
+Le Sac de l'Ender dépose dans le Transmetteur, qui **pousse les objets dans le
+réseau accolé** :
 
-> Astuce : reliez votre terminal **soit** au Centraliseur, **soit**
-> directement aux coffres — pas aux deux, sinon les objets seraient comptés
-> en double.
+* Collé à des **coffres/tonneaux** (vanilla, Sophisticated…) : le Sac les
+  remplit directement.
+* Collé à un **Connecteur d'inventaire (Tom's)** : le Sac déverse dans **tout
+  le réseau Tom's**, et le Storage Terminal affiche vos objets — comptés une
+  seule fois (le Transmetteur n'expose pas de vue agrégée, donc pas de double
+  comptage).
+
+L'insertion est conservatrice (aucune duplication) et respecte les filtres du
+rangement cible.
 
 ## Immersive Portals (optionnel)
 
@@ -156,16 +160,15 @@ Notes :
 
 * `src/main/java/com/maxezify/enderportals/`
   * `EnderPortalsMod.java` — point d'entrée `@Mod`, enregistrements
-    `DeferredRegister`, rituel de la Mace, capability du Centraliseur-port.
+    `DeferredRegister`, rituel de la Mace.
   * `tardis/` — activation, salle intérieure, matérialisation, traversées,
-    état persistant des portes (`SavedData`), logique du Centraliseur/Sac
-    (`CentralizerLogic`) et vue de réseau agrégée (`NetworkItemHandler`).
-    Nommage interne historique « Tardis* » conservé pour la compatibilité
-    des sauvegardes.
+    état persistant des portes (`SavedData`), logique du Transmetteur/Sac
+    (`CentralizerLogic` — nom de classe interne conservé, comme « Tardis* »,
+    pour la compatibilité des sauvegardes).
   * `world/EnderWorldChunkGenerator.java` — le générateur du monde-caverne
     et de ses blocs-reliques.
   * `block/`, `item/` — porte inactive/active, bloc de l'Ender, clé, pioche,
-    Centraliseur, Sac de l'Ender, livre-guide.
+    Transmetteur d'objet, Sac de l'Ender, livre-guide.
   * `client/TardisDoorRenderer.java` — le rendu de la porte avec fondu de
     matérialisation.
   * `compat/ImmPtlCompat.java` — l'intégration Immersive Portals par
