@@ -1,13 +1,13 @@
 package com.maxezify.enderportals.tardis;
 
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.PersistentState;
-import net.minecraft.world.World;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.saveddata.SavedData;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
@@ -18,22 +18,22 @@ import java.util.UUID;
  * Registre persistant (niveau sauvegarde) de tous les TARDIS. Attribue les
  * parcelles intérieures dans le monde de l'Ender.
  */
-public class TardisStateManager extends PersistentState {
+public class TardisStateManager extends SavedData {
 
     /** Espacement entre deux parcelles intérieures, en blocs. */
     private static final int PLOT_SPACING = 1024;
     /** Hauteur de la porte intérieure dans le monde de l'Ender. */
     private static final int PLOT_Y = 64;
 
-    private static final PersistentState.Type<TardisStateManager> TYPE =
-            new PersistentState.Type<>(TardisStateManager::new, TardisStateManager::fromNbt, null);
+    private static final SavedData.Factory<TardisStateManager> FACTORY =
+            new SavedData.Factory<>(TardisStateManager::new, TardisStateManager::load, null);
 
     private final Map<UUID, TardisData> tardises = new HashMap<>();
     private int nextPlot;
 
     public static TardisStateManager get(MinecraftServer server) {
-        return server.getWorld(World.OVERWORLD).getPersistentStateManager()
-                .getOrCreate(TYPE, "enderportals_tardis");
+        return server.getLevel(Level.OVERWORLD).getDataStorage()
+                .computeIfAbsent(FACTORY, "enderportals_tardis");
     }
 
     public TardisData createTardis(UUID owner) {
@@ -42,7 +42,7 @@ public class TardisStateManager extends PersistentState {
         data.ownerUuid = owner;
         data.interiorDoorPos = plotOrigin(plot);
         tardises.put(data.id, data);
-        markDirty();
+        setDirty();
         return data;
     }
 
@@ -67,7 +67,7 @@ public class TardisStateManager extends PersistentState {
         TardisData data = findByOwner(owner);
         if (data != null) {
             data.centralizerPos = pos;
-            markDirty();
+            setDirty();
         }
     }
 
@@ -76,7 +76,7 @@ public class TardisStateManager extends PersistentState {
         for (TardisData data : tardises.values()) {
             if (pos.equals(data.centralizerPos)) {
                 data.centralizerPos = null;
-                markDirty();
+                setDirty();
             }
         }
     }
@@ -85,20 +85,20 @@ public class TardisStateManager extends PersistentState {
         return new BlockPos(plot * PLOT_SPACING + 8, PLOT_Y, 8);
     }
 
-    public static TardisStateManager fromNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
+    public static TardisStateManager load(CompoundTag nbt, HolderLookup.Provider registries) {
         TardisStateManager manager = new TardisStateManager();
         manager.nextPlot = nbt.getInt("NextPlot");
-        for (NbtElement element : nbt.getList("Tardises", NbtElement.COMPOUND_TYPE)) {
-            TardisData data = TardisData.fromNbt((NbtCompound) element);
+        for (Tag element : nbt.getList("Tardises", Tag.TAG_COMPOUND)) {
+            TardisData data = TardisData.fromNbt((CompoundTag) element);
             manager.tardises.put(data.id, data);
         }
         return manager;
     }
 
     @Override
-    public NbtCompound writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
+    public CompoundTag save(CompoundTag nbt, HolderLookup.Provider registries) {
         nbt.putInt("NextPlot", nextPlot);
-        NbtList list = new NbtList();
+        ListTag list = new ListTag();
         for (TardisData data : tardises.values()) {
             list.add(data.toNbt());
         }

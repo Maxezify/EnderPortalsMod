@@ -3,16 +3,17 @@ package com.maxezify.enderportals.compat;
 import com.maxezify.enderportals.EnderPortalsMod;
 import com.maxezify.enderportals.ModDimensions;
 import com.maxezify.enderportals.tardis.TardisData;
-import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.registry.RegistryKey;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
+import net.neoforged.fml.ModList;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -31,8 +32,8 @@ import java.util.UUID;
  */
 public final class ImmPtlCompat {
 
-    private static final boolean LOADED = FabricLoader.getInstance().isModLoaded("imm_ptl_core")
-            || FabricLoader.getInstance().isModLoaded("immersive_portals");
+    private static final boolean LOADED = ModList.get().isLoaded("imm_ptl_core")
+            || ModList.get().isLoaded("immersive_portals");
 
     /** Passe à true au premier échec de réflexion : on n'insiste pas. */
     private static boolean broken;
@@ -50,26 +51,26 @@ public final class ImmPtlCompat {
             return;
         }
         try {
-            ServerWorld exteriorWorld = server.getWorld(data.exteriorWorld);
-            ServerWorld enderWorld = server.getWorld(ModDimensions.ENDER_WORLD);
+            ServerLevel exteriorWorld = server.getLevel(data.exteriorWorld);
+            ServerLevel enderWorld = server.getLevel(ModDimensions.ENDER_WORLD);
             if (exteriorWorld == null || enderWorld == null) {
                 return;
             }
-            Vec3d exteriorCenter = doorwayCenter(data.exteriorPos, data.exteriorFacing);
-            Vec3d interiorCenter = doorwayCenter(data.interiorDoorPos, data.interiorFacing);
+            Vec3 exteriorCenter = doorwayCenter(data.exteriorPos, data.exteriorFacing);
+            Vec3 interiorCenter = doorwayCenter(data.interiorDoorPos, data.interiorFacing);
             // La traversée mappe la direction d'entrée (−facing extérieur) sur la
             // direction de sortie (+facing intérieur), d'où le +180°. Le signe est
             // inversé car le yaw Minecraft est horaire (vu de dessus) alors que la
             // rotation autour de l'axe +Y est anti-horaire — validé en jeu : sans
             // cette inversion, les portes face est/ouest montraient la salle à
             // l'envers (nord/sud étant insensibles au signe).
-            double rotation = MathHelper.wrapDegrees(
-                    data.exteriorFacing.asRotation() - data.interiorFacing.asRotation() + 180.0);
+            double rotation = Mth.wrapDegrees(
+                    data.exteriorFacing.toYRot() - data.interiorFacing.toYRot() + 180.0);
 
             UUID outer = spawnPortal(exteriorWorld, exteriorCenter, data.exteriorFacing,
                     ModDimensions.ENDER_WORLD, interiorCenter, rotation);
             UUID inner = spawnPortal(enderWorld, interiorCenter, data.interiorFacing,
-                    data.exteriorWorld, exteriorCenter, MathHelper.wrapDegrees(-rotation));
+                    data.exteriorWorld, exteriorCenter, Mth.wrapDegrees(-rotation));
 
             data.portalIds.add(outer);
             data.portalIds.add(inner);
@@ -90,8 +91,8 @@ public final class ImmPtlCompat {
             data.immptlActive = false;
             return;
         }
-        ServerWorld exteriorWorld = server.getWorld(data.exteriorWorld);
-        ServerWorld enderWorld = server.getWorld(ModDimensions.ENDER_WORLD);
+        ServerLevel exteriorWorld = server.getLevel(data.exteriorWorld);
+        ServerLevel enderWorld = server.getLevel(ModDimensions.ENDER_WORLD);
         for (UUID id : data.portalIds) {
             discardEntity(exteriorWorld, id);
             discardEntity(enderWorld, id);
@@ -100,9 +101,9 @@ public final class ImmPtlCompat {
         data.immptlActive = false;
     }
 
-    private static void discardEntity(ServerWorld world, UUID id) {
-        if (world != null) {
-            Entity entity = world.getEntity(id);
+    private static void discardEntity(ServerLevel level, UUID id) {
+        if (level != null) {
+            Entity entity = level.getEntity(id);
             if (entity != null) {
                 entity.discard();
             }
@@ -110,44 +111,48 @@ public final class ImmPtlCompat {
     }
 
     /** Centre de l'embrasure (1 × 2 blocs) d'une porte. */
-    private static Vec3d doorwayCenter(net.minecraft.util.math.BlockPos base, Direction facing) {
-        return Vec3d.ofCenter(base).add(0.0, 0.5, 0.0)
-                .add(Vec3d.of(facing.getVector()).multiply(0.06));
+    private static Vec3 doorwayCenter(BlockPos base, Direction facing) {
+        return Vec3.atCenterOf(base).add(0.0, 0.5, 0.0)
+                .add(vector(facing).scale(0.06));
+    }
+
+    private static Vec3 vector(Direction direction) {
+        return new Vec3(direction.getStepX(), direction.getStepY(), direction.getStepZ());
     }
 
     /**
      * Crée un portail Immersive Portals par réflexion.
      * Plan 0.9 × 2.0, normale = {@code facing}.
      */
-    private static UUID spawnPortal(ServerWorld world, Vec3d origin, Direction facing,
-                                    RegistryKey<World> destinationWorld, Vec3d destination,
+    private static UUID spawnPortal(ServerLevel level, Vec3 origin, Direction facing,
+                                    ResourceKey<Level> destinationWorld, Vec3 destination,
                                     double rotationDegrees) throws Exception {
         Class<?> portalClass = Class.forName("qouteall.imm_ptl.core.portal.Portal");
         EntityType<?> type = (EntityType<?>) staticFieldValue(portalClass, "entityType", "ENTITY_TYPE");
-        Entity portal = type.create(world);
+        Entity portal = type.create(level);
         if (portal == null) {
             throw new IllegalStateException("EntityType du portail introuvable");
         }
 
-        invoke(portalClass, portal, "setOriginPos", new Class<?>[]{Vec3d.class}, origin);
-        invoke(portalClass, portal, "setDestinationDimension", new Class<?>[]{RegistryKey.class}, destinationWorld);
-        invoke(portalClass, portal, "setDestination", new Class<?>[]{Vec3d.class}, destination);
+        invoke(portalClass, portal, "setOriginPos", new Class<?>[]{Vec3.class}, origin);
+        invoke(portalClass, portal, "setDestinationDimension", new Class<?>[]{ResourceKey.class}, destinationWorld);
+        invoke(portalClass, portal, "setDestination", new Class<?>[]{Vec3.class}, destination);
 
         // axisW × axisH doit pointer vers l'extérieur de la porte (= facing).
-        Vec3d axisW = Vec3d.of(facing.rotateYCounterclockwise().getVector());
-        Vec3d axisH = new Vec3d(0.0, 1.0, 0.0);
+        Vec3 axisW = vector(facing.getCounterClockWise());
+        Vec3 axisH = new Vec3(0.0, 1.0, 0.0);
         // 0,8 × 1,9 : le plan du portail doit tenir dans l'embrasure du caisson
         // (parois à ±0,44, plancher/plafond à 0,03/1,97) sans les traverser.
         invoke(portalClass, portal, "setOrientationAndSize",
-                new Class<?>[]{Vec3d.class, Vec3d.class, double.class, double.class},
+                new Class<?>[]{Vec3.class, Vec3.class, double.class, double.class},
                 axisW, axisH, 0.8, 1.9);
 
         applyRotation(portalClass, portal, rotationDegrees);
 
-        if (!world.spawnEntity(portal)) {
+        if (!level.addFreshEntity(portal)) {
             throw new IllegalStateException("Le monde a refusé le portail");
         }
-        return portal.getUuid();
+        return portal.getUUID();
     }
 
     /**
@@ -156,13 +161,13 @@ public final class ImmPtlCompat {
      * {@link #tryCreatePortals} retomber sur la téléportation classique.
      */
     private static void applyRotation(Class<?> portalClass, Entity portal, double degrees) throws Exception {
-        if (Math.abs(MathHelper.wrapDegrees(degrees)) < 1.0) {
+        if (Math.abs(Mth.wrapDegrees(degrees)) < 1.0) {
             return;
         }
         Class<?> quaternionClass = Class.forName("qouteall.q_misc_util.my_util.DQuaternion");
         Object rotation = quaternionClass
-                .getMethod("rotationByDegrees", Vec3d.class, double.class)
-                .invoke(null, new Vec3d(0.0, 1.0, 0.0), degrees);
+                .getMethod("rotationByDegrees", Vec3.class, double.class)
+                .invoke(null, new Vec3(0.0, 1.0, 0.0), degrees);
         for (String methodName : new String[]{"setRotationTransformation", "setRotation", "setRotationTransformationD"}) {
             try {
                 portalClass.getMethod(methodName, quaternionClass).invoke(portal, rotation);

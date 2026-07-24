@@ -8,23 +8,23 @@ import com.maxezify.enderportals.block.entity.TardisDoorBlockEntity;
 import com.maxezify.enderportals.tardis.TardisData;
 import com.maxezify.enderportals.tardis.TardisHelper;
 import com.maxezify.enderportals.tardis.TardisStateManager;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.enums.DoubleBlockHalf;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemUsageContext;
-import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.World;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 
 import java.util.List;
 import java.util.UUID;
@@ -42,55 +42,55 @@ import java.util.UUID;
  */
 public class TardisKeyItem extends Item {
 
-    public TardisKeyItem(Settings settings) {
-        super(settings);
+    public TardisKeyItem(Properties properties) {
+        super(properties);
     }
 
     @Override
-    public ActionResult useOnBlock(ItemUsageContext context) {
-        World world = context.getWorld();
-        PlayerEntity player = context.getPlayer();
+    public InteractionResult useOn(UseOnContext context) {
+        Level level = context.getLevel();
+        Player player = context.getPlayer();
         if (player == null) {
-            return ActionResult.PASS;
+            return InteractionResult.PASS;
         }
-        if (world.isClient) {
-            return ActionResult.SUCCESS;
+        if (level.isClientSide) {
+            return InteractionResult.SUCCESS;
         }
-        ServerWorld serverWorld = (ServerWorld) world;
-        MinecraftServer server = serverWorld.getServer();
-        BlockPos pos = context.getBlockPos();
-        BlockState state = world.getBlockState(pos);
-        ItemStack stack = context.getStack();
+        ServerLevel serverLevel = (ServerLevel) level;
+        MinecraftServer server = serverLevel.getServer();
+        BlockPos pos = context.getClickedPos();
+        BlockState state = level.getBlockState(pos);
+        ItemStack stack = context.getItemInHand();
 
-        if (state.isOf(ModBlocks.TARDIS_DOOR)) {
-            handleDoorClick(server, serverWorld, pos, state, player, stack);
-            return ActionResult.SUCCESS;
+        if (state.is(ModBlocks.TARDIS_DOOR.get())) {
+            handleDoorClick(server, serverLevel, pos, state, player, stack);
+            return InteractionResult.SUCCESS;
         }
-        if (state.isOf(ModBlocks.INACTIVE_TARDIS_DOOR)) {
-            player.sendMessage(Text.translatable("enderportals.message.door_hint"), true);
-            return ActionResult.SUCCESS;
+        if (state.is(ModBlocks.INACTIVE_TARDIS_DOOR.get())) {
+            player.displayClientMessage(Component.translatable("enderportals.message.door_hint"), true);
+            return InteractionResult.SUCCESS;
         }
-        handleGroundClick(server, serverWorld, context, player, stack);
-        return ActionResult.SUCCESS;
+        handleGroundClick(server, serverLevel, context, player, stack);
+        return InteractionResult.SUCCESS;
     }
 
-    private static void handleDoorClick(MinecraftServer server, ServerWorld world, BlockPos pos, BlockState state,
-                                        PlayerEntity player, ItemStack stack) {
-        BlockPos base = state.get(TardisDoorBlock.HALF) == DoubleBlockHalf.UPPER ? pos.down() : pos;
-        if (!(world.getBlockEntity(base) instanceof TardisDoorBlockEntity door)
+    private static void handleDoorClick(MinecraftServer server, ServerLevel level, BlockPos pos, BlockState state,
+                                        Player player, ItemStack stack) {
+        BlockPos base = state.getValue(TardisDoorBlock.HALF) == DoubleBlockHalf.UPPER ? pos.below() : pos;
+        if (!(level.getBlockEntity(base) instanceof TardisDoorBlockEntity door)
                 || door.isDematerializing() || door.getTardisId() == null) {
             return;
         }
-        String bound = stack.get(ModComponents.TARDIS_ID);
+        String bound = stack.get(ModComponents.TARDIS_ID.get());
         if (bound == null) {
-            stack.set(ModComponents.TARDIS_ID, door.getTardisId().toString());
-            world.playSound(null, base, SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.PLAYERS, 1.0f, 1.2f);
-            player.sendMessage(Text.translatable("enderportals.message.key_bound"), false);
+            stack.set(ModComponents.TARDIS_ID.get(), door.getTardisId().toString());
+            level.playSound(null, base, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 1.0f, 1.2f);
+            player.displayClientMessage(Component.translatable("enderportals.message.key_bound"), false);
             return;
         }
         if (!bound.equals(door.getTardisId().toString())) {
-            player.sendMessage(Text.translatable("enderportals.message.wrong_key"), true);
-            world.playSound(null, base, SoundEvents.BLOCK_CHAIN_HIT, SoundCategory.PLAYERS, 0.8f, 0.6f);
+            player.displayClientMessage(Component.translatable("enderportals.message.wrong_key"), true);
+            level.playSound(null, base, SoundEvents.CHAIN_HIT, SoundSource.PLAYERS, 0.8f, 0.6f);
             return;
         }
         TardisData data = TardisStateManager.get(server).getTardis(door.getTardisId());
@@ -100,15 +100,15 @@ public class TardisKeyItem extends Item {
         if (door.isInterior()) {
             if (data.deployed) {
                 TardisHelper.dismissExterior(server, data);
-                player.sendMessage(Text.translatable("enderportals.message.tardis_dismissed"), true);
+                player.displayClientMessage(Component.translatable("enderportals.message.tardis_dismissed"), true);
             } else {
-                ServerWorld exteriorWorld = server.getWorld(data.exteriorWorld);
+                ServerLevel exteriorWorld = server.getLevel(data.exteriorWorld);
                 if (exteriorWorld == null
                         || !TardisHelper.deployExterior(server, data, exteriorWorld,
                                 data.exteriorPos, data.exteriorFacing, true, player)) {
-                    player.sendMessage(Text.translatable("enderportals.message.no_space"), true);
+                    player.displayClientMessage(Component.translatable("enderportals.message.no_space"), true);
                 } else {
-                    player.sendMessage(Text.translatable("enderportals.message.tardis_recalled"), true);
+                    player.displayClientMessage(Component.translatable("enderportals.message.tardis_recalled"), true);
                 }
             }
         } else {
@@ -120,15 +120,15 @@ public class TardisKeyItem extends Item {
         }
     }
 
-    private static void handleGroundClick(MinecraftServer server, ServerWorld world, ItemUsageContext context,
-                                          PlayerEntity player, ItemStack stack) {
-        String bound = stack.get(ModComponents.TARDIS_ID);
+    private static void handleGroundClick(MinecraftServer server, ServerLevel level, UseOnContext context,
+                                          Player player, ItemStack stack) {
+        String bound = stack.get(ModComponents.TARDIS_ID.get());
         if (bound == null) {
-            player.sendMessage(Text.translatable("enderportals.message.key_unbound"), true);
+            player.displayClientMessage(Component.translatable("enderportals.message.key_unbound"), true);
             return;
         }
-        if (world.getRegistryKey().equals(ModDimensions.ENDER_WORLD)) {
-            player.sendMessage(Text.translatable("enderportals.message.already_inside"), true);
+        if (level.dimension().equals(ModDimensions.ENDER_WORLD)) {
+            player.displayClientMessage(Component.translatable("enderportals.message.already_inside"), true);
             return;
         }
         TardisData data;
@@ -138,29 +138,30 @@ public class TardisKeyItem extends Item {
             data = null;
         }
         if (data == null) {
-            player.sendMessage(Text.translatable("enderportals.message.key_unbound"), true);
+            player.displayClientMessage(Component.translatable("enderportals.message.key_unbound"), true);
             return;
         }
-        BlockPos clicked = context.getBlockPos();
-        BlockPos base = world.getBlockState(clicked).isReplaceable() ? clicked : clicked.offset(context.getSide());
+        BlockPos clicked = context.getClickedPos();
+        BlockPos base = level.getBlockState(clicked).canBeReplaced() ? clicked : clicked.relative(context.getClickedFace());
         // Respecte la spawn protection, le mode aventure et les mods de claim.
-        if (!world.canPlayerModifyAt(player, base) || !world.canPlayerModifyAt(player, base.up())) {
-            player.sendMessage(Text.translatable("enderportals.message.protected"), true);
+        if (!level.mayInteract(player, base) || !level.mayInteract(player, base.above())) {
+            player.displayClientMessage(Component.translatable("enderportals.message.protected"), true);
             return;
         }
-        Direction facing = player.getHorizontalFacing().getOpposite();
-        TardisHelper.deployExterior(server, data, world, base, facing, false, player);
+        Direction facing = player.getDirection().getOpposite();
+        TardisHelper.deployExterior(server, data, level, base, facing, false, player);
     }
 
     @Override
-    public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        String bound = stack.get(ModComponents.TARDIS_ID);
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
+                                TooltipFlag flag) {
+        String bound = stack.get(ModComponents.TARDIS_ID.get());
         if (bound != null) {
-            tooltip.add(Text.translatable("enderportals.tooltip.key_bound",
-                    bound.substring(0, 8)).formatted(Formatting.AQUA));
+            tooltip.add(Component.translatable("enderportals.tooltip.key_bound",
+                    bound.substring(0, 8)).withStyle(ChatFormatting.AQUA));
         } else {
-            tooltip.add(Text.translatable("enderportals.tooltip.key_unbound").formatted(Formatting.GRAY));
+            tooltip.add(Component.translatable("enderportals.tooltip.key_unbound").withStyle(ChatFormatting.GRAY));
         }
-        super.appendTooltip(stack, context, tooltip, type);
+        super.appendHoverText(stack, context, tooltip, flag);
     }
 }

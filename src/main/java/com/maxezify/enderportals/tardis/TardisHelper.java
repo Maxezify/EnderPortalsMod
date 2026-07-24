@@ -6,23 +6,23 @@ import com.maxezify.enderportals.ModDimensions;
 import com.maxezify.enderportals.block.TardisDoorBlock;
 import com.maxezify.enderportals.block.entity.TardisDoorBlockEntity;
 import com.maxezify.enderportals.compat.ImmPtlCompat;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.enums.DoubleBlockHalf;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LightningEntity;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.TeleportTarget;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LightningBolt;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
+import net.minecraft.world.level.portal.DimensionTransition;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -37,39 +37,37 @@ public final class TardisHelper {
     // Activation (coup de masse)
     // ------------------------------------------------------------------
 
-    public static void activate(ServerWorld world, BlockPos base, Direction facing, ServerPlayerEntity player) {
-        MinecraftServer server = world.getServer();
-        ServerWorld enderWorld = server.getWorld(ModDimensions.ENDER_WORLD);
+    public static void activate(ServerLevel level, BlockPos base, Direction facing, ServerPlayer player) {
+        MinecraftServer server = level.getServer();
+        ServerLevel enderWorld = server.getLevel(ModDimensions.ENDER_WORLD);
         if (enderWorld == null) {
             EnderPortalsMod.LOGGER.error("Dimension enderportals:ender_world introuvable !");
             return;
         }
 
         TardisStateManager manager = TardisStateManager.get(server);
-        TardisData data = manager.createTardis(player.getUuid());
+        TardisData data = manager.createTardis(player.getUUID());
         buildInteriorRoom(enderWorld, data);
 
         // Remplace la porte inactive par la porte active, sans réactions de voisins.
-        int swapFlags = Block.NOTIFY_LISTENERS | Block.FORCE_STATE;
-        world.setBlockState(base, Blocks.AIR.getDefaultState(), swapFlags);
-        world.setBlockState(base.up(), Blocks.AIR.getDefaultState(), swapFlags);
-        placeDoor(world, base, facing, false, data, false, false);
+        int swapFlags = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE;
+        level.setBlock(base, Blocks.AIR.defaultBlockState(), swapFlags);
+        level.setBlock(base.above(), Blocks.AIR.defaultBlockState(), swapFlags);
+        placeDoor(level, base, facing, false, data, false, false);
 
         data.deployed = true;
         data.open = false;
-        data.exteriorWorld = world.getRegistryKey();
+        data.exteriorWorld = level.dimension();
         data.exteriorPos = base;
         data.exteriorFacing = facing;
-        manager.markDirty();
+        manager.setDirty();
 
-        LightningEntity bolt = EntityType.LIGHTNING_BOLT.create(world);
-        if (bolt != null) {
-            bolt.refreshPositionAfterTeleport(Vec3d.ofBottomCenter(base));
-            bolt.setCosmetic(true);
-            world.spawnEntity(bolt);
-        }
-        world.playSound(null, base, SoundEvents.BLOCK_BEACON_ACTIVATE, SoundCategory.BLOCKS, 1.5f, 0.6f);
-        player.sendMessage(Text.translatable("enderportals.message.activated"), false);
+        LightningBolt bolt = new LightningBolt(EntityType.LIGHTNING_BOLT, level);
+        bolt.moveTo(Vec3.atBottomCenterOf(base));
+        bolt.setVisualOnly(true);
+        level.addFreshEntity(bolt);
+        level.playSound(null, base, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 1.5f, 0.6f);
+        player.displayClientMessage(Component.translatable("enderportals.message.activated"), false);
     }
 
     // ------------------------------------------------------------------
@@ -80,29 +78,29 @@ public final class TardisHelper {
      * Creuse la salle de départ dans le monde de l'Ender et y pose la porte
      * intérieure. La porte est dans le mur nord et regarde vers la salle (sud).
      */
-    public static void buildInteriorRoom(ServerWorld enderWorld, TardisData data) {
+    public static void buildInteriorRoom(ServerLevel enderWorld, TardisData data) {
         BlockPos door = data.interiorDoorPos;
         int x0 = door.getX() - 6, x1 = door.getX() + 6;
         int y0 = door.getY() - 1, y1 = door.getY() + 5;
         int z0 = door.getZ(), z1 = door.getZ() + 12;
 
-        BlockState bricks = ModBlocks.ENDER_BRICKS.getDefaultState();
-        BlockState air = Blocks.AIR.getDefaultState();
-        BlockPos.Mutable cursor = new BlockPos.Mutable();
+        BlockState bricks = ModBlocks.ENDER_BRICKS.get().defaultBlockState();
+        BlockState air = Blocks.AIR.defaultBlockState();
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (int x = x0; x <= x1; x++) {
             for (int y = y0; y <= y1; y++) {
                 for (int z = z0; z <= z1; z++) {
                     boolean shell = x == x0 || x == x1 || y == y0 || y == y1 || z == z0 || z == z1;
-                    enderWorld.setBlockState(cursor.set(x, y, z), shell ? bricks : air, Block.NOTIFY_LISTENERS);
+                    enderWorld.setBlock(cursor.set(x, y, z), shell ? bricks : air, Block.UPDATE_CLIENTS);
                 }
             }
         }
         // Un peu de lumière aux quatre coins du sol.
-        BlockState lantern = Blocks.SEA_LANTERN.getDefaultState();
-        enderWorld.setBlockState(cursor.set(x0 + 1, y0, z0 + 2), lantern, Block.NOTIFY_LISTENERS);
-        enderWorld.setBlockState(cursor.set(x1 - 1, y0, z0 + 2), lantern, Block.NOTIFY_LISTENERS);
-        enderWorld.setBlockState(cursor.set(x0 + 1, y0, z1 - 2), lantern, Block.NOTIFY_LISTENERS);
-        enderWorld.setBlockState(cursor.set(x1 - 1, y0, z1 - 2), lantern, Block.NOTIFY_LISTENERS);
+        BlockState lantern = Blocks.SEA_LANTERN.defaultBlockState();
+        enderWorld.setBlock(cursor.set(x0 + 1, y0, z0 + 2), lantern, Block.UPDATE_CLIENTS);
+        enderWorld.setBlock(cursor.set(x1 - 1, y0, z0 + 2), lantern, Block.UPDATE_CLIENTS);
+        enderWorld.setBlock(cursor.set(x0 + 1, y0, z1 - 2), lantern, Block.UPDATE_CLIENTS);
+        enderWorld.setBlock(cursor.set(x1 - 1, y0, z1 - 2), lantern, Block.UPDATE_CLIENTS);
 
         // La porte intérieure, encastrée dans le mur nord (z0), face au sud.
         placeDoor(enderWorld, door, data.interiorFacing, false, data, true, false);
@@ -116,12 +114,12 @@ public final class TardisHelper {
      * Matérialise la porte extérieure à l'endroit donné (avec fondu). Si elle
      * était déployée ailleurs, elle s'y dématérialise d'abord.
      */
-    public static boolean deployExterior(MinecraftServer server, TardisData data, ServerWorld world,
+    public static boolean deployExterior(MinecraftServer server, TardisData data, ServerLevel level,
                                          BlockPos base, Direction facing, boolean open,
-                                         @Nullable PlayerEntity feedback) {
-        if (!world.getBlockState(base).isReplaceable() || !world.getBlockState(base.up()).isReplaceable()) {
+                                         @Nullable Player feedback) {
+        if (!level.getBlockState(base).canBeReplaced() || !level.getBlockState(base.above()).canBeReplaced()) {
             if (feedback != null) {
-                feedback.sendMessage(Text.translatable("enderportals.message.no_space"), true);
+                feedback.displayClientMessage(Component.translatable("enderportals.message.no_space"), true);
             }
             return false;
         }
@@ -129,17 +127,17 @@ public final class TardisHelper {
             dismissExterior(server, data);
         }
 
-        placeDoor(world, base, facing, open, data, false, true);
+        placeDoor(level, base, facing, open, data, false, true);
         data.deployed = true;
         data.open = open;
-        data.exteriorWorld = world.getRegistryKey();
+        data.exteriorWorld = level.dimension();
         data.exteriorPos = base;
         data.exteriorFacing = facing;
         setInteriorOpen(server, data, open);
-        TardisStateManager.get(server).markDirty();
+        TardisStateManager.get(server).setDirty();
 
-        world.playSound(null, base, SoundEvents.BLOCK_BEACON_ACTIVATE, SoundCategory.BLOCKS, 1.2f, 0.5f);
-        world.playSound(null, base, SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.BLOCKS, 1.0f, 0.6f);
+        level.playSound(null, base, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 1.2f, 0.5f);
+        level.playSound(null, base, SoundEvents.ENDERMAN_TELEPORT, SoundSource.BLOCKS, 1.0f, 0.6f);
 
         if (open) {
             ImmPtlCompat.tryCreatePortals(server, data);
@@ -157,22 +155,22 @@ public final class TardisHelper {
         setInteriorOpen(server, data, false);
         data.open = false;
 
-        ServerWorld world = server.getWorld(data.exteriorWorld);
-        if (world != null && data.deployed) {
+        ServerLevel level = server.getLevel(data.exteriorWorld);
+        if (level != null && data.deployed) {
             BlockPos base = data.exteriorPos;
-            BlockState state = world.getBlockState(base);
-            if (state.isOf(ModBlocks.TARDIS_DOOR)) {
-                setOpen(world, base, false);
-                if (world.getBlockEntity(base) instanceof TardisDoorBlockEntity door) {
+            BlockState state = level.getBlockState(base);
+            if (state.is(ModBlocks.TARDIS_DOOR.get())) {
+                setOpen(level, base, false);
+                if (level.getBlockEntity(base) instanceof TardisDoorBlockEntity door) {
                     door.startDematerialize();
                 }
-                world.playSound(null, base, SoundEvents.BLOCK_BEACON_DEACTIVATE, SoundCategory.BLOCKS, 1.2f, 0.5f);
-                world.playSound(null, base, SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.BLOCKS, 1.0f, 0.5f);
+                level.playSound(null, base, SoundEvents.BEACON_DEACTIVATE, SoundSource.BLOCKS, 1.2f, 0.5f);
+                level.playSound(null, base, SoundEvents.ENDERMAN_TELEPORT, SoundSource.BLOCKS, 1.0f, 0.5f);
             }
         }
         data.deployed = false;
         updatePortalFlags(server, data);
-        TardisStateManager.get(server).markDirty();
+        TardisStateManager.get(server).setDirty();
     }
 
     /**
@@ -181,16 +179,16 @@ public final class TardisHelper {
     public static void setDoorsOpen(MinecraftServer server, TardisData data, boolean open) {
         data.open = open;
         if (data.deployed) {
-            ServerWorld world = server.getWorld(data.exteriorWorld);
-            if (world != null) {
-                setOpen(world, data.exteriorPos, open);
-                world.playSound(null, data.exteriorPos,
-                        open ? SoundEvents.BLOCK_IRON_DOOR_OPEN : SoundEvents.BLOCK_IRON_DOOR_CLOSE,
-                        SoundCategory.BLOCKS, 1.0f, 1.0f);
+            ServerLevel level = server.getLevel(data.exteriorWorld);
+            if (level != null) {
+                setOpen(level, data.exteriorPos, open);
+                level.playSound(null, data.exteriorPos,
+                        open ? SoundEvents.IRON_DOOR_OPEN : SoundEvents.IRON_DOOR_CLOSE,
+                        SoundSource.BLOCKS, 1.0f, 1.0f);
             }
         }
         setInteriorOpen(server, data, open);
-        TardisStateManager.get(server).markDirty();
+        TardisStateManager.get(server).setDirty();
 
         if (open && data.deployed) {
             ImmPtlCompat.tryCreatePortals(server, data);
@@ -208,12 +206,12 @@ public final class TardisHelper {
     private static void updatePortalFlags(MinecraftServer server, TardisData data) {
         boolean active = data.immptlActive;
         if (data.deployed) {
-            ServerWorld world = server.getWorld(data.exteriorWorld);
-            if (world != null && world.getBlockEntity(data.exteriorPos) instanceof TardisDoorBlockEntity door) {
+            ServerLevel level = server.getLevel(data.exteriorWorld);
+            if (level != null && level.getBlockEntity(data.exteriorPos) instanceof TardisDoorBlockEntity door) {
                 door.setPortalActive(active);
             }
         }
-        ServerWorld enderWorld = server.getWorld(ModDimensions.ENDER_WORLD);
+        ServerLevel enderWorld = server.getLevel(ModDimensions.ENDER_WORLD);
         if (enderWorld != null && data.interiorDoorPos != null
                 && enderWorld.getBlockEntity(data.interiorDoorPos) instanceof TardisDoorBlockEntity door) {
             door.setPortalActive(active);
@@ -221,20 +219,20 @@ public final class TardisHelper {
     }
 
     private static void setInteriorOpen(MinecraftServer server, TardisData data, boolean open) {
-        ServerWorld enderWorld = server.getWorld(ModDimensions.ENDER_WORLD);
+        ServerLevel enderWorld = server.getLevel(ModDimensions.ENDER_WORLD);
         if (enderWorld != null && data.interiorDoorPos != null) {
             setOpen(enderWorld, data.interiorDoorPos, open);
         }
     }
 
-    private static void setOpen(ServerWorld world, BlockPos base, boolean open) {
-        BlockState lower = world.getBlockState(base);
-        if (lower.isOf(ModBlocks.TARDIS_DOOR)) {
-            world.setBlockState(base, lower.with(TardisDoorBlock.OPEN, open), Block.NOTIFY_ALL);
+    private static void setOpen(ServerLevel level, BlockPos base, boolean open) {
+        BlockState lower = level.getBlockState(base);
+        if (lower.is(ModBlocks.TARDIS_DOOR.get())) {
+            level.setBlock(base, lower.setValue(TardisDoorBlock.OPEN, open), Block.UPDATE_ALL);
         }
-        BlockState upper = world.getBlockState(base.up());
-        if (upper.isOf(ModBlocks.TARDIS_DOOR)) {
-            world.setBlockState(base.up(), upper.with(TardisDoorBlock.OPEN, open), Block.NOTIFY_ALL);
+        BlockState upper = level.getBlockState(base.above());
+        if (upper.is(ModBlocks.TARDIS_DOOR.get())) {
+            level.setBlock(base.above(), upper.setValue(TardisDoorBlock.OPEN, open), Block.UPDATE_ALL);
         }
     }
 
@@ -242,15 +240,15 @@ public final class TardisHelper {
      * Pose les deux moitiés d'une porte de TARDIS et initialise son block
      * entity.
      */
-    private static void placeDoor(ServerWorld world, BlockPos base, Direction facing, boolean open,
+    private static void placeDoor(ServerLevel level, BlockPos base, Direction facing, boolean open,
                                   TardisData data, boolean interior, boolean fadeIn) {
-        BlockState lower = ModBlocks.TARDIS_DOOR.getDefaultState()
-                .with(TardisDoorBlock.FACING, facing)
-                .with(TardisDoorBlock.HALF, DoubleBlockHalf.LOWER)
-                .with(TardisDoorBlock.OPEN, open);
-        world.setBlockState(base, lower, Block.NOTIFY_ALL);
-        world.setBlockState(base.up(), lower.with(TardisDoorBlock.HALF, DoubleBlockHalf.UPPER), Block.NOTIFY_ALL);
-        if (world.getBlockEntity(base) instanceof TardisDoorBlockEntity door) {
+        BlockState lower = ModBlocks.TARDIS_DOOR.get().defaultBlockState()
+                .setValue(TardisDoorBlock.FACING, facing)
+                .setValue(TardisDoorBlock.HALF, DoubleBlockHalf.LOWER)
+                .setValue(TardisDoorBlock.OPEN, open);
+        level.setBlock(base, lower, Block.UPDATE_ALL);
+        level.setBlock(base.above(), lower.setValue(TardisDoorBlock.HALF, DoubleBlockHalf.UPPER), Block.UPDATE_ALL);
+        if (level.getBlockEntity(base) instanceof TardisDoorBlockEntity door) {
             door.initialize(data.id, interior, fadeIn);
         }
     }
@@ -259,36 +257,36 @@ public final class TardisHelper {
     // Traversées
     // ------------------------------------------------------------------
 
-    public static void enterTardis(ServerPlayerEntity player, TardisData data) {
+    public static void enterTardis(ServerPlayer player, TardisData data) {
         MinecraftServer server = player.getServer();
         if (server == null) {
             return;
         }
-        ServerWorld enderWorld = server.getWorld(ModDimensions.ENDER_WORLD);
+        ServerLevel enderWorld = server.getLevel(ModDimensions.ENDER_WORLD);
         if (enderWorld == null || data.interiorDoorPos == null) {
             return;
         }
-        BlockPos front = data.interiorDoorPos.offset(data.interiorFacing);
+        BlockPos front = data.interiorDoorPos.relative(data.interiorFacing);
         player.setPortalCooldown(PORTAL_COOLDOWN_TICKS);
-        player.teleportTo(new TeleportTarget(enderWorld, Vec3d.ofBottomCenter(front),
-                Vec3d.ZERO, data.interiorFacing.asRotation(), 0.0f, TeleportTarget.NO_OP));
-        enderWorld.playSound(null, front, SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 0.8f, 0.9f);
+        player.changeDimension(new DimensionTransition(enderWorld, Vec3.atBottomCenterOf(front),
+                Vec3.ZERO, data.interiorFacing.toYRot(), 0.0f, DimensionTransition.DO_NOTHING));
+        enderWorld.playSound(null, front, SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 0.8f, 0.9f);
     }
 
-    public static void exitTardis(ServerPlayerEntity player, TardisData data) {
+    public static void exitTardis(ServerPlayer player, TardisData data) {
         MinecraftServer server = player.getServer();
         if (server == null || !data.deployed) {
             return;
         }
-        ServerWorld world = server.getWorld(data.exteriorWorld);
-        if (world == null) {
+        ServerLevel level = server.getLevel(data.exteriorWorld);
+        if (level == null) {
             return;
         }
-        BlockPos front = data.exteriorPos.offset(data.exteriorFacing);
+        BlockPos front = data.exteriorPos.relative(data.exteriorFacing);
         player.setPortalCooldown(PORTAL_COOLDOWN_TICKS);
-        player.teleportTo(new TeleportTarget(world, Vec3d.ofBottomCenter(front),
-                Vec3d.ZERO, data.exteriorFacing.asRotation(), 0.0f, TeleportTarget.NO_OP));
-        world.playSound(null, front, SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 0.8f, 0.9f);
+        player.changeDimension(new DimensionTransition(level, Vec3.atBottomCenterOf(front),
+                Vec3.ZERO, data.exteriorFacing.toYRot(), 0.0f, DimensionTransition.DO_NOTHING));
+        level.playSound(null, front, SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 0.8f, 0.9f);
     }
 
     private TardisHelper() {

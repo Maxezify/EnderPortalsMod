@@ -4,156 +4,148 @@ import com.maxezify.enderportals.EnderPortalsMod;
 import com.maxezify.enderportals.ModDimensions;
 import com.maxezify.enderportals.tardis.TardisHelper;
 import com.maxezify.enderportals.tardis.TardisStateManager;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.ShapeContext;
-import net.minecraft.block.enums.DoubleBlockHalf;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.state.StateManager;
-import net.minecraft.state.property.DirectionProperty;
-import net.minecraft.state.property.EnumProperty;
-import net.minecraft.state.property.Properties;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.World;
-import net.minecraft.world.WorldAccess;
-import net.minecraft.world.WorldView;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.world.level.block.BlockGetter;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * La porte inactive : un caisson dormant de deux blocs de haut et d'un bloc
- * d'épaisseur (même gabarit que la porte éveillée), posable et cassable à la
- * pioche. Pour l'éveiller, il faut reproduire l'attaque écrasante de la
- * Mace : chuter d'au moins {@link EnderPortalsMod#ACTIVATION_FALL_DISTANCE}
- * blocs et la frapper pendant la chute. L'impact absorbe les dégâts de chute
- * du joueur.
+ * d'épaisseur, posable et cassable à la pioche. Frappée à la Mace en pleine
+ * chute (≥ {@link EnderPortalsMod#ACTIVATION_FALL_DISTANCE} blocs), elle
+ * s'éveille.
  */
 public class InactiveTardisDoorBlock extends Block {
 
-    public static final DirectionProperty FACING = Properties.HORIZONTAL_FACING;
-    public static final EnumProperty<DoubleBlockHalf> HALF = Properties.DOUBLE_BLOCK_HALF;
+    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
 
-    public InactiveTardisDoorBlock(Settings settings) {
-        super(settings);
-        setDefaultState(getStateManager().getDefaultState()
-                .with(FACING, Direction.NORTH)
-                .with(HALF, DoubleBlockHalf.LOWER));
+    public InactiveTardisDoorBlock(BlockBehaviour.Properties properties) {
+        super(properties);
+        registerDefaultState(getStateDefinition().any()
+                .setValue(FACING, Direction.NORTH)
+                .setValue(HALF, DoubleBlockHalf.LOWER));
     }
 
     @Override
-    protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(FACING, HALF);
     }
 
     @Override
-    protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        return VoxelShapes.fullCube();
+    protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        return Shapes.block();
     }
 
     @Override
     @Nullable
-    public BlockState getPlacementState(ItemPlacementContext ctx) {
-        BlockPos pos = ctx.getBlockPos();
-        World world = ctx.getWorld();
-        if (pos.getY() < world.getTopY() - 1 && world.getBlockState(pos.up()).canReplace(ctx)) {
-            return getDefaultState()
-                    .with(FACING, ctx.getHorizontalPlayerFacing().getOpposite())
-                    .with(HALF, DoubleBlockHalf.LOWER);
+    public BlockState getStateForPlacement(BlockPlaceContext context) {
+        BlockPos pos = context.getClickedPos();
+        Level level = context.getLevel();
+        if (pos.getY() < level.getMaxBuildHeight() - 1 && level.getBlockState(pos.above()).canBeReplaced(context)) {
+            return defaultBlockState()
+                    .setValue(FACING, context.getHorizontalDirection().getOpposite())
+                    .setValue(HALF, DoubleBlockHalf.LOWER);
         }
         return null;
     }
 
     @Override
-    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
-        world.setBlockState(pos.up(), state.with(HALF, DoubleBlockHalf.UPPER),
-                Block.NOTIFY_ALL);
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer,
+                            ItemStack stack) {
+        level.setBlock(pos.above(), state.setValue(HALF, DoubleBlockHalf.UPPER), Block.UPDATE_ALL);
     }
 
     @Override
-    protected boolean canPlaceAt(BlockState state, WorldView world, BlockPos pos) {
-        if (state.get(HALF) == DoubleBlockHalf.UPPER) {
-            return world.getBlockState(pos.down()).isOf(this);
+    protected boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
+        if (state.getValue(HALF) == DoubleBlockHalf.UPPER) {
+            return level.getBlockState(pos.below()).is(this);
         }
-        return world.getBlockState(pos.down()).isSideSolidFullSquare(world, pos.down(), Direction.UP);
+        return level.getBlockState(pos.below()).isFaceSturdy(level, pos.below(), Direction.UP);
     }
 
     @Override
-    protected BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState,
-                                                   WorldAccess world, BlockPos pos, BlockPos neighborPos) {
-        net.minecraft.block.enums.DoubleBlockHalf half = state.get(HALF);
+    protected BlockState updateShape(BlockState state, Direction direction, BlockState neighborState,
+                                     LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
+        DoubleBlockHalf half = state.getValue(HALF);
         if (direction.getAxis() == Direction.Axis.Y
                 && (half == DoubleBlockHalf.LOWER) == (direction == Direction.UP)
-                && !neighborState.isOf(this)) {
-            return Blocks.AIR.getDefaultState();
+                && !neighborState.is(this)) {
+            return Blocks.AIR.defaultBlockState();
         }
-        if (half == DoubleBlockHalf.LOWER && direction == Direction.DOWN
-                && !state.canPlaceAt(world, pos)) {
-            return Blocks.AIR.getDefaultState();
+        if (half == DoubleBlockHalf.LOWER && direction == Direction.DOWN && !state.canSurvive(level, pos)) {
+            return Blocks.AIR.defaultBlockState();
         }
-        return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
+        return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
     }
 
     /**
      * Rituel de la Mace. Retourne true si la porte s'est éveillée.
      */
-    public static boolean tryActivate(ServerWorld world, BlockPos pos, ServerPlayerEntity player, ItemStack mace) {
-        BlockState state = world.getBlockState(pos);
+    public static boolean tryActivate(ServerLevel level, BlockPos pos, ServerPlayer player, ItemStack mace) {
+        BlockState state = level.getBlockState(pos);
         if (!(state.getBlock() instanceof InactiveTardisDoorBlock)) {
             return false;
         }
-        BlockPos base = state.get(HALF) == DoubleBlockHalf.UPPER ? pos.down() : pos;
+        BlockPos base = state.getValue(HALF) == DoubleBlockHalf.UPPER ? pos.below() : pos;
 
-        // Pas de porte dans la porte : le monde de l'Ender refuse le rituel.
-        if (world.getRegistryKey().equals(ModDimensions.ENDER_WORLD)) {
-            player.sendMessage(Text.translatable("enderportals.message.no_create_inside"), true);
-            world.playSound(null, base, SoundEvents.BLOCK_ANVIL_LAND, SoundCategory.BLOCKS, 0.6f, 0.5f);
+        if (level.dimension().equals(ModDimensions.ENDER_WORLD)) {
+            player.displayClientMessage(Component.translatable("enderportals.message.no_create_inside"), true);
+            level.playSound(null, base, SoundEvents.ANVIL_LAND, SoundSource.BLOCKS, 0.6f, 0.5f);
             return false;
         }
-        // Une seule porte par personne.
-        if (TardisStateManager.get(world.getServer()).findByOwner(player.getUuid()) != null) {
-            player.sendMessage(Text.translatable("enderportals.message.already_owner"), true);
-            world.playSound(null, base, SoundEvents.BLOCK_ANVIL_LAND, SoundCategory.BLOCKS, 0.6f, 0.5f);
+        if (TardisStateManager.get(level.getServer()).findByOwner(player.getUUID()) != null) {
+            player.displayClientMessage(Component.translatable("enderportals.message.already_owner"), true);
+            level.playSound(null, base, SoundEvents.ANVIL_LAND, SoundSource.BLOCKS, 0.6f, 0.5f);
             return false;
         }
-        // Respecte la spawn protection, le mode aventure et les mods de claim.
-        if (!world.canPlayerModifyAt(player, base)) {
-            player.sendMessage(Text.translatable("enderportals.message.protected"), true);
+        if (!level.mayInteract(player, base)) {
+            player.displayClientMessage(Component.translatable("enderportals.message.protected"), true);
             return false;
         }
 
         float fall = player.fallDistance;
         if (fall < EnderPortalsMod.ACTIVATION_FALL_DISTANCE) {
-            player.sendMessage(Text.translatable("enderportals.message.not_falling",
+            player.displayClientMessage(Component.translatable("enderportals.message.not_falling",
                     (int) EnderPortalsMod.ACTIVATION_FALL_DISTANCE, (int) fall), true);
-            world.playSound(null, base, SoundEvents.ITEM_MACE_SMASH_AIR, SoundCategory.PLAYERS, 0.8f, 0.9f);
+            level.playSound(null, base, SoundEvents.MACE_SMASH_AIR, SoundSource.PLAYERS, 0.8f, 0.9f);
             return false;
         }
 
-        // L'impact absorbe la chute, comme l'attaque écrasante de la Mace.
         player.fallDistance = 0.0f;
+        Vec3 impact = Vec3.atBottomCenterOf(base);
+        level.playSound(null, base, SoundEvents.MACE_SMASH_GROUND_HEAVY, SoundSource.PLAYERS, 1.2f, 0.8f);
+        level.sendParticles(ParticleTypes.GUST_EMITTER_LARGE, impact.x, impact.y, impact.z, 1, 0.0, 0.0, 0.0, 0.0);
 
-        Vec3d impact = Vec3d.ofBottomCenter(base);
-        world.playSound(null, base, SoundEvents.ITEM_MACE_SMASH_GROUND_HEAVY, SoundCategory.PLAYERS, 1.2f, 0.8f);
-        world.spawnParticles(ParticleTypes.GUST_EMITTER_LARGE, impact.getX(), impact.getY(), impact.getZ(),
-                1, 0.0, 0.0, 0.0, 0.0);
-
-        Direction facing = world.getBlockState(base).get(FACING);
-        TardisHelper.activate(world, base, facing, player);
-        mace.damage(10, player, EquipmentSlot.MAINHAND);
+        Direction facing = level.getBlockState(base).getValue(FACING);
+        TardisHelper.activate(level, base, facing, player);
+        mace.hurtAndBreak(10, player, EquipmentSlot.MAINHAND);
         return true;
     }
 }

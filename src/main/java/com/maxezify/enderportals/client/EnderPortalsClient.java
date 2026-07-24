@@ -1,23 +1,25 @@
 package com.maxezify.enderportals.client;
 
+import com.maxezify.enderportals.EnderPortalsMod;
 import com.maxezify.enderportals.ModBlockEntities;
-import com.maxezify.enderportals.ModBlocks;
-import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 
-@Environment(EnvType.CLIENT)
-public class EnderPortalsClient implements ClientModInitializer {
+/**
+ * Enregistrements côté client. Les couches de rendu (translucide / cutout) des
+ * blocs sont déclarées via {@code "render_type"} dans leurs modèles JSON ; il
+ * ne reste ici que le renderer du block entity de la porte.
+ */
+@EventBusSubscriber(modid = EnderPortalsMod.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+public final class EnderPortalsClient {
 
-    @Override
-    public void onInitializeClient() {
-        BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.ENDER_BLOCK, RenderLayer.getTranslucent());
-        // La surcouche de cristaux du minerai est transparente (base end stone vanilla).
-        BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.ENDER_ORE, RenderLayer.getCutoutMipped());
+    @SubscribeEvent
+    public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerBlockEntityRenderer(ModBlockEntities.TARDIS_DOOR.get(), TardisDoorRenderer::new);
+    }
 
-        BlockEntityRendererFactories.register(ModBlockEntities.TARDIS_DOOR, TardisDoorRenderer::new);
+    private EnderPortalsClient() {
     }
 }

@@ -6,34 +6,36 @@ import com.maxezify.enderportals.block.entity.TardisDoorBlockEntity;
 import com.maxezify.enderportals.tardis.TardisData;
 import com.maxezify.enderportals.tardis.TardisHelper;
 import com.maxezify.enderportals.tardis.TardisStateManager;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockEntityProvider;
-import net.minecraft.block.BlockRenderType;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.ShapeContext;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.BlockEntityTicker;
-import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.block.enums.DoubleBlockHalf;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.state.StateManager;
-import net.minecraft.state.property.BooleanProperty;
-import net.minecraft.state.property.DirectionProperty;
-import net.minecraft.state.property.EnumProperty;
-import net.minecraft.state.property.Properties;
-import net.minecraft.text.Text;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.World;
-import net.minecraft.world.WorldAccess;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -42,80 +44,81 @@ import org.jetbrains.annotations.Nullable;
  * matérialisation. Le block entity (moitié basse uniquement) porte l'identité
  * du TARDIS.
  */
-public class TardisDoorBlock extends Block implements BlockEntityProvider {
+public class TardisDoorBlock extends Block implements EntityBlock {
 
-    public static final DirectionProperty FACING = Properties.HORIZONTAL_FACING;
-    public static final EnumProperty<DoubleBlockHalf> HALF = Properties.DOUBLE_BLOCK_HALF;
-    public static final BooleanProperty OPEN = Properties.OPEN;
+    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
+    public static final BooleanProperty OPEN = BlockStateProperties.OPEN;
 
-    public TardisDoorBlock(Settings settings) {
-        super(settings);
-        setDefaultState(getStateManager().getDefaultState()
-                .with(FACING, Direction.NORTH)
-                .with(HALF, DoubleBlockHalf.LOWER)
-                .with(OPEN, false));
+    public TardisDoorBlock(BlockBehaviour.Properties properties) {
+        super(properties);
+        registerDefaultState(getStateDefinition().any()
+                .setValue(FACING, Direction.NORTH)
+                .setValue(HALF, DoubleBlockHalf.LOWER)
+                .setValue(OPEN, false));
     }
 
     @Override
-    protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(FACING, HALF, OPEN);
     }
 
     @Override
-    protected BlockRenderType getRenderType(BlockState state) {
-        return BlockRenderType.INVISIBLE;
+    protected RenderShape getRenderShape(BlockState state) {
+        return RenderShape.INVISIBLE;
     }
 
     @Override
-    protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+    protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         // Le TARDIS occupe un bloc entier d'épaisseur : un vrai caisson.
-        return VoxelShapes.fullCube();
+        return Shapes.block();
     }
 
     @Override
-    protected VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        return state.get(OPEN) ? VoxelShapes.empty() : VoxelShapes.fullCube();
+    protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        return state.getValue(OPEN) ? Shapes.empty() : Shapes.block();
     }
 
     @Override
-    protected BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState,
-                                                   WorldAccess world, BlockPos pos, BlockPos neighborPos) {
-        DoubleBlockHalf half = state.get(HALF);
+    protected BlockState updateShape(BlockState state, Direction direction, BlockState neighborState,
+                                     LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
+        DoubleBlockHalf half = state.getValue(HALF);
         if (direction.getAxis() == Direction.Axis.Y
                 && (half == DoubleBlockHalf.LOWER) == (direction == Direction.UP)
-                && !neighborState.isOf(this)) {
+                && !neighborState.is(this)) {
             // L'autre moitié a disparu : cette moitié disparaît aussi.
-            return net.minecraft.block.Blocks.AIR.getDefaultState();
+            return Blocks.AIR.defaultBlockState();
         }
-        return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
+        return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
     }
 
     @Override
-    protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        // La clé est gérée par TardisKeyItem#useOnBlock : on la laisse passer.
-        if (player.getMainHandStack().isOf(ModItems.TARDIS_KEY)) {
-            return ActionResult.PASS;
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
+                                               BlockHitResult hit) {
+        // La clé est gérée par TardisKeyItem#useOn : on la laisse passer.
+        if (player.getMainHandItem().is(ModItems.TARDIS_KEY.get())) {
+            return InteractionResult.PASS;
         }
-        if (!world.isClient) {
-            player.sendMessage(Text.translatable("enderportals.message.locked"), true);
+        if (!level.isClientSide) {
+            player.displayClientMessage(Component.translatable("enderportals.message.locked"), true);
         }
-        return ActionResult.SUCCESS;
+        return InteractionResult.SUCCESS;
     }
 
     @Override
-    protected void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
-        if (world.isClient || !state.get(OPEN) || !(entity instanceof ServerPlayerEntity player)) {
+    protected void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
+        if (level.isClientSide || !state.getValue(OPEN) || !(entity instanceof ServerPlayer player)) {
             return;
         }
-        if (player.hasPortalCooldown() || player.isSpectator()) {
+        if (player.isOnPortalCooldown() || player.isSpectator()) {
             return;
         }
-        BlockPos base = state.get(HALF) == DoubleBlockHalf.UPPER ? pos.down() : pos;
-        if (!(world.getBlockEntity(base) instanceof TardisDoorBlockEntity door)
+        BlockPos base = state.getValue(HALF) == DoubleBlockHalf.UPPER ? pos.below() : pos;
+        if (!(level.getBlockEntity(base) instanceof TardisDoorBlockEntity door)
                 || door.isDematerializing() || door.getTardisId() == null) {
             return;
         }
-        MinecraftServer server = world.getServer();
+        MinecraftServer server = level.getServer();
         if (server == null) {
             return;
         }
@@ -135,15 +138,16 @@ public class TardisDoorBlock extends Block implements BlockEntityProvider {
 
     @Override
     @Nullable
-    public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
-        return state.get(HALF) == DoubleBlockHalf.LOWER ? new TardisDoorBlockEntity(pos, state) : null;
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return state.getValue(HALF) == DoubleBlockHalf.LOWER ? new TardisDoorBlockEntity(pos, state) : null;
     }
 
     @Override
     @Nullable
     @SuppressWarnings("unchecked")
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
-        return type == ModBlockEntities.TARDIS_DOOR
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state,
+                                                                  BlockEntityType<T> type) {
+        return type == ModBlockEntities.TARDIS_DOOR.get()
                 ? (BlockEntityTicker<T>) (BlockEntityTicker<TardisDoorBlockEntity>) TardisDoorBlockEntity::tick
                 : null;
     }

@@ -1,14 +1,14 @@
 package com.maxezify.enderportals.tardis;
 
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -33,8 +33,8 @@ public class TardisData {
     public Direction interiorFacing = Direction.SOUTH;
 
     /** Dernier emplacement de la porte extérieure. */
-    public RegistryKey<World> exteriorWorld = World.OVERWORLD;
-    public BlockPos exteriorPos = BlockPos.ORIGIN;
+    public ResourceKey<Level> exteriorWorld = Level.OVERWORLD;
+    public BlockPos exteriorPos = BlockPos.ZERO;
     public Direction exteriorFacing = Direction.NORTH;
 
     /** La porte extérieure est-elle actuellement matérialisée ? */
@@ -55,24 +55,24 @@ public class TardisData {
         this.plotIndex = plotIndex;
     }
 
-    public NbtCompound toNbt() {
-        NbtCompound nbt = new NbtCompound();
-        nbt.putUuid("Id", id);
+    public CompoundTag toNbt() {
+        CompoundTag nbt = new CompoundTag();
+        nbt.putUUID("Id", id);
         nbt.putInt("Plot", plotIndex);
         if (ownerUuid != null) {
-            nbt.putUuid("Owner", ownerUuid);
+            nbt.putUUID("Owner", ownerUuid);
         }
         putPos(nbt, "Interior", interiorDoorPos);
         nbt.putString("InteriorFacing", interiorFacing.getName());
-        nbt.putString("ExteriorWorld", exteriorWorld.getValue().toString());
+        nbt.putString("ExteriorWorld", exteriorWorld.location().toString());
         putPos(nbt, "Exterior", exteriorPos);
         nbt.putString("ExteriorFacing", exteriorFacing.getName());
         nbt.putBoolean("Deployed", deployed);
         nbt.putBoolean("Open", open);
-        NbtList portals = new NbtList();
+        ListTag portals = new ListTag();
         for (UUID portal : portalIds) {
-            NbtCompound tag = new NbtCompound();
-            tag.putUuid("Id", portal);
+            CompoundTag tag = new CompoundTag();
+            tag.putUUID("Id", portal);
             portals.add(tag);
         }
         nbt.put("Portals", portals);
@@ -83,21 +83,22 @@ public class TardisData {
         return nbt;
     }
 
-    public static TardisData fromNbt(NbtCompound nbt) {
-        TardisData data = new TardisData(nbt.getUuid("Id"), nbt.getInt("Plot"));
-        data.ownerUuid = nbt.containsUuid("Owner") ? nbt.getUuid("Owner") : null;
+    public static TardisData fromNbt(CompoundTag nbt) {
+        TardisData data = new TardisData(nbt.getUUID("Id"), nbt.getInt("Plot"));
+        data.ownerUuid = nbt.hasUUID("Owner") ? nbt.getUUID("Owner") : null;
         data.interiorDoorPos = getPos(nbt, "Interior");
         data.interiorFacing = directionOrDefault(nbt.getString("InteriorFacing"), Direction.SOUTH);
-        data.exteriorWorld = RegistryKey.of(RegistryKeys.WORLD, Identifier.of(nbt.getString("ExteriorWorld")));
+        data.exteriorWorld = ResourceKey.create(Registries.DIMENSION,
+                ResourceLocation.parse(nbt.getString("ExteriorWorld")));
         data.exteriorPos = getPos(nbt, "Exterior");
         data.exteriorFacing = directionOrDefault(nbt.getString("ExteriorFacing"), Direction.NORTH);
         data.deployed = nbt.getBoolean("Deployed");
         data.open = nbt.getBoolean("Open");
-        for (NbtElement element : nbt.getList("Portals", NbtElement.COMPOUND_TYPE)) {
-            data.portalIds.add(((NbtCompound) element).getUuid("Id"));
+        for (Tag element : nbt.getList("Portals", Tag.TAG_COMPOUND)) {
+            data.portalIds.add(((CompoundTag) element).getUUID("Id"));
         }
         data.immptlActive = nbt.getBoolean("ImmptlActive");
-        data.centralizerPos = nbt.contains("Centralizer", NbtElement.INT_ARRAY_TYPE)
+        data.centralizerPos = nbt.contains("Centralizer", Tag.TAG_INT_ARRAY)
                 ? getPos(nbt, "Centralizer") : null;
         return data;
     }
@@ -107,12 +108,12 @@ public class TardisData {
         return direction != null && direction.getAxis().isHorizontal() ? direction : fallback;
     }
 
-    private static void putPos(NbtCompound nbt, String key, BlockPos pos) {
+    private static void putPos(CompoundTag nbt, String key, BlockPos pos) {
         nbt.putIntArray(key, new int[]{pos.getX(), pos.getY(), pos.getZ()});
     }
 
-    private static BlockPos getPos(NbtCompound nbt, String key) {
+    private static BlockPos getPos(CompoundTag nbt, String key) {
         int[] xyz = nbt.getIntArray(key);
-        return xyz.length == 3 ? new BlockPos(xyz[0], xyz[1], xyz[2]) : BlockPos.ORIGIN;
+        return xyz.length == 3 ? new BlockPos(xyz[0], xyz[1], xyz[2]) : BlockPos.ZERO;
     }
 }

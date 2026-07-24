@@ -1,0 +1,6 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "#minecraft:is_end",
+  "features": "enderportals:ender_ore",
+  "step": "underground_ores"
+}

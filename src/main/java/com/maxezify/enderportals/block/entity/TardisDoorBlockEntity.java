@@ -1,20 +1,20 @@
 package com.maxezify.enderportals.block.entity;
 
 import com.maxezify.enderportals.ModBlockEntities;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.listener.ClientPlayPacketListener;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
@@ -40,7 +40,7 @@ public class TardisDoorBlockEntity extends BlockEntity {
     private boolean portalActive;
 
     public TardisDoorBlockEntity(BlockPos pos, BlockState state) {
-        super(ModBlockEntities.TARDIS_DOOR, pos, state);
+        super(ModBlockEntities.TARDIS_DOOR.get(), pos, state);
     }
 
     public void initialize(UUID tardisId, boolean interior, boolean fadeIn) {
@@ -99,43 +99,43 @@ public class TardisDoorBlockEntity extends BlockEntity {
         if (alpha < 1.0f) {
             alpha *= 0.7f + 0.3f * (float) Math.sin(t * 0.45f);
         }
-        return MathHelper.clamp(alpha, 0.0f, 1.0f);
+        return Mth.clamp(alpha, 0.0f, 1.0f);
     }
 
-    public static void tick(World world, BlockPos pos, BlockState state, TardisDoorBlockEntity door) {
+    public static void tick(Level level, BlockPos pos, BlockState state, TardisDoorBlockEntity door) {
         door.age++;
-        if (world.isClient) {
+        if (level.isClientSide) {
             boolean fading = door.dematerializing || door.age < FADE_IN_TICKS;
-            if (fading && world.random.nextInt(2) == 0) {
-                world.addParticle(ParticleTypes.REVERSE_PORTAL,
-                        pos.getX() + world.random.nextDouble(),
-                        pos.getY() + world.random.nextDouble() * 2.0,
-                        pos.getZ() + world.random.nextDouble(),
+            if (fading && level.random.nextInt(2) == 0) {
+                level.addParticle(ParticleTypes.REVERSE_PORTAL,
+                        pos.getX() + level.random.nextDouble(),
+                        pos.getY() + level.random.nextDouble() * 2.0,
+                        pos.getZ() + level.random.nextDouble(),
                         0.0, 0.02, 0.0);
             }
             return;
         }
         if (door.dematerializing && door.age - door.dematStart >= FADE_OUT_TICKS) {
-            // FORCE_STATE court-circuite les shape updates : sans lui, la moitié
-            // orpheline serait retirée via Block#replace → breakBlock, qui joue
-            // les particules et le son de casse du bloc.
-            int flags = Block.NOTIFY_LISTENERS | Block.FORCE_STATE;
-            world.setBlockState(pos.up(), Blocks.AIR.getDefaultState(), flags);
-            world.setBlockState(pos, Blocks.AIR.getDefaultState(), flags);
+            // UPDATE_KNOWN_SHAPE court-circuite les shape updates : sans lui, la
+            // moitié orpheline serait retirée via Block#updateOrDestroy →
+            // destroyBlock, qui joue les particules et le son de casse du bloc.
+            int flags = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE;
+            level.setBlock(pos.above(), Blocks.AIR.defaultBlockState(), flags);
+            level.setBlock(pos, Blocks.AIR.defaultBlockState(), flags);
         }
     }
 
     private void sync() {
-        markDirty();
-        if (world instanceof ServerWorld serverWorld) {
-            serverWorld.getChunkManager().markForUpdate(pos);
+        setChanged();
+        if (level instanceof ServerLevel serverLevel) {
+            serverLevel.getChunkSource().blockChanged(worldPosition);
         }
     }
 
     @Override
-    public void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
-        super.readNbt(nbt, registryLookup);
-        tardisId = nbt.containsUuid("TardisId") ? nbt.getUuid("TardisId") : null;
+    protected void loadAdditional(CompoundTag nbt, HolderLookup.Provider registries) {
+        super.loadAdditional(nbt, registries);
+        tardisId = nbt.hasUUID("TardisId") ? nbt.getUUID("TardisId") : null;
         interior = nbt.getBoolean("Interior");
         age = nbt.getInt("Age");
         dematerializing = nbt.getBoolean("Dematerializing");
@@ -144,10 +144,10 @@ public class TardisDoorBlockEntity extends BlockEntity {
     }
 
     @Override
-    public void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
-        super.writeNbt(nbt, registryLookup);
+    protected void saveAdditional(CompoundTag nbt, HolderLookup.Provider registries) {
+        super.saveAdditional(nbt, registries);
         if (tardisId != null) {
-            nbt.putUuid("TardisId", tardisId);
+            nbt.putUUID("TardisId", tardisId);
         }
         nbt.putBoolean("Interior", interior);
         // Un rechargement de chunk ne doit pas rejouer le fondu d'apparition.
@@ -158,12 +158,12 @@ public class TardisDoorBlockEntity extends BlockEntity {
     }
 
     @Override
-    public Packet<ClientPlayPacketListener> toUpdatePacket() {
-        return BlockEntityUpdateS2CPacket.create(this);
+    public Packet<ClientGamePacketListener> getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
     }
 
     @Override
-    public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registryLookup) {
-        return createNbt(registryLookup);
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        return saveWithoutMetadata(registries);
     }
 }

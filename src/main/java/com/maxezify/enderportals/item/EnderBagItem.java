@@ -1,16 +1,16 @@
 package com.maxezify.enderportals.item;
 
 import com.maxezify.enderportals.tardis.CentralizerLogic;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.tooltip.TooltipType;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Hand;
-import net.minecraft.util.TypedActionResult;
-import net.minecraft.world.World;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.Level;
 
 import java.util.List;
 
@@ -22,25 +22,26 @@ import java.util.List;
  */
 public class EnderBagItem extends Item {
 
-    public EnderBagItem(Settings settings) {
-        super(settings);
+    public EnderBagItem(Properties properties) {
+        super(properties);
     }
 
     @Override
-    public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
-        ItemStack stack = user.getStackInHand(hand);
-        if (hand != Hand.OFF_HAND) {
-            return TypedActionResult.pass(stack);
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        ItemStack stack = player.getItemInHand(hand);
+        if (hand != InteractionHand.OFF_HAND) {
+            return InteractionResultHolder.pass(stack);
         }
-        if (!world.isClient && user instanceof ServerPlayerEntity player) {
-            CentralizerLogic.deposit(player);
+        if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
+            CentralizerLogic.deposit(serverPlayer);
         }
-        return TypedActionResult.success(stack, world.isClient);
+        return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
     }
 
     @Override
-    public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        tooltip.add(Text.translatable("enderportals.tooltip.ender_bag").formatted(Formatting.GRAY));
-        super.appendTooltip(stack, context, tooltip, type);
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
+                                TooltipFlag flag) {
+        tooltip.add(Component.translatable("enderportals.tooltip.ender_bag").withStyle(ChatFormatting.GRAY));
+        super.appendHoverText(stack, context, tooltip, flag);
     }
 }

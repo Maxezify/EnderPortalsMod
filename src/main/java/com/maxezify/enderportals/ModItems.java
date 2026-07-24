@@ -4,79 +4,72 @@ import com.maxezify.enderportals.item.CentralizerBlockItem;
 import com.maxezify.enderportals.item.EnderBagItem;
 import com.maxezify.enderportals.item.EnderToolMaterial;
 import com.maxezify.enderportals.item.TardisKeyItem;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.ToolComponent;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
-import net.minecraft.item.MiningToolItem;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.tag.BlockTags;
-import net.minecraft.util.Rarity;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.PickaxeItem;
+import net.minecraft.world.item.Rarity;
+import net.minecraft.world.item.Tool;
+import net.neoforged.neoforge.registries.DeferredItem;
+import net.neoforged.neoforge.registries.DeferredRegister;
 
 import java.util.List;
-import java.util.Optional;
 
 public final class ModItems {
 
+    public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(EnderPortalsMod.MODID);
+
     /** Cristal de l'Ender — récolté sur le minerai de l'End. */
-    public static final Item ENDER_CRYSTAL = register("ender_crystal",
-            new Item(new Item.Settings().rarity(Rarity.UNCOMMON)));
+    public static final DeferredItem<Item> ENDER_CRYSTAL = ITEMS.register("ender_crystal",
+            () -> new Item(new Item.Properties().rarity(Rarity.UNCOMMON)));
 
-    /** La Clé du TARDIS — matérialise la porte et l'ouvre. */
-    public static final Item TARDIS_KEY = register("tardis_key",
-            new TardisKeyItem(new Item.Settings()
-                    .maxCount(1)
-                    .rarity(Rarity.EPIC)
-                    .fireproof()));
+    /** La Clé de l'Ender — matérialise la porte et l'ouvre. */
+    public static final DeferredItem<TardisKeyItem> TARDIS_KEY = ITEMS.register("tardis_key",
+            () -> new TardisKeyItem(new Item.Properties().stacksTo(1).rarity(Rarity.EPIC).fireResistant()));
 
-    /** Pioche de l'Ender — seule capable de récolter les blocs de l'Ender. */
-    public static final Item ENDER_PICKAXE = register("ender_pickaxe",
-            new Item(new Item.Settings()
-                    .maxCount(1)
-                    .maxDamage(2031)
+    /** Pioche de l'Ender — seule capable de récolter les Blocs de l'Ender. */
+    public static final DeferredItem<Item> ENDER_PICKAXE = ITEMS.register("ender_pickaxe",
+            () -> new Item(new Item.Properties()
+                    .durability(2031)
                     .rarity(Rarity.RARE)
-                    .attributeModifiers(MiningToolItem.createAttributeModifiers(
-                            EnderToolMaterial.INSTANCE, 1.0f, -2.8f))
-                    .component(DataComponentTypes.TOOL, createEnderPickaxeTool())));
+                    .attributes(PickaxeItem.createAttributes(EnderToolMaterial.INSTANCE, 1.0f, -2.8f))
+                    .component(DataComponents.TOOL, createEnderPickaxeTool())));
 
-    public static final Item INACTIVE_TARDIS_DOOR = register("inactive_tardis_door",
-            new BlockItem(ModBlocks.INACTIVE_TARDIS_DOOR, new Item.Settings().rarity(Rarity.EPIC).fireproof()));
+    public static final DeferredItem<BlockItem> INACTIVE_TARDIS_DOOR = ITEMS.register("inactive_tardis_door",
+            () -> new BlockItem(ModBlocks.INACTIVE_TARDIS_DOOR.get(),
+                    new Item.Properties().rarity(Rarity.EPIC).fireResistant()));
 
-    public static final Item ENDER_ORE = register("ender_ore",
-            new BlockItem(ModBlocks.ENDER_ORE, new Item.Settings()));
+    public static final DeferredItem<BlockItem> ENDER_ORE = ITEMS.register("ender_ore",
+            () -> new BlockItem(ModBlocks.ENDER_ORE.get(), new Item.Properties()));
 
-    public static final Item ENDER_BLOCK = register("ender_block",
-            new BlockItem(ModBlocks.ENDER_BLOCK, new Item.Settings()));
+    public static final DeferredItem<BlockItem> ENDER_BLOCK = ITEMS.register("ender_block",
+            () -> new BlockItem(ModBlocks.ENDER_BLOCK.get(), new Item.Properties()));
 
-    public static final Item ENDER_BRICKS = register("ender_bricks",
-            new BlockItem(ModBlocks.ENDER_BRICKS, new Item.Settings()));
+    public static final DeferredItem<BlockItem> ENDER_BRICKS = ITEMS.register("ender_bricks",
+            () -> new BlockItem(ModBlocks.ENDER_BRICKS.get(), new Item.Properties()));
 
-    public static final Item CENTRALIZER = register("centralizer",
-            new CentralizerBlockItem(ModBlocks.CENTRALIZER, new Item.Settings().rarity(Rarity.RARE)));
+    public static final DeferredItem<CentralizerBlockItem> CENTRALIZER = ITEMS.register("centralizer",
+            () -> new CentralizerBlockItem(ModBlocks.CENTRALIZER.get(), new Item.Properties().rarity(Rarity.RARE)));
 
     /** Le Sac de l'Ender — en seconde main, range la ligne du haut dans la base. */
-    public static final Item ENDER_BAG = register("ender_bag",
-            new EnderBagItem(new Item.Settings().maxCount(1).rarity(Rarity.RARE)));
+    public static final DeferredItem<EnderBagItem> ENDER_BAG = ITEMS.register("ender_bag",
+            () -> new EnderBagItem(new Item.Properties().stacksTo(1).rarity(Rarity.RARE)));
 
     /**
-     * Outil de la pioche de l'Ender : très rapide sur les blocs de l'Ender
-     * (et seule à les faire tomber), niveau diamant pour le reste.
+     * Composant d'outil de la pioche de l'Ender : très rapide sur les Blocs de
+     * l'Ender (et seule à les faire tomber), niveau diamant pour le reste.
      */
-    private static ToolComponent createEnderPickaxeTool() {
-        return new ToolComponent(List.of(
-                ToolComponent.Rule.ofAlwaysDropping(ModTags.ENDER_PICKAXE_FAST, 45.0f),
-                new ToolComponent.Rule(Registries.BLOCK.getOrCreateEntryList(BlockTags.INCORRECT_FOR_DIAMOND_TOOL),
-                        Optional.empty(), Optional.of(false)),
-                ToolComponent.Rule.ofAlwaysDropping(BlockTags.PICKAXE_MINEABLE, 8.0f)
+    private static Tool createEnderPickaxeTool() {
+        return new Tool(List.of(
+                Tool.Rule.minesAndDrops(
+                        BuiltInRegistries.BLOCK.getOrCreateTag(ModTags.ENDER_PICKAXE_FAST), 45.0f),
+                Tool.Rule.deniesDrops(
+                        BuiltInRegistries.BLOCK.getOrCreateTag(BlockTags.INCORRECT_FOR_DIAMOND_TOOL)),
+                Tool.Rule.minesAndDrops(
+                        BuiltInRegistries.BLOCK.getOrCreateTag(BlockTags.MINEABLE_WITH_PICKAXE), 8.0f)
         ), 1.0f, 1);
-    }
-
-    private static Item register(String name, Item item) {
-        return Registry.register(Registries.ITEM, EnderPortalsMod.id(name), item);
-    }
-
-    public static void init() {
     }
 
     private ModItems() {

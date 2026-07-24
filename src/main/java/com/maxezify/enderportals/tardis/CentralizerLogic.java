@@ -2,19 +2,19 @@ package com.maxezify.enderportals.tardis;
 
 import com.maxezify.enderportals.ModBlocks;
 import com.maxezify.enderportals.ModDimensions;
-import net.minecraft.block.entity.ChestBlockEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.item.ItemStack;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.Container;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.entity.ChestBlockEntity;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -37,35 +37,35 @@ public final class CentralizerLogic {
     private static final int ROW_START = 9;
     private static final int ROW_END = 17;
 
-    public static void deposit(ServerPlayerEntity player) {
+    public static void deposit(ServerPlayer player) {
         MinecraftServer server = player.getServer();
         if (server == null) {
             return;
         }
         TardisStateManager manager = TardisStateManager.get(server);
-        TardisData data = manager.findByOwner(player.getUuid());
+        TardisData data = manager.findByOwner(player.getUUID());
         if (data == null || data.centralizerPos == null) {
             fail(player, "enderportals.message.no_centralizer");
             return;
         }
-        ServerWorld enderWorld = server.getWorld(ModDimensions.ENDER_WORLD);
+        ServerLevel enderWorld = server.getLevel(ModDimensions.ENDER_WORLD);
         BlockPos centralizer = data.centralizerPos;
-        if (enderWorld == null || !enderWorld.getBlockState(centralizer).isOf(ModBlocks.CENTRALIZER)) {
+        if (enderWorld == null || !enderWorld.getBlockState(centralizer).is(ModBlocks.CENTRALIZER.get())) {
             manager.clearCentralizer(centralizer);
             fail(player, "enderportals.message.no_centralizer");
             return;
         }
 
-        List<Inventory> chests = collectChests(enderWorld, centralizer);
+        List<Container> chests = collectChests(enderWorld, centralizer);
         if (chests.isEmpty()) {
             fail(player, "enderportals.message.no_chest");
             return;
         }
 
-        PlayerInventory inv = player.getInventory();
+        Inventory inv = player.getInventory();
         int candidates = 0;
         for (int slot = ROW_START; slot <= ROW_END; slot++) {
-            if (!inv.getStack(slot).isEmpty()) {
+            if (!inv.getItem(slot).isEmpty()) {
                 candidates++;
             }
         }
@@ -86,7 +86,7 @@ public final class CentralizerLogic {
 
         int moved = 0;
         for (int slot = ROW_START; slot <= ROW_END; slot++) {
-            ItemStack stack = inv.getStack(slot);
+            ItemStack stack = inv.getItem(slot);
             if (stack.isEmpty()) {
                 continue;
             }
@@ -95,11 +95,11 @@ public final class CentralizerLogic {
             if (stack.getCount() != before) {
                 moved++;
                 if (stack.isEmpty()) {
-                    inv.setStack(slot, ItemStack.EMPTY);
+                    inv.setItem(slot, ItemStack.EMPTY);
                 }
             }
         }
-        inv.markDirty();
+        inv.setChanged();
 
         if (moved == 0) {
             // Filet de sécurité : hasAnyRoom garantit normalement moved >= 1.
@@ -107,8 +107,8 @@ public final class CentralizerLogic {
             return;
         }
         // Force la synchronisation de l'inventaire modifié vers le client.
-        player.currentScreenHandler.sendContentUpdates();
-        player.addExperience(-XP_COST_PER_SLOT * moved);
+        player.containerMenu.broadcastChanges();
+        player.giveExperiencePoints(-XP_COST_PER_SLOT * moved);
         success(player);
     }
 
@@ -116,24 +116,24 @@ public final class CentralizerLogic {
      * Le réseau a-t-il de la place pour au moins un objet de la ligne du haut ?
      * Lecture seule, court-circuit dès la première place trouvée.
      */
-    private static boolean hasAnyRoom(List<Inventory> chests, PlayerInventory inv) {
+    private static boolean hasAnyRoom(List<Container> chests, Inventory inv) {
         for (int slot = ROW_START; slot <= ROW_END; slot++) {
-            ItemStack stack = inv.getStack(slot);
+            ItemStack stack = inv.getItem(slot);
             if (stack.isEmpty()) {
                 continue;
             }
-            for (Inventory chest : chests) {
-                int size = chest.size();
+            for (Container chest : chests) {
+                int size = chest.getContainerSize();
                 for (int i = 0; i < size; i++) {
-                    if (!chest.isValid(i, stack)) {
+                    if (!chest.canPlaceItem(i, stack)) {
                         continue;
                     }
-                    ItemStack slotStack = chest.getStack(i);
+                    ItemStack slotStack = chest.getItem(i);
                     if (slotStack.isEmpty()) {
                         return true;
                     }
-                    if (ItemStack.areItemsAndComponentsEqual(slotStack, stack)
-                            && slotStack.getCount() < Math.min(chest.getMaxCountPerStack(), slotStack.getMaxCount())) {
+                    if (ItemStack.isSameItemSameComponents(slotStack, stack)
+                            && slotStack.getCount() < Math.min(chest.getMaxStackSize(), slotStack.getMaxStackSize())) {
                         return true;
                     }
                 }
@@ -146,15 +146,15 @@ public final class CentralizerLogic {
     // Réseau de coffres
     // ------------------------------------------------------------------
 
-    private static List<Inventory> collectChests(ServerWorld world, BlockPos centralizer) {
-        List<Inventory> result = new ArrayList<>();
+    private static List<Container> collectChests(ServerLevel level, BlockPos centralizer) {
+        List<Container> result = new ArrayList<>();
         Set<BlockPos> visited = new HashSet<>();
         ArrayDeque<BlockPos> queue = new ArrayDeque<>();
 
         // Amorce : les coffres directement collés à une face du centraliseur.
         for (Direction dir : Direction.values()) {
-            BlockPos p = centralizer.offset(dir);
-            if (world.getBlockEntity(p) instanceof ChestBlockEntity) {
+            BlockPos p = centralizer.relative(dir);
+            if (level.getBlockEntity(p) instanceof ChestBlockEntity) {
                 queue.add(p);
             }
         }
@@ -163,11 +163,11 @@ public final class CentralizerLogic {
             if (!visited.add(p)) {
                 continue;
             }
-            if (world.getBlockEntity(p) instanceof ChestBlockEntity chest) {
+            if (level.getBlockEntity(p) instanceof ChestBlockEntity chest) {
                 result.add(chest);
                 for (Direction dir : Direction.values()) {
-                    BlockPos n = p.offset(dir);
-                    if (!visited.contains(n) && world.getBlockEntity(n) instanceof ChestBlockEntity) {
+                    BlockPos n = p.relative(dir);
+                    if (!visited.contains(n) && level.getBlockEntity(n) instanceof ChestBlockEntity) {
                         queue.add(n);
                     }
                 }
@@ -180,8 +180,8 @@ public final class CentralizerLogic {
     // Insertion (fusion sur piles existantes, puis cases vides)
     // ------------------------------------------------------------------
 
-    private static void insert(List<Inventory> targets, ItemStack stack) {
-        for (Inventory inv : targets) {
+    private static void insert(List<Container> targets, ItemStack stack) {
+        for (Container inv : targets) {
             if (stack.isEmpty()) {
                 return;
             }
@@ -189,41 +189,41 @@ public final class CentralizerLogic {
         }
     }
 
-    private static void mergeInto(Inventory inv, ItemStack stack) {
-        int size = inv.size();
+    private static void mergeInto(Container inv, ItemStack stack) {
+        int size = inv.getContainerSize();
         boolean changed = false;
 
         for (int i = 0; i < size && !stack.isEmpty(); i++) {
-            if (!inv.isValid(i, stack)) {
+            if (!inv.canPlaceItem(i, stack)) {
                 continue;
             }
-            ItemStack slotStack = inv.getStack(i);
-            if (slotStack.isEmpty() || !ItemStack.areItemsAndComponentsEqual(slotStack, stack)) {
+            ItemStack slotStack = inv.getItem(i);
+            if (slotStack.isEmpty() || !ItemStack.isSameItemSameComponents(slotStack, stack)) {
                 continue;
             }
-            int max = Math.min(inv.getMaxCountPerStack(), slotStack.getMaxCount());
+            int max = Math.min(inv.getMaxStackSize(), slotStack.getMaxStackSize());
             int space = max - slotStack.getCount();
             if (space > 0) {
                 int add = Math.min(space, stack.getCount());
-                slotStack.increment(add);
-                stack.decrement(add);
+                slotStack.grow(add);
+                stack.shrink(add);
                 changed = true;
             }
         }
         for (int i = 0; i < size && !stack.isEmpty(); i++) {
-            if (!inv.isValid(i, stack) || !inv.getStack(i).isEmpty()) {
+            if (!inv.canPlaceItem(i, stack) || !inv.getItem(i).isEmpty()) {
                 continue;
             }
-            int max = Math.min(inv.getMaxCountPerStack(), stack.getMaxCount());
+            int max = Math.min(inv.getMaxStackSize(), stack.getMaxStackSize());
             int add = Math.min(max, stack.getCount());
             ItemStack placed = stack.copy();
             placed.setCount(add);
-            inv.setStack(i, placed);
-            stack.decrement(add);
+            inv.setItem(i, placed);
+            stack.shrink(add);
             changed = true;
         }
         if (changed) {
-            inv.markDirty();
+            inv.setChanged();
         }
     }
 
@@ -232,9 +232,9 @@ public final class CentralizerLogic {
     // ------------------------------------------------------------------
 
     /** Total des points d'expérience actuellement détenus par le joueur. */
-    private static int getXpPoints(PlayerEntity player) {
+    private static int getXpPoints(Player player) {
         return xpForLevel(player.experienceLevel)
-                + Math.round(player.experienceProgress * player.getNextLevelExperience());
+                + Math.round(player.experienceProgress * player.getXpNeededForNextLevel());
     }
 
     /** Points cumulés nécessaires pour atteindre un niveau (formule vanilla). */
@@ -255,31 +255,31 @@ public final class CentralizerLogic {
     // Retours sonores
     // ------------------------------------------------------------------
 
-    private static void success(ServerPlayerEntity player) {
-        ServerWorld world = player.getServerWorld();
+    private static void success(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
         // Mystique (chime d'améthyste + rangement du coffre de l'Ender).
-        world.playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.BLOCK_ENDER_CHEST_CLOSE, SoundCategory.PLAYERS, 0.6f, 1.1f);
-        world.playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.PLAYERS, 0.5f, 1.4f);
+        level.playSound(null, player.getX(), player.getY(), player.getZ(),
+                SoundEvents.ENDER_CHEST_CLOSE, SoundSource.PLAYERS, 0.6f, 1.1f);
+        level.playSound(null, player.getX(), player.getY(), player.getZ(),
+                SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.5f, 1.4f);
     }
 
-    private static void fail(ServerPlayerEntity player, String messageKey) {
-        player.getServerWorld().playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.BLOCK_ANVIL_LAND, SoundCategory.PLAYERS, 0.5f, 0.5f);
-        player.sendMessage(Text.translatable(messageKey), true);
+    private static void fail(ServerPlayer player, String messageKey) {
+        player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(),
+                SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 0.5f, 0.5f);
+        player.displayClientMessage(Component.translatable(messageKey), true);
     }
 
     /** Coffres pleins : son grave dédié + message. */
-    private static void full(ServerPlayerEntity player) {
-        player.getServerWorld().playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.BLOCK_ANVIL_LAND, SoundCategory.PLAYERS, 0.6f, 0.6f);
-        player.sendMessage(Text.translatable("enderportals.message.chests_full"), true);
+    private static void full(ServerPlayer player) {
+        player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(),
+                SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 0.6f, 0.6f);
+        player.displayClientMessage(Component.translatable("enderportals.message.chests_full"), true);
     }
 
-    private static void neutral(ServerPlayerEntity player) {
-        player.getServerWorld().playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.PLAYERS, 0.6f, 1.0f);
+    private static void neutral(ServerPlayer player) {
+        player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(),
+                SoundEvents.DISPENSER_FAIL, SoundSource.PLAYERS, 0.6f, 1.0f);
     }
 
     private CentralizerLogic() {

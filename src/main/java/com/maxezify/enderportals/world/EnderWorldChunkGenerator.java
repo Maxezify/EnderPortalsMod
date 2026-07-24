@@ -3,25 +3,25 @@ package com.maxezify.enderportals.world;
 import com.maxezify.enderportals.ModBlocks;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.noise.PerlinNoiseSampler;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.world.ChunkRegion;
-import net.minecraft.world.HeightLimitView;
-import net.minecraft.world.Heightmap;
-import net.minecraft.world.biome.source.BiomeAccess;
-import net.minecraft.world.biome.source.BiomeSource;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.gen.GenerationStep;
-import net.minecraft.world.gen.StructureAccessor;
-import net.minecraft.world.gen.chunk.Blender;
-import net.minecraft.world.gen.chunk.ChunkGenerator;
-import net.minecraft.world.gen.chunk.VerticalBlockSample;
-import net.minecraft.world.gen.noise.NoiseConfig;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.WorldGenRegion;
+import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.LevelHeightAccessor;
+import net.minecraft.world.level.StructureManager;
+import net.minecraft.world.level.biome.BiomeManager;
+import net.minecraft.world.level.biome.BiomeSource;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.ChunkGenerator;
+import net.minecraft.world.level.levelgen.GenerationStep;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.levelgen.NoiseColumn;
+import net.minecraft.world.level.levelgen.RandomState;
+import net.minecraft.world.level.levelgen.blending.Blender;
+import net.minecraft.world.level.levelgen.synth.ImprovedNoise;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -44,42 +44,42 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
     private static final int HEIGHT = 128;
 
     // Bruits fixes : le paradis des blocs est le même dans toutes les graines.
-    private static final PerlinNoiseSampler CAVERN = new PerlinNoiseSampler(Random.create(0x7A4D15L));
-    private static final PerlinNoiseSampler TUNNEL_A = new PerlinNoiseSampler(Random.create(0xE17EBEEFL));
-    private static final PerlinNoiseSampler TUNNEL_B = new PerlinNoiseSampler(Random.create(0x0DD5EEDL));
+    private static final ImprovedNoise CAVERN = new ImprovedNoise(RandomSource.create(0x7A4D15L));
+    private static final ImprovedNoise TUNNEL_A = new ImprovedNoise(RandomSource.create(0xE17EBEEFL));
+    private static final ImprovedNoise TUNNEL_B = new ImprovedNoise(RandomSource.create(0x0DD5EEDL));
 
     /** Blocs-reliques (pondérés par répétition), lumineux compris. */
     private static final List<BlockState> RELICS = List.of(
-            Blocks.STONE.getDefaultState(), Blocks.STONE.getDefaultState(), Blocks.STONE.getDefaultState(),
-            Blocks.STONE.getDefaultState(), Blocks.STONE.getDefaultState(),
-            Blocks.DEEPSLATE.getDefaultState(), Blocks.DEEPSLATE.getDefaultState(), Blocks.DEEPSLATE.getDefaultState(),
-            Blocks.DIRT.getDefaultState(), Blocks.DIRT.getDefaultState(), Blocks.DIRT.getDefaultState(),
-            Blocks.GRAVEL.getDefaultState(), Blocks.GRAVEL.getDefaultState(),
-            Blocks.SAND.getDefaultState(), Blocks.SAND.getDefaultState(),
-            Blocks.OAK_LOG.getDefaultState(), Blocks.OAK_LOG.getDefaultState(),
-            Blocks.SPRUCE_LOG.getDefaultState(),
-            Blocks.CLAY.getDefaultState(), Blocks.CLAY.getDefaultState(),
-            Blocks.MOSS_BLOCK.getDefaultState(), Blocks.MOSS_BLOCK.getDefaultState(),
-            Blocks.BONE_BLOCK.getDefaultState(), Blocks.BONE_BLOCK.getDefaultState(),
-            Blocks.COAL_ORE.getDefaultState(), Blocks.COAL_ORE.getDefaultState(), Blocks.COAL_ORE.getDefaultState(),
-            Blocks.COPPER_ORE.getDefaultState(), Blocks.COPPER_ORE.getDefaultState(),
-            Blocks.IRON_ORE.getDefaultState(), Blocks.IRON_ORE.getDefaultState(), Blocks.IRON_ORE.getDefaultState(),
-            Blocks.GOLD_ORE.getDefaultState(), Blocks.GOLD_ORE.getDefaultState(),
-            Blocks.REDSTONE_ORE.getDefaultState(), Blocks.REDSTONE_ORE.getDefaultState(),
-            Blocks.LAPIS_ORE.getDefaultState(),
-            Blocks.DIAMOND_ORE.getDefaultState(),
-            Blocks.EMERALD_ORE.getDefaultState(),
-            Blocks.GLOWSTONE.getDefaultState(), Blocks.GLOWSTONE.getDefaultState(),
-            Blocks.SEA_LANTERN.getDefaultState(),
-            Blocks.SHROOMLIGHT.getDefaultState(),
-            Blocks.AMETHYST_BLOCK.getDefaultState(),
-            Blocks.OBSIDIAN.getDefaultState(),
-            Blocks.CRYING_OBSIDIAN.getDefaultState(),
-            Blocks.BOOKSHELF.getDefaultState(),
-            Blocks.PUMPKIN.getDefaultState(),
-            Blocks.MELON.getDefaultState(),
-            Blocks.SPONGE.getDefaultState(),
-            Blocks.GOLD_BLOCK.getDefaultState());
+            Blocks.STONE.defaultBlockState(), Blocks.STONE.defaultBlockState(), Blocks.STONE.defaultBlockState(),
+            Blocks.STONE.defaultBlockState(), Blocks.STONE.defaultBlockState(),
+            Blocks.DEEPSLATE.defaultBlockState(), Blocks.DEEPSLATE.defaultBlockState(), Blocks.DEEPSLATE.defaultBlockState(),
+            Blocks.DIRT.defaultBlockState(), Blocks.DIRT.defaultBlockState(), Blocks.DIRT.defaultBlockState(),
+            Blocks.GRAVEL.defaultBlockState(), Blocks.GRAVEL.defaultBlockState(),
+            Blocks.SAND.defaultBlockState(), Blocks.SAND.defaultBlockState(),
+            Blocks.OAK_LOG.defaultBlockState(), Blocks.OAK_LOG.defaultBlockState(),
+            Blocks.SPRUCE_LOG.defaultBlockState(),
+            Blocks.CLAY.defaultBlockState(), Blocks.CLAY.defaultBlockState(),
+            Blocks.MOSS_BLOCK.defaultBlockState(), Blocks.MOSS_BLOCK.defaultBlockState(),
+            Blocks.BONE_BLOCK.defaultBlockState(), Blocks.BONE_BLOCK.defaultBlockState(),
+            Blocks.COAL_ORE.defaultBlockState(), Blocks.COAL_ORE.defaultBlockState(), Blocks.COAL_ORE.defaultBlockState(),
+            Blocks.COPPER_ORE.defaultBlockState(), Blocks.COPPER_ORE.defaultBlockState(),
+            Blocks.IRON_ORE.defaultBlockState(), Blocks.IRON_ORE.defaultBlockState(), Blocks.IRON_ORE.defaultBlockState(),
+            Blocks.GOLD_ORE.defaultBlockState(), Blocks.GOLD_ORE.defaultBlockState(),
+            Blocks.REDSTONE_ORE.defaultBlockState(), Blocks.REDSTONE_ORE.defaultBlockState(),
+            Blocks.LAPIS_ORE.defaultBlockState(),
+            Blocks.DIAMOND_ORE.defaultBlockState(),
+            Blocks.EMERALD_ORE.defaultBlockState(),
+            Blocks.GLOWSTONE.defaultBlockState(), Blocks.GLOWSTONE.defaultBlockState(),
+            Blocks.SEA_LANTERN.defaultBlockState(),
+            Blocks.SHROOMLIGHT.defaultBlockState(),
+            Blocks.AMETHYST_BLOCK.defaultBlockState(),
+            Blocks.OBSIDIAN.defaultBlockState(),
+            Blocks.CRYING_OBSIDIAN.defaultBlockState(),
+            Blocks.BOOKSHELF.defaultBlockState(),
+            Blocks.PUMPKIN.defaultBlockState(),
+            Blocks.MELON.defaultBlockState(),
+            Blocks.SPONGE.defaultBlockState(),
+            Blocks.GOLD_BLOCK.defaultBlockState());
 
     /** Une relique tous les ~N blocs pleins. */
     private static final int RELIC_RARITY = 256;
@@ -89,44 +89,44 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
     }
 
     @Override
-    protected MapCodec<? extends ChunkGenerator> getCodec() {
+    protected MapCodec<? extends ChunkGenerator> codec() {
         return CODEC;
     }
 
     @Override
-    public CompletableFuture<Chunk> populateNoise(Blender blender, NoiseConfig noiseConfig,
-                                                  StructureAccessor structureAccessor, Chunk chunk) {
+    public CompletableFuture<ChunkAccess> fillFromNoise(Blender blender, RandomState randomState,
+                                                        StructureManager structureManager, ChunkAccess chunk) {
         ChunkPos chunkPos = chunk.getPos();
-        BlockPos.Mutable cursor = new BlockPos.Mutable();
-        int bottom = chunk.getBottomY();
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        int bottom = chunk.getMinBuildHeight();
         int top = bottom + chunk.getHeight();
         for (int dx = 0; dx < 16; dx++) {
             for (int dz = 0; dz < 16; dz++) {
-                int x = chunkPos.getStartX() + dx;
-                int z = chunkPos.getStartZ() + dz;
+                int x = chunkPos.getMinBlockX() + dx;
+                int z = chunkPos.getMinBlockZ() + dz;
                 for (int y = bottom; y < top; y++) {
                     chunk.setBlockState(cursor.set(x, y, z), stateAt(x, y, z, bottom, top), false);
                 }
             }
         }
-        Heightmap.populateHeightmaps(chunk, EnumSet.of(
-                Heightmap.Type.WORLD_SURFACE_WG, Heightmap.Type.OCEAN_FLOOR_WG));
+        Heightmap.primeHeightmaps(chunk, EnumSet.of(
+                Heightmap.Types.WORLD_SURFACE_WG, Heightmap.Types.OCEAN_FLOOR_WG));
         return CompletableFuture.completedFuture(chunk);
     }
 
     private static BlockState stateAt(int x, int y, int z, int bottom, int top) {
         if (y <= bottom + 1 || y >= top - 2) {
-            return Blocks.BEDROCK.getDefaultState();
+            return Blocks.BEDROCK.defaultBlockState();
         }
         if (isCarved(x, y, z, bottom, top)) {
-            return Blocks.AIR.getDefaultState();
+            return Blocks.AIR.defaultBlockState();
         }
-        long hash = MathHelper.hashCode(x, y, z);
-        Random random = Random.create(hash);
+        long hash = Mth.getSeed(x, y, z);
+        RandomSource random = RandomSource.create(hash);
         if (random.nextInt(RELIC_RARITY) == 0) {
             return RELICS.get(random.nextInt(RELICS.size()));
         }
-        return ModBlocks.ENDER_BLOCK.getDefaultState();
+        return ModBlocks.ENDER_BLOCK.get().defaultBlockState();
     }
 
     private static boolean isCarved(int x, int y, int z, int bottom, int top) {
@@ -140,34 +140,35 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
         }
 
         // Grandes cavernes.
-        double cavern = CAVERN.sample(x * 0.014, y * 0.026, z * 0.014);
+        double cavern = CAVERN.noise(x * 0.014, y * 0.026, z * 0.014);
         if (cavern > 0.34 + edge) {
             return true;
         }
         // Tunnels "spaghetti".
-        double a = TUNNEL_A.sample(x * 0.011, y * 0.021, z * 0.011);
-        double b = TUNNEL_B.sample(x * 0.011, y * 0.021, z * 0.011);
+        double a = TUNNEL_A.noise(x * 0.011, y * 0.021, z * 0.011);
+        double b = TUNNEL_B.noise(x * 0.011, y * 0.021, z * 0.011);
         return a * a + b * b < Math.max(0.0, 0.0075 - edge * 0.01);
     }
 
     @Override
-    public void carve(ChunkRegion chunkRegion, long seed, NoiseConfig noiseConfig, BiomeAccess biomeAccess,
-                      StructureAccessor structureAccessor, Chunk chunk, GenerationStep.Carver carverStep) {
-        // Le creusement est intégré à populateNoise.
+    public void applyCarvers(WorldGenRegion level, long seed, RandomState random, BiomeManager biomeManager,
+                             StructureManager structureManager, ChunkAccess chunk, GenerationStep.Carving step) {
+        // Le creusement est intégré à fillFromNoise.
     }
 
     @Override
-    public void buildSurface(ChunkRegion region, StructureAccessor structures, NoiseConfig noiseConfig, Chunk chunk) {
+    public void buildSurface(WorldGenRegion level, StructureManager structureManager, RandomState random,
+                             ChunkAccess chunk) {
         // Pas de surface : tout est souterrain.
     }
 
     @Override
-    public void populateEntities(ChunkRegion region) {
+    public void spawnOriginalMobs(WorldGenRegion level) {
         // Pas d'apparitions naturelles.
     }
 
     @Override
-    public int getWorldHeight() {
+    public int getGenDepth() {
         return HEIGHT;
     }
 
@@ -177,14 +178,14 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
     }
 
     @Override
-    public int getMinimumY() {
+    public int getMinY() {
         return MIN_Y;
     }
 
     @Override
-    public int getHeight(int x, int z, Heightmap.Type heightmap, HeightLimitView world, NoiseConfig noiseConfig) {
-        int bottom = world.getBottomY();
-        int top = bottom + world.getHeight();
+    public int getBaseHeight(int x, int z, Heightmap.Types type, LevelHeightAccessor level, RandomState random) {
+        int bottom = level.getMinBuildHeight();
+        int top = bottom + level.getHeight();
         for (int y = top - 3; y > bottom + 1; y--) {
             if (!isCarved(x, y, z, bottom, top)) {
                 return y + 1;
@@ -194,25 +195,25 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
     }
 
     @Override
-    public VerticalBlockSample getColumnSample(int x, int z, HeightLimitView world, NoiseConfig noiseConfig) {
-        int bottom = world.getBottomY();
-        int top = bottom + world.getHeight();
-        BlockState[] states = new BlockState[world.getHeight()];
+    public NoiseColumn getBaseColumn(int x, int z, LevelHeightAccessor level, RandomState random) {
+        int bottom = level.getMinBuildHeight();
+        int top = bottom + level.getHeight();
+        BlockState[] states = new BlockState[level.getHeight()];
         for (int i = 0; i < states.length; i++) {
             int y = bottom + i;
             if (y <= bottom + 1 || y >= top - 2) {
-                states[i] = Blocks.BEDROCK.getDefaultState();
+                states[i] = Blocks.BEDROCK.defaultBlockState();
             } else if (isCarved(x, y, z, bottom, top)) {
-                states[i] = Blocks.AIR.getDefaultState();
+                states[i] = Blocks.AIR.defaultBlockState();
             } else {
-                states[i] = ModBlocks.ENDER_BLOCK.getDefaultState();
+                states[i] = ModBlocks.ENDER_BLOCK.get().defaultBlockState();
             }
         }
-        return new VerticalBlockSample(bottom, states);
+        return new NoiseColumn(bottom, states);
     }
 
     @Override
-    public void getDebugHudText(List<String> text, NoiseConfig noiseConfig, BlockPos pos) {
-        text.add("EnderWorld (paradis des cubes)");
+    public void addDebugScreenInfo(List<String> info, RandomState random, BlockPos pos) {
+        info.add("EnderWorld (paradis des cubes)");
     }
 }

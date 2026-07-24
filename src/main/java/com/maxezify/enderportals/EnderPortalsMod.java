@@ -1,101 +1,66 @@
 package com.maxezify.enderportals;
 
 import com.maxezify.enderportals.block.InactiveTardisDoorBlock;
-import com.maxezify.enderportals.world.EnderWorldChunkGenerator;
-import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
-import net.fabricmc.fabric.api.biome.v1.BiomeSelectors;
-import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
-import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
-import net.minecraft.item.ItemGroup;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Identifier;
-import net.minecraft.world.gen.GenerationStep;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class EnderPortalsMod implements ModInitializer {
-    public static final String MOD_ID = "enderportals";
-    public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+/**
+ * Point d'entrée NeoForge du mod Ender Portals.
+ */
+@Mod(EnderPortalsMod.MODID)
+public class EnderPortalsMod {
+
+    public static final String MODID = "enderportals";
+    public static final Logger LOGGER = LoggerFactory.getLogger(MODID);
 
     /**
-     * Distance de chute (en blocs) que le joueur doit accumuler avant de
-     * frapper la porte inactive à la masse pour l'initialiser — la mécanique
-     * de l'attaque écrasante de la Mace, appliquée à la porte.
+     * Distance de chute (en blocs) requise avant de frapper la porte inactive
+     * à la Mace pour l'éveiller — la mécanique de l'attaque écrasante.
      */
     public static final float ACTIVATION_FALL_DISTANCE = 20.0f;
 
-    public static Identifier id(String path) {
-        return Identifier.of(MOD_ID, path);
+    public static ResourceLocation id(String path) {
+        return ResourceLocation.fromNamespaceAndPath(MODID, path);
     }
 
-    @Override
-    public void onInitialize() {
-        ModBlocks.init();
-        ModItems.init();
-        ModBlockEntities.init();
-        ModComponents.init();
-        ModRecipes.init();
+    public EnderPortalsMod(IEventBus modBus, ModContainer container) {
+        ModBlocks.BLOCKS.register(modBus);
+        ModItems.ITEMS.register(modBus);
+        ModBlockEntities.BLOCK_ENTITIES.register(modBus);
+        ModComponents.COMPONENTS.register(modBus);
+        ModRecipes.RECIPE_SERIALIZERS.register(modBus);
+        ModRegistries.CHUNK_GENERATORS.register(modBus);
+        ModRegistries.CREATIVE_TABS.register(modBus);
 
-        Registry.register(Registries.CHUNK_GENERATOR, id("ender_world"), EnderWorldChunkGenerator.CODEC);
+        NeoForge.EVENT_BUS.addListener(this::onLeftClickBlock);
 
-        registerItemGroup();
-        registerEndOreGeneration();
-        registerMaceRitual();
-
-        LOGGER.info("Ender Portals initialisé — le vortex vous attend.");
-    }
-
-    private static void registerItemGroup() {
-        ItemGroup group = FabricItemGroup.builder()
-                .icon(() -> new ItemStack(ModItems.TARDIS_KEY))
-                .displayName(Text.translatable("itemGroup.enderportals.main"))
-                .entries((context, entries) -> {
-                    entries.add(ModItems.ENDER_CRYSTAL);
-                    entries.add(ModItems.TARDIS_KEY);
-                    entries.add(ModItems.ENDER_PICKAXE);
-                    entries.add(ModItems.INACTIVE_TARDIS_DOOR);
-                    entries.add(ModItems.ENDER_ORE);
-                    entries.add(ModItems.ENDER_BLOCK);
-                    entries.add(ModItems.ENDER_BRICKS);
-                    entries.add(ModItems.CENTRALIZER);
-                    entries.add(ModItems.ENDER_BAG);
-                })
-                .build();
-        Registry.register(Registries.ITEM_GROUP, id("main"), group);
-    }
-
-    private static void registerEndOreGeneration() {
-        BiomeModifications.addFeature(
-                BiomeSelectors.foundInTheEnd(),
-                GenerationStep.Feature.UNDERGROUND_ORES,
-                RegistryKey.of(RegistryKeys.PLACED_FEATURE, id("ender_ore")));
+        LOGGER.info("Ender Portals (NeoForge) initialisé — le vortex vous attend.");
     }
 
     /**
-     * L'attaque écrasante de la Mace vanilla, appliquée à la porte inactive :
-     * frappée en pleine chute, elle s'éveille.
+     * L'attaque écrasante de la Mace appliquée à la porte inactive : frappée
+     * (clic gauche) en pleine chute, elle s'éveille.
      */
-    private static void registerMaceRitual() {
-        AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
-            if (world.getBlockState(pos).isOf(ModBlocks.INACTIVE_TARDIS_DOOR)
-                    && player.getStackInHand(hand).isOf(Items.MACE)) {
-                if (!world.isClient && player instanceof ServerPlayerEntity serverPlayer) {
-                    InactiveTardisDoorBlock.tryActivate((ServerWorld) world, pos, serverPlayer,
-                            player.getStackInHand(hand));
-                }
-                return ActionResult.SUCCESS;
-            }
-            return ActionResult.PASS;
-        });
+    private void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
+        if (event.getLevel().isClientSide || event.getHand() != InteractionHand.MAIN_HAND) {
+            return;
+        }
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+        if (event.getLevel().getBlockState(event.getPos()).is(ModBlocks.INACTIVE_TARDIS_DOOR.get())
+                && player.getMainHandItem().is(net.minecraft.world.item.Items.MACE)) {
+            InactiveTardisDoorBlock.tryActivate((ServerLevel) event.getLevel(), event.getPos(),
+                    player, player.getMainHandItem());
+        }
     }
 }

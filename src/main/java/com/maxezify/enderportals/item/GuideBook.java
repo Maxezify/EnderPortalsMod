@@ -1,13 +1,14 @@
 package com.maxezify.enderportals.item;
 
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.WrittenBookContentComponent;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.text.RawFilteredPair;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.network.Filterable;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.WrittenBookContent;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -25,16 +26,16 @@ public final class GuideBook {
     public static ItemStack create() {
         ItemStack book = new ItemStack(Items.WRITTEN_BOOK);
 
-        List<RawFilteredPair<Text>> pages = new java.util.ArrayList<>(PAGE_COUNT);
+        List<Filterable<Component>> pages = new ArrayList<>(PAGE_COUNT);
         for (int i = 1; i <= PAGE_COUNT; i++) {
-            pages.add(RawFilteredPair.of(Text.translatable("enderportals.book.page" + i)));
+            pages.add(Filterable.passThrough(Component.translatable("enderportals.book.page" + i)));
         }
 
-        book.set(DataComponentTypes.WRITTEN_BOOK_CONTENT, new WrittenBookContentComponent(
-                RawFilteredPair.of(TITLE), AUTHOR, 0, pages, false));
-        book.set(DataComponentTypes.CUSTOM_NAME,
-                Text.translatable("item.enderportals.guide_book")
-                        .styled(style -> style.withColor(Formatting.AQUA).withItalic(false)));
+        book.set(DataComponents.WRITTEN_BOOK_CONTENT, new WrittenBookContent(
+                Filterable.passThrough(TITLE), AUTHOR, 0, pages, false));
+        book.set(DataComponents.CUSTOM_NAME,
+                Component.translatable("item.enderportals.guide_book")
+                        .withStyle(style -> style.withColor(ChatFormatting.AQUA).withItalic(false)));
         return book;
     }
 

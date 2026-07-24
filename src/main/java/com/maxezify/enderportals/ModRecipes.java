@@ -1,20 +1,21 @@
 package com.maxezify.enderportals;
 
 import com.maxezify.enderportals.recipe.GuideBookRecipe;
-import net.minecraft.recipe.RecipeSerializer;
-import net.minecraft.recipe.SpecialRecipeSerializer;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.item.crafting.SimpleCraftingRecipeSerializer;
+import net.neoforged.neoforge.registries.DeferredRegister;
+
+import java.util.function.Supplier;
 
 public final class ModRecipes {
 
-    public static final RecipeSerializer<GuideBookRecipe> GUIDE_BOOK = Registry.register(
-            Registries.RECIPE_SERIALIZER,
-            EnderPortalsMod.id("guide_book"),
-            new SpecialRecipeSerializer<>(GuideBookRecipe::new));
+    public static final DeferredRegister<RecipeSerializer<?>> RECIPE_SERIALIZERS =
+            DeferredRegister.create(Registries.RECIPE_SERIALIZER, EnderPortalsMod.MODID);
 
-    public static void init() {
-    }
+    public static final Supplier<RecipeSerializer<GuideBookRecipe>> GUIDE_BOOK =
+            RECIPE_SERIALIZERS.register("guide_book",
+                    () -> new SimpleCraftingRecipeSerializer<>(GuideBookRecipe::new));
 
     private ModRecipes() {
     }

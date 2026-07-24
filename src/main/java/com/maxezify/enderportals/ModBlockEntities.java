@@ -1,19 +1,21 @@
 package com.maxezify.enderportals;
 
 import com.maxezify.enderportals.block.entity.TardisDoorBlockEntity;
-import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.neoforged.neoforge.registries.DeferredRegister;
+
+import java.util.function.Supplier;
 
 public final class ModBlockEntities {
 
-    public static final BlockEntityType<TardisDoorBlockEntity> TARDIS_DOOR = Registry.register(
-            Registries.BLOCK_ENTITY_TYPE,
-            EnderPortalsMod.id("tardis_door"),
-            BlockEntityType.Builder.create(TardisDoorBlockEntity::new, ModBlocks.TARDIS_DOOR).build(null));
+    public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
+            DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, EnderPortalsMod.MODID);
 
-    public static void init() {
-    }
+    public static final Supplier<BlockEntityType<TardisDoorBlockEntity>> TARDIS_DOOR =
+            BLOCK_ENTITIES.register("tardis_door",
+                    () -> BlockEntityType.Builder.of(TardisDoorBlockEntity::new, ModBlocks.TARDIS_DOOR.get())
+                            .build(null));
 
     private ModBlockEntities() {
     }
