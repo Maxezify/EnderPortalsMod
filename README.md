@@ -1,9 +1,9 @@
 # Ender Portals — la Porte de l'Ender, une base de poche
 
-Mod **Minecraft 1.21.1 / Fabric** : une porte d'obsidienne plus grande à
+Mod **Minecraft 1.21.1 / NeoForge** : une porte d'obsidienne plus grande à
 l'intérieur qu'à l'extérieur, qui s'ouvre sur **le monde de l'Ender** — le
 paradis des cubes, un monde-caverne où viennent se reposer les blocs
-détruits.
+détruits. Version courante : **0.3.0**.
 
 ## La progression
 
@@ -42,16 +42,35 @@ Cavernes et tunnels serpentent dans la masse. Chaque porte éveillée reçoit
 sa parcelle (espacées de 1024 blocs) : construisez-y base, fermes et
 stockage — les lits et ancres de réapparition y fonctionnent.
 
+## Le stockage : Centraliseur & Sac de l'Ender
+
+Deux objets transforment votre base de poche en **entrepôt distant** :
+
+* **Le Centraliseur** (posable uniquement dans le monde de l'Ender) fédère
+  tout un **réseau de rangements** accolés — de bloc en bloc, le réseau
+  grandit.
+* **Le Sac de l'Ender**, porté en **seconde main**, envoie d'un clic droit la
+  **rangée du haut** de votre inventaire dans ce réseau, où que vous soyez
+  dans le monde. Chaque case rangée coûte un peu d'**expérience** (3 points) ;
+  réseau plein ou XP insuffisante, rien ne part.
+
+Le Centraliseur reconnaît **tout rangement exposant un inventaire** (voir
+[Compatibilité rangement](#compatibilité-rangement)) — pas seulement les
+coffres vanilla.
+
 ## Crafts (grille d'établi)
 
 ```
-Porte inactive        Clé                  Pioche de l'Ender
-C C                   C                    C C C
-C N                   P                    . S .
-C C                   G                    . S .
+Porte inactive     Clé              Pioche de l'Ender     Centraliseur
+C C                C                C C C                 I R I
+C N                P                . S .                 I E I
+C C                G                . S .                 I I I
 
-C = Cristal de l'Ender   N = Nether Star   S = Bâton
-P = Perle d'Ender        G = Lingot d'or
+Sac de l'Ender (sans forme) : Bundle + Coffre de l'Ender
+
+C = Cristal de l'Ender   N = Nether Star    S = Bâton      I = Bloc de fer
+P = Perle d'Ender        G = Lingot d'or    E = Coffre de l'Ender
+R = Bloc de redstone
 ```
 
 Le rituel d'éveil demande en plus une **Mace vanilla** (elle n'est pas
@@ -60,28 +79,58 @@ consommée, juste un peu usée à chaque éveil).
 Bonus : 4 cristaux → 1 Bloc de l'Ender ; 4 Blocs de l'Ender → 4 Briques de l'Ender.
 
 **Le Guide de la Porte de l'Ender** : 8 cristaux autour d'un livre → un
-livre écrit contenant le lore et tous les crafts, traduit dans la langue du
-jeu (FR/EN).
+livre écrit (10 pages) contenant le lore, tous les crafts et la
+compatibilité rangement, traduit dans la langue du jeu (FR/EN).
 
-## Compatibilité
+## Compatibilité rangement
 
-Le mod est conçu pour cohabiter sereinement avec d'autres mods : aucun
-mixin, tags vanilla additifs uniquement, événements Fabric standards ciblés
-sur ses propres blocs, générateur de dimension auto-contenu et thread-safe,
-intégration Immersive Portals par réflexion avec repli automatique. La clé
-et le rituel respectent la spawn protection, le mode aventure et les mods
-de protection de terrain branchés sur `canPlayerModifyAt`.
+La compatibilité passe par la **capability `IItemHandler`** de NeoForge —
+l'interface d'inventaire standard. Le Centraliseur/Sac fonctionne donc avec
+**tout mod de rangement** qui l'expose, sans aucune dépendance de compilation :
 
-## Immersive Portals (optionnel, expérimental)
+* **Sophisticated Storage** — coffres, tonneaux, shulkers de tous tiers, et le
+  Storage Controller (déposer dans le contrôleur répartit dans son réseau lié).
+* **Sophisticated Backpacks** — sacs à dos posés au sol.
+* **Tom's Simple Storage** — inventaires reliés à un Inventory Connector.
+* Coffres/tonneaux vanilla, drawers, et la plupart des mods de rangement.
+
+Comme l'insertion passe par `ItemHandlerHelper`, elle **respecte les filtres
+et upgrades** de chaque rangement : un tonneau Sophisticated filtré fait le
+**tri automatique** de ce que vous déversez.
+
+### Le Centraliseur-port
+
+Le Centraliseur **expose lui-même** un inventaire agrégé de tout son réseau.
+Branchez-y un **Storage Terminal (Tom's)** via un Inventory Connector, ou un
+**Storage Controller (Sophisticated)** : l'outil voit alors **toute votre base
+de poche** d'un coup. La vue est rafraîchie une fois par tick (jamais périmée)
+et protégée contre les boucles entre agrégateurs voisins.
+
+> Astuce : reliez votre terminal **soit** au Centraliseur, **soit**
+> directement aux coffres — pas aux deux, sinon les objets seraient comptés
+> en double.
+
+## Immersive Portals (optionnel)
 
 Le mod fonctionne seul (traversée par contact avec l'embrasure ouverte).
-Si [Immersive Portals](https://github.com/iPortalTeam/ImmersivePortalsMod)
-(`imm_ptl_core`) est installé, l'ouverture de la porte tente de créer une
-paire de portails « voir au travers » entre l'embrasure extérieure et la
-salle intérieure — la continuité visuelle entre les deux dimensions.
+Si [Immersive Portals pour NeoForge](https://github.com/iPortalTeam/ImmersivePortalsModForNeo)
+(mods `imm_ptl` / `immersive_portals_core`) est installé, l'ouverture de la
+porte crée une paire de portails « voir au travers » entre l'embrasure
+extérieure et la salle intérieure — la continuité visuelle entre les deux
+dimensions, comme un portail du Nether d'Immersive Portals.
+
 L'intégration passe par réflexion (aucune dépendance de compilation) : si
 l'API d'Immersive Portals change, le mod bascule automatiquement sur sa
-téléportation classique et l'indique dans les logs.
+téléportation classique et l'indique dans les logs. Au démarrage, une ligne
+`Immersive Portals détecté : true/false` confirme la détection.
+
+## Compatibilité générale
+
+Le mod est conçu pour cohabiter sereinement avec d'autres mods : aucun
+mixin, tags vanilla additifs uniquement, écouteurs d'événements NeoForge
+ciblés sur ses propres blocs, générateur de dimension auto-contenu et
+thread-safe. La clé et le rituel respectent la spawn protection, le mode
+aventure et les mods de protection de terrain (via `Level#mayInteract`).
 
 ## Compiler
 
@@ -89,37 +138,39 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.1.0.jar
+# → build/libs/enderportals-0.3.0.jar
 ```
 
 Notes :
 
-* Le jar se place dans `mods/` avec **Fabric Loader ≥ 0.16** et
-  **Fabric API** pour 1.21.1.
-* Ce dépôt a été écrit dans un environnement sans accès aux dépôts Maven de
-  Mojang/FabricMC : le code n'a **pas encore été compilé**. Si `gradle`
-  signale un écart mineur d'API (les mappings Yarn évoluent entre builds),
-  la correction devrait être locale et évidente — n'hésite pas à me
-  redonner l'erreur.
-* Versions épinglées dans `gradle.properties` (Yarn `1.21.1+build.3`,
-  Loader `0.16.9`, Fabric API `0.102.1+1.21.1`, Loom `1.9.2`) — vous pouvez
-  les mettre à jour vers les derniers builds 1.21.1.
+* Le jar se place dans `mods/` avec **NeoForge 21.1.x** pour Minecraft 1.21.1.
+* Build géré par **ModDevGradle** (`net.neoforged.moddev`) ; NeoForge et les
+  mappings officiels (Mojmap) sont téléchargés automatiquement.
+* Versions épinglées dans `gradle.properties` (`minecraft_version=1.21.1`,
+  `neo_version=21.1.93`) — vous pouvez les mettre à jour vers les derniers
+  builds 1.21.1.
+* La CI GitHub Actions (`.github/workflows/build.yml`) compile chaque push et
+  publie le jar dans la pré-release `dev-latest`.
 
 ## Arborescence rapide
 
 * `src/main/java/com/maxezify/enderportals/`
+  * `EnderPortalsMod.java` — point d'entrée `@Mod`, enregistrements
+    `DeferredRegister`, rituel de la Mace, capability du Centraliseur-port.
   * `tardis/` — activation, salle intérieure, matérialisation, traversées,
-    état persistant des portes (nommage interne historique « Tardis* »,
-    conservé pour la compatibilité des sauvegardes).
+    état persistant des portes (`SavedData`), logique du Centraliseur/Sac
+    (`CentralizerLogic`) et vue de réseau agrégée (`NetworkItemHandler`).
+    Nommage interne historique « Tardis* » conservé pour la compatibilité
+    des sauvegardes.
   * `world/EnderWorldChunkGenerator.java` — le générateur du monde-caverne
     et de ses blocs-reliques.
-  * `block/`, `item/` — porte inactive/active, bloc de l'Ender, masse, clé,
-    pioche.
+  * `block/`, `item/` — porte inactive/active, bloc de l'Ender, clé, pioche,
+    Centraliseur, Sac de l'Ender, livre-guide.
   * `client/TardisDoorRenderer.java` — le rendu de la porte avec fondu de
     matérialisation.
   * `compat/ImmPtlCompat.java` — l'intégration Immersive Portals par
     réflexion.
 * `src/main/resources/data/enderportals/` — dimension, biome, minerai de
-  l'End, recettes, butins.
+  l'End (biome modifier NeoForge), recettes, butins, tags.
 * Les textures sont générées procéduralement (voir l'historique du dépôt) —
   remplacez-les librement par de vraies textures d'artiste.

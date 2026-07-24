@@ -40,6 +40,7 @@
   "enderportals.message.no_chest": "Aucun rangement n'est collé au Centraliseur.",
   "enderportals.message.not_enough_xp": "Pas assez d'expérience pour ranger.",
   "enderportals.message.chests_full": "Le réseau de rangement du Centraliseur est plein.",
-  "enderportals.book.page8": "§5Le Centraliseur§0\n\nUne machine aux voyants d'un autre âge. Craft : 8 blocs de fer autour d'un coffre de l'Ender, un bloc de redstone en haut.\n\nPosez-le dans votre base de l'Ender et collez-lui des coffres — de coffre en coffre, le réseau grandit.",
-  "enderportals.book.page9": "§5Le Sac de l'Ender§0\n\nCraft : un sac et un coffre de l'Ender.\n\nEn §bseconde main§0, clic droit : la ligne du haut de votre inventaire file dans les coffres du Centraliseur, où que vous soyez.\n\nChaque case rangée coûte un peu d'§aexpérience§0. Coffres pleins ou trop peu d'XP : rien ne part."
+  "enderportals.book.page8": "§5Le Centraliseur§0\n\nUne machine aux voyants d'un autre âge. Craft : 8 blocs de fer autour d'un coffre de l'Ender, un bloc de redstone en haut.\n\nPosez-le dans votre base de l'Ender et collez-lui n'importe quel rangement — coffre, tonneau, sac à dos — de bloc en bloc, le réseau grandit.",
+  "enderportals.book.page9": "§5Le Sac de l'Ender§0\n\nCraft : un sac et un coffre de l'Ender.\n\nEn §bseconde main§0, clic droit : la ligne du haut de votre inventaire file dans le réseau de votre base, où que vous soyez.\n\nChaque case rangée coûte un peu d'§aexpérience§0. Réseau plein ou trop peu d'XP : rien ne part.",
+  "enderportals.book.page10": "§5Le Grand Réseau§0\n\nLe Centraliseur parle la langue commune du rangement. Sophisticated, Tom's et d'autres lui répondent, et les filtres trient seuls.\n\nReliez un terminal au Centraliseur : toute votre base de poche s'ouvre à vous."
 }

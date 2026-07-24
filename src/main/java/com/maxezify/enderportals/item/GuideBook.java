@@ -21,7 +21,7 @@ public final class GuideBook {
 
     private static final String TITLE = "Guide de la Porte de l'Ender";
     private static final String AUTHOR = "Le Vortex";
-    private static final int PAGE_COUNT = 9;
+    private static final int PAGE_COUNT = 10;
 
     public static ItemStack create() {
         ItemStack book = new ItemStack(Items.WRITTEN_BOOK);
