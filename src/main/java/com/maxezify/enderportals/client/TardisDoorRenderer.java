@@ -7,6 +7,7 @@ import com.maxezify.enderportals.block.entity.TardisDoorBlockEntity;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -41,7 +42,10 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
     private static final int AXIS_Y = 1;
     private static final int AXIS_Z = 2;
 
+    private final Font font;
+
     public TardisDoorRenderer(BlockEntityRendererProvider.Context context) {
+        this.font = context.getFont();
     }
 
     @Override
@@ -104,6 +108,30 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
             drawVoidVeil(veil, entry, alpha, lightCoord, overlay);
         }
 
+        // Petit panneau avec le pseudo du propriétaire, sur le devant (+Z local).
+        String owner = door.getOwnerName();
+        if (alpha >= 0.6f && !owner.isEmpty()) {
+            drawNameplate(owner, poseStack, buffer);
+        }
+
+        poseStack.popPose();
+    }
+
+    /**
+     * Dessine le pseudo du propriétaire sur un petit panneau sombre plaqué sur
+     * l'avant de la porte (repère local : +Z = devant). Même patron que le
+     * texte des pancartes vanilla (translation vers la face avant, échelle avec
+     * Y inversé), pleine luminosité pour rester lisible dans le noir.
+     */
+    private void drawNameplate(String name, PoseStack poseStack, MultiBufferSource buffer) {
+        poseStack.pushPose();
+        poseStack.translate(0.0, 1.62, 0.47);
+        poseStack.scale(0.01f, -0.01f, 0.01f);
+        float x = -font.width(name) / 2.0f;
+        int background = 0x66000000;
+        font.drawInBatch(name, x, 0.0f, 0xFFFFFFFF, false,
+                poseStack.last().pose(), buffer, Font.DisplayMode.NORMAL, background,
+                LightTexture.FULL_BRIGHT);
         poseStack.popPose();
     }
 

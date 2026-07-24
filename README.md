@@ -20,8 +20,11 @@ détruits. Version courante : **0.3.0**.
    taillée dans le monde de l'Ender.
 4. **La Clé de l'Ender** se crafte avec 1 cristal, 1 perle d'Ender et
    1 lingot d'or. Clic droit sur la porte éveillée pour **lier** la clé.
-5. **La Pioche de l'Ender** (3 cristaux, 2 bâtons) est la seule capable de
-   récolter les Blocs de l'Ender — et elle les casse presque instantanément.
+5. **La Pioche de l'Ender** (3 cristaux, 2 bâtons) récolte les Blocs de l'Ender
+   — et les casse presque instantanément. À défaut, l'enchantement rare
+   **« Brisure d'Espace-Temps »** (trésor, comme Raccommodage : troc, butin,
+   pas la table d'enchantement) permet à **n'importe quelle pioche** de les
+   casser avec butin, à vitesse correcte.
 
 ## La clé, au quotidien
 
@@ -39,8 +42,10 @@ semi-transparents comme le bloc de miel, doucement luminescents. Au travers
 de la masse translucide, on **entrevoit les blocs-reliques** venus mourir
 ici : pierre, troncs, minerais (jusqu'au diamant), glowstone, éponges…
 Cavernes et tunnels serpentent dans la masse. Chaque porte éveillée reçoit
-sa parcelle (espacées de 1024 blocs) : construisez-y base, fermes et
-stockage — les lits et ancres de réapparition y fonctionnent.
+sa parcelle (espacées de 8192 blocs) : construisez-y base, fermes et
+stockage — les lits et ancres de réapparition y fonctionnent. Le pseudo du
+propriétaire s'affiche sur un petit panneau à l'avant de la porte, et tout
+fonctionne en multijoueur (logique côté serveur, données synchronisées).
 
 ## Le stockage : Transmetteur d'objet & Sac de l'Ender
 

@@ -1,0 +1,25 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_ender_crystal": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          { "items": ["enderportals:ender_crystal"] }
+        ]
+      }
+    },
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "enderportals:guide_book"
+      }
+    }
+  },
+  "requirements": [
+    ["has_ender_crystal", "has_the_recipe"]
+  ],
+  "rewards": {
+    "recipes": ["enderportals:guide_book"]
+  }
+}

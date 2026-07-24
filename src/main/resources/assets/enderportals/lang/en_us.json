@@ -33,6 +33,7 @@
   "enderportals.book.page6": "§5The Ender Pickaxe§0\n\nCraft: 3 crystals in a row, 2 sticks.\n\nIt alone can carve §7Ender Blocks§0, shattering them like glass.\n\n4 crystals = 1 Ender Block\n4 Blocks = 4 Ender Bricks.",
   "enderportals.book.page7": "§5Your pocket base§0\n\nBehind the door: your room, carved in the endless cavern. Beds and anchors work there.\n\nOne door per person — and the vortex refuses to awaken a door within the door.\n\nSafe travels.",
   "block.enderportals.centralizer": "Item Transmitter",
+  "enchantment.enderportals.spacetime_breach": "Spacetime Breach",
   "item.enderportals.ender_bag": "Ender Bag",
   "enderportals.tooltip.ender_bag": "In the offhand, right-click: stores your top inventory row into your base (costs XP)",
   "enderportals.message.centralizer_here": "The Item Transmitter can only be placed in the Ender world.",

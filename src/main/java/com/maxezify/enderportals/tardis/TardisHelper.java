@@ -46,7 +46,7 @@ public final class TardisHelper {
         }
 
         TardisStateManager manager = TardisStateManager.get(server);
-        TardisData data = manager.createTardis(player.getUUID());
+        TardisData data = manager.createTardis(player.getUUID(), player.getGameProfile().getName());
         buildInteriorRoom(enderWorld, data);
 
         // Remplace la porte inactive par la porte active, sans réactions de voisins.
@@ -249,7 +249,7 @@ public final class TardisHelper {
         level.setBlock(base, lower, Block.UPDATE_ALL);
         level.setBlock(base.above(), lower.setValue(TardisDoorBlock.HALF, DoubleBlockHalf.UPPER), Block.UPDATE_ALL);
         if (level.getBlockEntity(base) instanceof TardisDoorBlockEntity door) {
-            door.initialize(data.id, interior, fadeIn);
+            door.initialize(data.id, interior, fadeIn, data.ownerName);
         }
     }
 

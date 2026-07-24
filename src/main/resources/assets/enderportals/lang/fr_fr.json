@@ -33,6 +33,7 @@
   "enderportals.book.page6": "§5La Pioche de l'Ender§0\n\nCraft : 3 cristaux en ligne, 2 bâtons.\n\nElle seule entame les §7Blocs de l'Ender§0, et les brise comme du verre.\n\n4 cristaux = 1 Bloc de l'Ender\n4 Blocs = 4 Briques de l'Ender.",
   "enderportals.book.page7": "§5Votre base de poche§0\n\nDerrière la porte : votre salle, taillée dans la caverne infinie. Lits et ancres y fonctionnent.\n\nUne seule porte par personne — et le vortex refuse qu'on éveille une porte dans la porte.\n\nBon voyage.",
   "block.enderportals.centralizer": "Transmetteur d'objet",
+  "enchantment.enderportals.spacetime_breach": "Brisure d'Espace-Temps",
   "item.enderportals.ender_bag": "Sac de l'Ender",
   "enderportals.tooltip.ender_bag": "En seconde main, clic droit : range la ligne du haut dans votre base (coûte de l'XP)",
   "enderportals.message.centralizer_here": "Le Transmetteur d'objet ne peut être posé que dans le monde de l'Ender.",

@@ -39,15 +39,19 @@ public class TardisDoorBlockEntity extends BlockEntity {
     /** Un portail Immersive Portals couvre-t-il l'embrasure ? (synchronisé) */
     private boolean portalActive;
 
+    /** Pseudo du propriétaire, affiché sur le panneau de la porte (synchronisé). */
+    private String ownerName = "";
+
     public TardisDoorBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.TARDIS_DOOR.get(), pos, state);
     }
 
-    public void initialize(UUID tardisId, boolean interior, boolean fadeIn) {
+    public void initialize(UUID tardisId, boolean interior, boolean fadeIn, String ownerName) {
         this.tardisId = tardisId;
         this.interior = interior;
         this.age = fadeIn ? 0 : FADE_IN_TICKS;
         this.dematerializing = false;
+        this.ownerName = ownerName == null ? "" : ownerName;
         sync();
     }
 
@@ -74,6 +78,10 @@ public class TardisDoorBlockEntity extends BlockEntity {
 
     public boolean isPortalActive() {
         return portalActive;
+    }
+
+    public String getOwnerName() {
+        return ownerName;
     }
 
     /** Appelé côté serveur quand les portails Immersive Portals apparaissent/disparaissent. */
@@ -141,6 +149,7 @@ public class TardisDoorBlockEntity extends BlockEntity {
         dematerializing = nbt.getBoolean("Dematerializing");
         dematStart = nbt.getInt("DematStart");
         portalActive = nbt.getBoolean("PortalActive");
+        ownerName = nbt.getString("OwnerName");
     }
 
     @Override
@@ -155,6 +164,7 @@ public class TardisDoorBlockEntity extends BlockEntity {
         nbt.putBoolean("Dematerializing", dematerializing);
         nbt.putInt("DematStart", dematStart);
         nbt.putBoolean("PortalActive", portalActive);
+        nbt.putString("OwnerName", ownerName);
     }
 
     @Override

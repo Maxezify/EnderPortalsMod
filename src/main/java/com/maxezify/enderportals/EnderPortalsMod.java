@@ -10,6 +10,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,14 +39,27 @@ public class EnderPortalsMod {
         ModItems.ITEMS.register(modBus);
         ModBlockEntities.BLOCK_ENTITIES.register(modBus);
         ModComponents.COMPONENTS.register(modBus);
-        ModRecipes.RECIPE_SERIALIZERS.register(modBus);
         ModRegistries.CHUNK_GENERATORS.register(modBus);
         ModRegistries.CREATIVE_TABS.register(modBus);
 
         NeoForge.EVENT_BUS.addListener(this::onLeftClickBlock);
+        NeoForge.EVENT_BUS.addListener(this::onBreakSpeed);
 
         LOGGER.info("Ender Portals (NeoForge) initialisé — le vortex vous attend.");
         LOGGER.info("Immersive Portals détecté : {}", ImmPtlCompat.isLoaded());
+    }
+
+    /**
+     * « Brisure d'Espace-Temps » : une pioche enchantée casse le Bloc de
+     * l'Ender à une vitesse correcte (la récolte est autorisée par
+     * {@link com.maxezify.enderportals.block.EnderBlock#canHarvestBlock}). La
+     * Pioche de l'Ender, elle, reste bien plus rapide.
+     */
+    private void onBreakSpeed(PlayerEvent.BreakSpeed event) {
+        if (event.getState().is(ModBlocks.ENDER_BLOCK.get())
+                && ModEnchantments.allowsEnderBlock(event.getEntity().level(), event.getEntity().getMainHandItem())) {
+            event.setNewSpeed(Math.max(event.getNewSpeed(), 9.0f));
+        }
     }
 
     /**

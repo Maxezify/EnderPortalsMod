@@ -21,7 +21,7 @@ import java.util.UUID;
 public class TardisStateManager extends SavedData {
 
     /** Espacement entre deux parcelles intérieures, en blocs. */
-    private static final int PLOT_SPACING = 1024;
+    private static final int PLOT_SPACING = 8192;
     /** Hauteur de la porte intérieure dans le monde de l'Ender. */
     private static final int PLOT_Y = 64;
 
@@ -36,10 +36,11 @@ public class TardisStateManager extends SavedData {
                 .computeIfAbsent(FACTORY, "enderportals_tardis");
     }
 
-    public TardisData createTardis(UUID owner) {
+    public TardisData createTardis(UUID owner, String ownerName) {
         int plot = nextPlot++;
         TardisData data = new TardisData(UUID.randomUUID(), plot);
         data.ownerUuid = owner;
+        data.ownerName = ownerName;
         data.interiorDoorPos = plotOrigin(plot);
         tardises.put(data.id, data);
         setDirty();

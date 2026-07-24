@@ -28,6 +28,9 @@ public class TardisData {
     @Nullable
     public UUID ownerUuid;
 
+    /** Pseudo du propriétaire, affiché sur le panneau de la porte. */
+    public String ownerName = "";
+
     /** Porte intérieure (moitié basse), dans le monde de l'Ender. */
     public BlockPos interiorDoorPos;
     public Direction interiorFacing = Direction.SOUTH;
@@ -62,6 +65,7 @@ public class TardisData {
         if (ownerUuid != null) {
             nbt.putUUID("Owner", ownerUuid);
         }
+        nbt.putString("OwnerName", ownerName);
         putPos(nbt, "Interior", interiorDoorPos);
         nbt.putString("InteriorFacing", interiorFacing.getName());
         nbt.putString("ExteriorWorld", exteriorWorld.location().toString());
@@ -86,6 +90,7 @@ public class TardisData {
     public static TardisData fromNbt(CompoundTag nbt) {
         TardisData data = new TardisData(nbt.getUUID("Id"), nbt.getInt("Plot"));
         data.ownerUuid = nbt.hasUUID("Owner") ? nbt.getUUID("Owner") : null;
+        data.ownerName = nbt.getString("OwnerName");
         data.interiorDoorPos = getPos(nbt, "Interior");
         data.interiorFacing = directionOrDefault(nbt.getString("InteriorFacing"), Direction.SOUTH);
         data.exteriorWorld = ResourceKey.create(Registries.DIMENSION,
