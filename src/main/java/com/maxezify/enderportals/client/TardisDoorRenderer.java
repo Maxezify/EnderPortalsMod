@@ -52,9 +52,11 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
      * Profondeur du panneau de pseudo : juste devant les montants latéraux
      * (z = 0,47), qui sinon masquent la moitié du texte en vue de biais.
      */
-    private static final float NAMEPLATE_Z = 0.475f;
+    private static final float NAMEPLATE_Z = 0.478f;
     /** Largeur utile de la façade pour le panneau de pseudo. */
     private static final float NAMEPLATE_MAX_WIDTH = 0.78f;
+    /** Hauteur d'une ligne de texte, en pixels de police. */
+    private static final float GLYPH_HEIGHT = 9.0f;
 
     private final Font font;
 
@@ -126,7 +128,7 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
         // Porte ouverte, le battant s'efface : on ne l'affiche pas.
         String owner = door.getOwnerName();
         if (!open && alpha >= 0.6f && !owner.isEmpty()) {
-            drawNameplate(owner, poseStack, buffer);
+            drawNameplate(owner, poseStack, entry, buffer, overlay);
         }
 
         poseStack.popPose();
@@ -138,7 +140,8 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
      * texte des pancartes vanilla (translation vers la face avant, échelle avec
      * Y inversé), pleine luminosité pour rester lisible dans le noir.
      */
-    private void drawNameplate(String name, PoseStack poseStack, MultiBufferSource buffer) {
+    private void drawNameplate(String name, PoseStack poseStack, PoseStack.Pose entry,
+                               MultiBufferSource buffer, int overlay) {
         int width = font.width(name);
         // Le panneau doit tenir dans la largeur de la façade : les pseudos
         // longs sont rétrécis plutôt que de déborder du caisson.
@@ -147,14 +150,31 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
             scale = NAMEPLATE_MAX_WIDTH / width;
         }
 
+        float halfWidth = width * scale / 2.0f;
+        float pad = 0.025f;
+        float top = NAMEPLATE_Y + pad;
+        float bottom = NAMEPLATE_Y - GLYPH_HEIGHT * scale - pad * 0.5f;
+
+        // La plaque sombre du panneau, dessinée nous-mêmes avec la zone sombre
+        // de la texture. On n'utilise PAS le fond intégré de drawInBatch : il
+        // s'écrit exactement à la même profondeur que les glyphes, si bien que
+        // le test de profondeur en départageait la moitié selon l'angle de vue
+        // — c'est ce qui masquait un côté du pseudo.
+        VertexConsumer plate = buffer.getBuffer(RenderType.entityCutoutNoCull(TEXTURE));
+        region(plate, entry,
+                -halfWidth - pad, bottom, NAMEPLATE_Z,
+                halfWidth + pad, bottom, NAMEPLATE_Z,
+                halfWidth + pad, top, NAMEPLATE_Z,
+                -halfWidth - pad, top, NAMEPLATE_Z,
+                VOID_UV, 1.0f, LightTexture.FULL_BRIGHT, overlay, 0, 0, 1);
+
+        // Le pseudo, franchement devant sa plaque : aucune ambiguïté de
+        // profondeur, quel que soit l'angle.
         poseStack.pushPose();
-        // Devant la face la plus avancée du caisson (les montants latéraux vont
-        // jusqu'à z = 0,47). En retrait, ces montants masquaient la moitié du
-        // pseudo dès qu'on regardait la porte de biais.
-        poseStack.translate(0.0, NAMEPLATE_Y, NAMEPLATE_Z);
+        poseStack.translate(0.0, NAMEPLATE_Y, NAMEPLATE_Z + 0.008);
         poseStack.scale(scale, -scale, scale);
         font.drawInBatch(name, -width / 2.0f, 0.0f, 0xFFFFFFFF, false,
-                poseStack.last().pose(), buffer, Font.DisplayMode.NORMAL, 0xAA000000,
+                poseStack.last().pose(), buffer, Font.DisplayMode.NORMAL, 0,
                 LightTexture.FULL_BRIGHT);
         poseStack.popPose();
     }
