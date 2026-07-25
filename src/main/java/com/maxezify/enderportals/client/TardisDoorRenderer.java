@@ -4,6 +4,7 @@ import com.maxezify.enderportals.EnderPortalsMod;
 import com.maxezify.enderportals.ModBlocks;
 import com.maxezify.enderportals.block.TardisDoorBlock;
 import com.maxezify.enderportals.block.entity.TardisDoorBlockEntity;
+import com.maxezify.enderportals.compat.ImmPtlCompat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
@@ -117,9 +118,11 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
             drawBox(vertexBuffer, entry, -0.44f, 0.06f, 0.36f, 0.44f, 1.94f, 0.44f, AXIS_Z, FRONT, BACK, alpha, lightCoord, overlay);
         }
 
-        // Voile de vide dans l'embrasure ouverte, seulement si aucun portail
-        // Immersive Portals ne l'occupe déjà.
-        if (open && !door.isPortalActive()) {
+        // Voile de vide dans l'embrasure ouverte : c'est le repli visuel quand
+        // Immersive Portals est absent. Si le mod est installé, on ne le dessine
+        // jamais — sinon il recouvre le portail (vue traversante) dès que le
+        // drapeau de synchronisation n'est pas encore parvenu au client.
+        if (open && !ImmPtlCompat.isLoaded() && !door.isPortalActive()) {
             VertexConsumer veil = buffer.getBuffer(RenderType.entityTranslucent(TEXTURE));
             drawVoidVeil(veil, entry, alpha, lightCoord, overlay);
         }

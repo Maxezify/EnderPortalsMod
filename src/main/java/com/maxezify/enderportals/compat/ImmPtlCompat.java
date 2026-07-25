@@ -92,6 +92,9 @@ public final class ImmPtlCompat {
             data.immptlActive = false;
         }
         if (!data.deployed || !data.open) {
+            EnderPortalsMod.LOGGER.info(
+                    "Portails Immersive Portals non créés pour le TARDIS {} : deployed={}, open={}.",
+                    data.id, data.deployed, data.open);
             return;
         }
         try {
