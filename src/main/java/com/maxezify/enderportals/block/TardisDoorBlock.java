@@ -74,9 +74,48 @@ public class TardisDoorBlock extends Block implements EntityBlock {
         return Shapes.block();
     }
 
+    /** Épaisseur des parois du caisson pour la collision (2 pixels). */
+    private static final double WALL = 0.125;
+
+    /** Coque ouverte pré-calculée par orientation : seule la face avant est franchissable. */
+    private static final java.util.Map<Direction, VoxelShape> OPEN_SHAPES =
+            java.util.Arrays.stream(Direction.values())
+                    .filter(d -> d.getAxis().isHorizontal())
+                    .collect(java.util.stream.Collectors.toMap(java.util.function.Function.identity(),
+                            TardisDoorBlock::buildOpenShape));
+
+    /**
+     * Porte ouverte : on ne traverse que par l'avant (le côté {@code FACING}).
+     * Les deux flancs et le dos restent pleins — impossible de passer au
+     * travers du caisson. Porte fermée : bloc plein.
+     */
     @Override
     protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return state.getValue(OPEN) ? Shapes.empty() : Shapes.block();
+        if (!state.getValue(OPEN)) {
+            return Shapes.block();
+        }
+        return OPEN_SHAPES.getOrDefault(state.getValue(FACING), Shapes.block());
+    }
+
+    private static VoxelShape buildOpenShape(Direction facing) {
+        VoxelShape shape = Shapes.empty();
+        for (Direction side : Direction.Plane.HORIZONTAL) {
+            if (side != facing) {
+                shape = Shapes.or(shape, wall(side));
+            }
+        }
+        return shape;
+    }
+
+    /** Paroi verticale plaquée contre la face donnée du bloc. */
+    private static VoxelShape wall(Direction side) {
+        return switch (side) {
+            case NORTH -> Shapes.box(0.0, 0.0, 0.0, 1.0, 1.0, WALL);
+            case SOUTH -> Shapes.box(0.0, 0.0, 1.0 - WALL, 1.0, 1.0, 1.0);
+            case WEST -> Shapes.box(0.0, 0.0, 0.0, WALL, 1.0, 1.0);
+            case EAST -> Shapes.box(1.0 - WALL, 0.0, 0.0, 1.0, 1.0, 1.0);
+            default -> Shapes.empty();
+        };
     }
 
     @Override

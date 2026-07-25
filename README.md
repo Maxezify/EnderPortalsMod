@@ -67,15 +67,15 @@ coffres vanilla.
 
 ```
 Porte inactive     Clé              Pioche de l'Ender     Transmetteur
-C C                C                C C C                 I R I
-C N                P                . S .                 I E I
-C C                G                . S .                 I I I
+O O O              C                C C C                 I R I
+O C N              P                . S .                 I E I
+O O O              G                . S .                 I I I
 
 Sac de l'Ender (sans forme) : Bundle + Coffre de l'Ender
 
-C = Cristal de l'Ender   N = Nether Star    S = Bâton      I = Bloc de fer
-P = Perle d'Ender        G = Lingot d'or    E = Coffre de l'Ender
-R = Bloc de redstone
+O = Obsidienne pleureuse  C = Cristal de l'Ender   N = Nether Star
+P = Perle d'Ender         G = Lingot d'or          S = Bâton
+I = Bloc de fer           E = Coffre de l'Ender    R = Bloc de redstone
 ```
 
 Le rituel d'éveil demande en plus une **Mace vanilla** (elle n'est pas

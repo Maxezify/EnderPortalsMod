@@ -2,11 +2,12 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    "CC",
-    "CN",
-    "CC"
+    "OOO",
+    "OCN",
+    "OOO"
   ],
   "key": {
+    "O": { "item": "minecraft:crying_obsidian" },
     "C": { "item": "enderportals:ender_crystal" },
     "N": { "item": "minecraft:nether_star" }
   },

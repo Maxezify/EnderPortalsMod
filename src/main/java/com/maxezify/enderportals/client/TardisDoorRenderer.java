@@ -125,10 +125,13 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
      */
     private void drawNameplate(String name, PoseStack poseStack, MultiBufferSource buffer) {
         poseStack.pushPose();
-        poseStack.translate(0.0, 1.62, 0.47);
+        // Plaqué juste devant l'avant du caisson (le montant le plus avancé est
+        // à +0,47) : le texte affleure la façade sans jamais la traverser.
+        // Hauteur : sous le motif étoile du panneau.
+        poseStack.translate(0.0, 1.42, 0.481);
         poseStack.scale(0.01f, -0.01f, 0.01f);
         float x = -font.width(name) / 2.0f;
-        int background = 0x66000000;
+        int background = 0xAA000000;
         font.drawInBatch(name, x, 0.0f, 0xFFFFFFFF, false,
                 poseStack.last().pose(), buffer, Font.DisplayMode.NORMAL, background,
                 LightTexture.FULL_BRIGHT);

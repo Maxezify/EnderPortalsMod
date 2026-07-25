@@ -27,7 +27,7 @@
   "enderportals.message.protected": "You cannot modify the terrain here.",
   "enderportals.book.page1": "§5The Paradise of Cubes§0\n\nEvery broken block, wherever it falls, must rest somewhere.\n\nBeneath our worlds lies the Ender world: an endless cavern where undone matter sleeps, caught in a grey translucent mass.",
   "enderportals.book.page2": "§5The Ore§0\n\nAn ancient ore surfaces in the End's stone. Its §bcrystals§0 hum with the rhythm of the vortex.\n\nAn iron pickaxe is enough to harvest them. Fortune yields more.",
-  "enderportals.book.page3": "§5The Dormant Door§0\n\nCraft (bench):\n§8C C§0\n§8C §6★§0\n§8C C§0\n\n§8C§0 = Crystal\n§6★§0 = Nether Star\n\nPlace it anywhere. It sleeps.",
+  "enderportals.book.page3": "§5The Dormant Door§0\n\nCraft (bench):\n§5O O O§0\n§5O §bC §6★§0\n§5O O O§0\n\n§5O§0 = Crying Obsidian\n§bC§0 = Ender Crystal\n§6★§0 = Nether Star\n\nPlace it anywhere. It sleeps.",
   "enderportals.book.page4": "§5The Ritual§0\n\nOnly a colossal impact can awaken it.\n\nTake a §cMace§0, climb at least §c20 blocks§0, jump — and strike the door mid-air.\n\nThe impact will absorb your fall. Lightning will do the rest.",
   "enderportals.book.page5": "§5The Key§0\n\nCraft (vertical):\n§bCrystal§0\n§3Ender Pearl§0\n§6Gold Ingot§0\n\nRight-click the awakened door: the key binds.\nRight-click the ground: the door materialises.\nOn the door: open, then dematerialise.",
   "enderportals.book.page6": "§5The Ender Pickaxe§0\n\nCraft: 3 crystals in a row, 2 sticks.\n\nIt alone can carve §7Ender Blocks§0, shattering them like glass.\n\n4 crystals = 1 Ender Block\n4 Blocks = 4 Ender Bricks.",
