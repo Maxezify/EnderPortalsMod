@@ -47,7 +47,7 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
      * les rangées v = 4…6 de la région FRONT ; le battant s'étend de y = 0,06 à
      * y = 1,94 pour v = 32 → 0, donc le bas de l'étoile tombe à y ≈ 1,53.
      */
-    private static final float NAMEPLATE_Y = 1.50f;
+    private static final float NAMEPLATE_Y = 1.44f;
     /**
      * Profondeur du panneau de pseudo : juste devant les montants latéraux
      * (z = 0,47), qui sinon masquent la moitié du texte en vue de biais.

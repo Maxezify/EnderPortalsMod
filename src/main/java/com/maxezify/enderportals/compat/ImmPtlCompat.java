@@ -32,12 +32,35 @@ import java.util.UUID;
  */
 public final class ImmPtlCompat {
 
-    // modIds réels de la version NeoForge (ImmersivePortalsModForNeo) :
-    // immersive_portals_core (fournit la classe Portal), imm_ptl (parapluie),
-    // q_misc_util (DQuaternion). On garde les anciens ids Fabric en repli.
-    private static final boolean LOADED = ModList.get().isLoaded("immersive_portals_core")
-            || ModList.get().isLoaded("imm_ptl")
-            || ModList.get().isLoaded("imm_ptl_core");
+    /** Classe pivot d'Immersive Portals, commune au mod officiel et à ses forks. */
+    private static final String PORTAL_CLASS = "qouteall.imm_ptl.core.portal.Portal";
+
+    private static final boolean LOADED = detect();
+
+    /**
+     * Détection d'Immersive Portals. On teste les modIds connus, puis — et
+     * surtout — la simple présence de la classe {@code Portal} : les forks
+     * (compatibilité Sodium/Iris/Distant Horizons, etc.) changent souvent de
+     * modId tout en conservant le paquetage d'origine, et c'est bien la classe
+     * qui compte pour la réflexion qui suit.
+     */
+    private static boolean detect() {
+        for (String modId : new String[]{"immersive_portals_core", "imm_ptl", "imm_ptl_core", "immersive_portals"}) {
+            if (ModList.get().isLoaded(modId)) {
+                EnderPortalsMod.LOGGER.info("Immersive Portals détecté (modId « {} »).", modId);
+                return true;
+            }
+        }
+        try {
+            Class.forName(PORTAL_CLASS, false, ImmPtlCompat.class.getClassLoader());
+            EnderPortalsMod.LOGGER.info("Immersive Portals détecté via la classe {} (fork).", PORTAL_CLASS);
+            return true;
+        } catch (ClassNotFoundException e) {
+            EnderPortalsMod.LOGGER.info(
+                    "Immersive Portals absent : traversée classique de la porte (contact avec l'embrasure).");
+            return false;
+        }
+    }
 
     /** Passe à true au premier échec de réflexion : on n'insiste pas. */
     private static boolean broken;
@@ -51,7 +74,24 @@ public final class ImmPtlCompat {
      * {@code data.immptlActive} en conséquence.
      */
     public static void tryCreatePortals(MinecraftServer server, TardisData data) {
-        if (!isLoaded() || data.immptlActive || !data.deployed || !data.open) {
+        if (!isLoaded()) {
+            EnderPortalsMod.LOGGER.debug(
+                    "Portails Immersive Portals non créés : mod absent ou intégration désactivée (broken={}).", broken);
+            return;
+        }
+        if (data.immptlActive) {
+            if (portalsAlive(server, data)) {
+                return;
+            }
+            // Les entités de portail ont disparu (rechargement du monde, purge
+            // d'entités…) : on repart d'un état propre plutôt que de croire à
+            // des portails qui n'existent plus.
+            EnderPortalsMod.LOGGER.info("Portails Immersive Portals introuvables pour le TARDIS {} — recréation.",
+                    data.id);
+            data.portalIds.clear();
+            data.immptlActive = false;
+        }
+        if (!data.deployed || !data.open) {
             return;
         }
         try {
@@ -87,6 +127,23 @@ public final class ImmPtlCompat {
             EnderPortalsMod.LOGGER.warn(
                     "Intégration Immersive Portals indisponible (API changée ?) — retour à la téléportation classique.", t);
         }
+    }
+
+    /** Les entités de portail enregistrées existent-elles toujours ? */
+    private static boolean portalsAlive(MinecraftServer server, TardisData data) {
+        if (data.portalIds.isEmpty()) {
+            return false;
+        }
+        ServerLevel exteriorWorld = server.getLevel(data.exteriorWorld);
+        ServerLevel enderWorld = server.getLevel(ModDimensions.ENDER_WORLD);
+        for (UUID id : data.portalIds) {
+            boolean found = (exteriorWorld != null && exteriorWorld.getEntity(id) != null)
+                    || (enderWorld != null && enderWorld.getEntity(id) != null);
+            if (!found) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /** Supprime les portails de l'embrasure s'ils existent. */
@@ -131,7 +188,7 @@ public final class ImmPtlCompat {
     private static UUID spawnPortal(ServerLevel level, Vec3 origin, Direction facing,
                                     ResourceKey<Level> destinationWorld, Vec3 destination,
                                     double rotationDegrees) throws Exception {
-        Class<?> portalClass = Class.forName("qouteall.imm_ptl.core.portal.Portal");
+        Class<?> portalClass = Class.forName(PORTAL_CLASS);
         EntityType<?> type = (EntityType<?>) staticFieldValue(portalClass, "entityType", "ENTITY_TYPE");
         Entity portal = type.create(level);
         if (portal == null) {
