@@ -48,7 +48,12 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
      * y = 1,94 pour v = 32 → 0, donc le bas de l'étoile tombe à y ≈ 1,53.
      */
     private static final float NAMEPLATE_Y = 1.50f;
-    /** Largeur utile du battant pour le panneau de pseudo. */
+    /**
+     * Profondeur du panneau de pseudo : juste devant les montants latéraux
+     * (z = 0,47), qui sinon masquent la moitié du texte en vue de biais.
+     */
+    private static final float NAMEPLATE_Z = 0.475f;
+    /** Largeur utile de la façade pour le panneau de pseudo. */
     private static final float NAMEPLATE_MAX_WIDTH = 0.78f;
 
     private final Font font;
@@ -117,10 +122,11 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
             drawVoidVeil(veil, entry, alpha, lightCoord, overlay);
         }
 
-        // Petit panneau avec le pseudo du propriétaire, solidaire du battant.
+        // Petit panneau avec le pseudo du propriétaire, sur la façade fermée.
+        // Porte ouverte, le battant s'efface : on ne l'affiche pas.
         String owner = door.getOwnerName();
-        if (alpha >= 0.6f && !owner.isEmpty()) {
-            drawNameplate(owner, open, poseStack, buffer);
+        if (!open && alpha >= 0.6f && !owner.isEmpty()) {
+            drawNameplate(owner, poseStack, buffer);
         }
 
         poseStack.popPose();
@@ -132,26 +138,20 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
      * texte des pancartes vanilla (translation vers la face avant, échelle avec
      * Y inversé), pleine luminosité pour rester lisible dans le noir.
      */
-    private void drawNameplate(String name, boolean open, PoseStack poseStack, MultiBufferSource buffer) {
+    private void drawNameplate(String name, PoseStack poseStack, MultiBufferSource buffer) {
         int width = font.width(name);
-        // Le panneau doit tenir dans la largeur du battant : les pseudos longs
-        // sont rétrécis plutôt que de mordre sur les montants.
+        // Le panneau doit tenir dans la largeur de la façade : les pseudos
+        // longs sont rétrécis plutôt que de déborder du caisson.
         float scale = 0.01f;
         if (width * scale > NAMEPLATE_MAX_WIDTH) {
             scale = NAMEPLATE_MAX_WIDTH / width;
         }
 
         poseStack.pushPose();
-        if (open) {
-            // Battant plaqué contre le flanc gauche (x −0,41…−0,33) : sa face
-            // décorée regarde +X. On s'y colle et on pivote d'un quart de tour
-            // pour que le pseudo suive le battant.
-            poseStack.translate(-0.3275, NAMEPLATE_Y, -0.02);
-            poseStack.mulPose(Axis.YP.rotationDegrees(90.0f));
-        } else {
-            // Battant dans l'embrasure : sa face décorée (z = 0,44) regarde +Z.
-            poseStack.translate(0.0, NAMEPLATE_Y, 0.4425);
-        }
+        // Devant la face la plus avancée du caisson (les montants latéraux vont
+        // jusqu'à z = 0,47). En retrait, ces montants masquaient la moitié du
+        // pseudo dès qu'on regardait la porte de biais.
+        poseStack.translate(0.0, NAMEPLATE_Y, NAMEPLATE_Z);
         poseStack.scale(scale, -scale, scale);
         font.drawInBatch(name, -width / 2.0f, 0.0f, 0xFFFFFFFF, false,
                 poseStack.last().pose(), buffer, Font.DisplayMode.NORMAL, 0xAA000000,
