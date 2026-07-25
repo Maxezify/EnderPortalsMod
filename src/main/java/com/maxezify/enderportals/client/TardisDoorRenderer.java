@@ -42,6 +42,15 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
     private static final int AXIS_Y = 1;
     private static final int AXIS_Z = 2;
 
+    /**
+     * Haut du panneau de pseudo, juste sous le motif étoile. L'étoile occupe
+     * les rangées v = 4…6 de la région FRONT ; le battant s'étend de y = 0,06 à
+     * y = 1,94 pour v = 32 → 0, donc le bas de l'étoile tombe à y ≈ 1,53.
+     */
+    private static final float NAMEPLATE_Y = 1.50f;
+    /** Largeur utile du battant pour le panneau de pseudo. */
+    private static final float NAMEPLATE_MAX_WIDTH = 0.78f;
+
     private final Font font;
 
     public TardisDoorRenderer(BlockEntityRendererProvider.Context context) {
@@ -108,10 +117,10 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
             drawVoidVeil(veil, entry, alpha, lightCoord, overlay);
         }
 
-        // Petit panneau avec le pseudo du propriétaire, sur le devant (+Z local).
+        // Petit panneau avec le pseudo du propriétaire, solidaire du battant.
         String owner = door.getOwnerName();
         if (alpha >= 0.6f && !owner.isEmpty()) {
-            drawNameplate(owner, poseStack, buffer);
+            drawNameplate(owner, open, poseStack, buffer);
         }
 
         poseStack.popPose();
@@ -123,17 +132,29 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
      * texte des pancartes vanilla (translation vers la face avant, échelle avec
      * Y inversé), pleine luminosité pour rester lisible dans le noir.
      */
-    private void drawNameplate(String name, PoseStack poseStack, MultiBufferSource buffer) {
+    private void drawNameplate(String name, boolean open, PoseStack poseStack, MultiBufferSource buffer) {
+        int width = font.width(name);
+        // Le panneau doit tenir dans la largeur du battant : les pseudos longs
+        // sont rétrécis plutôt que de mordre sur les montants.
+        float scale = 0.01f;
+        if (width * scale > NAMEPLATE_MAX_WIDTH) {
+            scale = NAMEPLATE_MAX_WIDTH / width;
+        }
+
         poseStack.pushPose();
-        // Plaqué juste devant l'avant du caisson (le montant le plus avancé est
-        // à +0,47) : le texte affleure la façade sans jamais la traverser.
-        // Hauteur : sous le motif étoile du panneau.
-        poseStack.translate(0.0, 1.42, 0.481);
-        poseStack.scale(0.01f, -0.01f, 0.01f);
-        float x = -font.width(name) / 2.0f;
-        int background = 0xAA000000;
-        font.drawInBatch(name, x, 0.0f, 0xFFFFFFFF, false,
-                poseStack.last().pose(), buffer, Font.DisplayMode.NORMAL, background,
+        if (open) {
+            // Battant plaqué contre le flanc gauche (x −0,41…−0,33) : sa face
+            // décorée regarde +X. On s'y colle et on pivote d'un quart de tour
+            // pour que le pseudo suive le battant.
+            poseStack.translate(-0.3275, NAMEPLATE_Y, -0.02);
+            poseStack.mulPose(Axis.YP.rotationDegrees(90.0f));
+        } else {
+            // Battant dans l'embrasure : sa face décorée (z = 0,44) regarde +Z.
+            poseStack.translate(0.0, NAMEPLATE_Y, 0.4425);
+        }
+        poseStack.scale(scale, -scale, scale);
+        font.drawInBatch(name, -width / 2.0f, 0.0f, 0xFFFFFFFF, false,
+                poseStack.last().pose(), buffer, Font.DisplayMode.NORMAL, 0xAA000000,
                 LightTexture.FULL_BRIGHT);
         poseStack.popPose();
     }
