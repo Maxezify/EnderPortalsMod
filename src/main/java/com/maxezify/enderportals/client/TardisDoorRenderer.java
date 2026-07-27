@@ -104,7 +104,15 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
                 : RenderType.entityTranslucent(TEXTURE));
 
         // La coque : dos, flancs, plafond, plancher — des pavés fins disjoints.
-        drawBox(vertexBuffer, entry, -0.41f, 0.0f, -0.47f, 0.41f, 2.0f, -0.42f, AXIS_Z, BACK, BACK, alpha, lightCoord, overlay);
+        // La paroi arrière n'est dessinée que porte fermée : ouverte, elle
+        // boucherait l'embrasure. Surtout, elle se trouve juste derrière le plan
+        // du portail Immersive Portals ; le contenu d'un portail portant la
+        // profondeur de la scène lointaine de destination, une paroi à 50 cm
+        // recouvre la vue traversante dès que l'occlusion de profondeur des
+        // portails fonctionne correctement.
+        if (!open) {
+            drawBox(vertexBuffer, entry, -0.41f, 0.0f, -0.47f, 0.41f, 2.0f, -0.42f, AXIS_Z, BACK, BACK, alpha, lightCoord, overlay);
+        }
         drawBox(vertexBuffer, entry, -0.47f, 0.0f, -0.47f, -0.42f, 2.0f, 0.47f, AXIS_X, BACK, BACK, alpha, lightCoord, overlay);
         drawBox(vertexBuffer, entry, 0.42f, 0.0f, -0.47f, 0.47f, 2.0f, 0.47f, AXIS_X, BACK, BACK, alpha, lightCoord, overlay);
         drawBox(vertexBuffer, entry, -0.41f, 1.95f, -0.41f, 0.41f, 1.98f, 0.44f, AXIS_Y, EDGE, EDGE, alpha, lightCoord, overlay);
