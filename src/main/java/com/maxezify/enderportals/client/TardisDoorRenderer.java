@@ -118,11 +118,10 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
         drawBox(vertexBuffer, entry, -0.41f, 1.95f, -0.41f, 0.41f, 1.98f, 0.44f, AXIS_Y, EDGE, EDGE, alpha, lightCoord, overlay);
         drawBox(vertexBuffer, entry, -0.41f, 0.02f, -0.41f, 0.41f, 0.05f, 0.44f, AXIS_Y, EDGE, EDGE, alpha, lightCoord, overlay);
 
-        // Le panneau : fermé dans l'embrasure, ouvert plaqué contre le flanc
-        // gauche (pivot instantané, comme les portes vanilla).
-        if (open) {
-            drawBox(vertexBuffer, entry, -0.41f, 0.07f, -0.40f, -0.33f, 1.93f, 0.36f, AXIS_X, FRONT, BACK, alpha, lightCoord, overlay);
-        } else {
+        // Le battant, dans l'embrasure. Porte ouverte il s'efface entièrement :
+        // plaqué contre le flanc gauche, il traversait le plan du portail et
+        // gênait l'entrée comme la vue traversante.
+        if (!open) {
             drawBox(vertexBuffer, entry, -0.44f, 0.06f, 0.36f, 0.44f, 1.94f, 0.44f, AXIS_Z, FRONT, BACK, alpha, lightCoord, overlay);
         }
 
