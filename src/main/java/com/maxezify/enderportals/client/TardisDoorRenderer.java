@@ -105,20 +105,12 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
 
         // La coque : dos, flancs, plafond, plancher — des pavés fins disjoints.
         //
-        // La paroi arrière occupe exactement l'embrasure, donc le même espace
-        // que la vue traversante du portail — dont le contenu porte la
-        // profondeur de la scène lointaine de destination et se fait donc
-        // recouvrir. Les deux sont géométriquement inconciliables : quand
-        // Immersive Portals est installé et la porte ouverte, on renonce à la
-        // paroi et on laisse le portail. Sans le mod, la paroi reste (le voile
-        // de vide ci-dessous ferme alors l'embrasure).
-        //
-        // Ce critère ne dépend d'aucune hypothèse de rendu (élimination des
-        // faces arrière du GPU, position de caméra pendant les passes de
-        // portail) : il est déterministe et identique sur tous les clients.
-        if (!open || !ImmPtlCompat.isLoaded()) {
-            drawBox(vertexBuffer, entry, -0.41f, 0.0f, -0.47f, 0.41f, 2.0f, -0.42f, AXIS_Z, BACK, BACK, alpha, lightCoord, overlay);
-        }
+        // La paroi arrière est toujours dessinée. Le plan du portail Immersive
+        // Portals est placé au fond du caisson (cf. ImmPtlCompat), donc DEVANT
+        // elle : la paroi tombe derrière le plan du portail, où le clipping
+        // d'Immersive Portals l'écarte, au lieu de recouvrir la vue
+        // traversante comme lorsque le portail était à l'avant.
+        drawBox(vertexBuffer, entry, -0.41f, 0.0f, -0.47f, 0.41f, 2.0f, -0.42f, AXIS_Z, BACK, BACK, alpha, lightCoord, overlay);
         drawBox(vertexBuffer, entry, -0.47f, 0.0f, -0.47f, -0.42f, 2.0f, 0.47f, AXIS_X, BACK, BACK, alpha, lightCoord, overlay);
         drawBox(vertexBuffer, entry, 0.42f, 0.0f, -0.47f, 0.47f, 2.0f, 0.47f, AXIS_X, BACK, BACK, alpha, lightCoord, overlay);
         drawBox(vertexBuffer, entry, -0.41f, 1.95f, -0.41f, 0.41f, 1.98f, 0.44f, AXIS_Y, EDGE, EDGE, alpha, lightCoord, overlay);
