@@ -8,6 +8,7 @@ import com.maxezify.enderportals.compat.ImmPtlCompat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -16,6 +17,7 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 
@@ -104,27 +106,15 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
                 : RenderType.entityTranslucent(TEXTURE));
 
         // La coque : dos, flancs, plafond, plancher — des pavés fins disjoints.
-        // La paroi arrière n'est dessinée que porte fermée : ouverte, elle
-        // boucherait l'embrasure. Surtout, elle se trouve juste derrière le plan
-        // du portail Immersive Portals ; le contenu d'un portail portant la
-        // profondeur de la scène lointaine de destination, une paroi à 50 cm
-        // recouvre la vue traversante dès que l'occlusion de profondeur des
-        // portails fonctionne correctement.
-        if (!open) {
+        // La paroi arrière. Porte fermée, on la dessine toujours. Porte
+        // ouverte, elle ne doit apparaître que si l'on regarde la porte DE
+        // DERRIÈRE : vue de face elle recouvrirait la vue traversante du
+        // portail, dont le contenu porte la profondeur de la scène lointaine
+        // de destination. On tranche ici selon la position réelle de la
+        // caméra, plutôt que de compter sur l'élimination des faces arrière du
+        // GPU — dont le comportement n'est pas fiable avec les shaders.
+        if (!open || isCameraBehind(door, facing)) {
             drawBox(vertexBuffer, entry, -0.41f, 0.0f, -0.47f, 0.41f, 2.0f, -0.42f, AXIS_Z, BACK, BACK, alpha, lightCoord, overlay);
-        } else {
-            // Porte ouverte : on ne conserve que la face extérieure du dos, sur
-            // une couche qui élimine les faces arrière. Vue de derrière, la
-            // porte garde sa texture ; vue de face, cette face est éliminée et
-            // laisse voir le portail — dont le contenu porte la profondeur de
-            // la scène lointaine de destination et serait sinon recouvert.
-            VertexConsumer backFace = buffer.getBuffer(RenderType.entityCutout(TEXTURE));
-            region(backFace, entry,
-                    0.41f, 0.0f, -0.47f,
-                    -0.41f, 0.0f, -0.47f,
-                    -0.41f, 2.0f, -0.47f,
-                    0.41f, 2.0f, -0.47f,
-                    BACK, alpha, lightCoord, overlay, 0, 0, -1);
         }
         drawBox(vertexBuffer, entry, -0.47f, 0.0f, -0.47f, -0.42f, 2.0f, 0.47f, AXIS_X, BACK, BACK, alpha, lightCoord, overlay);
         drawBox(vertexBuffer, entry, 0.42f, 0.0f, -0.47f, 0.47f, 2.0f, 0.47f, AXIS_X, BACK, BACK, alpha, lightCoord, overlay);
@@ -200,6 +190,18 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
                 poseStack.last().pose(), buffer, Font.DisplayMode.NORMAL, 0,
                 LightTexture.FULL_BRIGHT);
         poseStack.popPose();
+    }
+
+    /**
+     * La caméra est-elle derrière la porte ? On projette le vecteur
+     * porte → caméra sur la direction de façade : un produit scalaire négatif
+     * signifie que l'on observe la porte par l'arrière.
+     */
+    private static boolean isCameraBehind(TardisDoorBlockEntity door, Direction facing) {
+        Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
+        Vec3 center = Vec3.atCenterOf(door.getBlockPos()).add(0.0, 0.5, 0.0);
+        Vec3 front = new Vec3(facing.getStepX(), 0.0, facing.getStepZ());
+        return camera.subtract(center).dot(front) < 0.0;
     }
 
     /**
