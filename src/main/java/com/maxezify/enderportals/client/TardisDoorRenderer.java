@@ -112,6 +112,19 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
         // portails fonctionne correctement.
         if (!open) {
             drawBox(vertexBuffer, entry, -0.41f, 0.0f, -0.47f, 0.41f, 2.0f, -0.42f, AXIS_Z, BACK, BACK, alpha, lightCoord, overlay);
+        } else {
+            // Porte ouverte : on ne conserve que la face extérieure du dos, sur
+            // une couche qui élimine les faces arrière. Vue de derrière, la
+            // porte garde sa texture ; vue de face, cette face est éliminée et
+            // laisse voir le portail — dont le contenu porte la profondeur de
+            // la scène lointaine de destination et serait sinon recouvert.
+            VertexConsumer backFace = buffer.getBuffer(RenderType.entityCutout(TEXTURE));
+            region(backFace, entry,
+                    0.41f, 0.0f, -0.47f,
+                    -0.41f, 0.0f, -0.47f,
+                    -0.41f, 2.0f, -0.47f,
+                    0.41f, 2.0f, -0.47f,
+                    BACK, alpha, lightCoord, overlay, 0, 0, -1);
         }
         drawBox(vertexBuffer, entry, -0.47f, 0.0f, -0.47f, -0.42f, 2.0f, 0.47f, AXIS_X, BACK, BACK, alpha, lightCoord, overlay);
         drawBox(vertexBuffer, entry, 0.42f, 0.0f, -0.47f, 0.47f, 2.0f, 0.47f, AXIS_X, BACK, BACK, alpha, lightCoord, overlay);
