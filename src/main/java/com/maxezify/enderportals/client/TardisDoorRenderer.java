@@ -8,7 +8,6 @@ import com.maxezify.enderportals.compat.ImmPtlCompat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -17,9 +16,10 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 /**
  * Dessine la Porte de l'Ender : un caisson d'un bloc d'épaisseur composé de
@@ -110,10 +110,11 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
         // ouverte, elle ne doit apparaître que si l'on regarde la porte DE
         // DERRIÈRE : vue de face elle recouvrirait la vue traversante du
         // portail, dont le contenu porte la profondeur de la scène lointaine
-        // de destination. On tranche ici selon la position réelle de la
-        // caméra, plutôt que de compter sur l'élimination des faces arrière du
-        // GPU — dont le comportement n'est pas fiable avec les shaders.
-        if (!open || isCameraBehind(door, facing)) {
+        // de destination. On tranche d'après le point de vue de la passe de
+        // rendu en cours (cf. isCameraBehind), plutôt que de compter sur
+        // l'élimination des faces arrière du GPU — dont le comportement n'est
+        // pas fiable avec les shaders.
+        if (!open || isCameraBehind(entry)) {
             drawBox(vertexBuffer, entry, -0.41f, 0.0f, -0.47f, 0.41f, 2.0f, -0.42f, AXIS_Z, BACK, BACK, alpha, lightCoord, overlay);
         }
         drawBox(vertexBuffer, entry, -0.47f, 0.0f, -0.47f, -0.42f, 2.0f, 0.47f, AXIS_X, BACK, BACK, alpha, lightCoord, overlay);
@@ -197,11 +198,17 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
      * porte → caméra sur la direction de façade : un produit scalaire négatif
      * signifie que l'on observe la porte par l'arrière.
      */
-    private static boolean isCameraBehind(TardisDoorBlockEntity door, Direction facing) {
-        Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
-        Vec3 center = Vec3.atCenterOf(door.getBlockPos()).add(0.0, 0.5, 0.0);
-        Vec3 front = new Vec3(facing.getStepX(), 0.0, facing.getStepZ());
-        return camera.subtract(center).dot(front) < 0.0;
+    private static boolean isCameraBehind(PoseStack.Pose entry) {
+        // Le point de vue est toujours à l'origine de l'espace de vue : on l'y
+        // reprend et on le ramène dans le repère local de la porte en inversant
+        // la matrice de pose courante (+Z local = façade).
+        //
+        // On lit ainsi le point de vue de la passe de rendu réellement en
+        // cours. Interroger la caméra principale ne convient pas : Immersive
+        // Portals la déplace pendant qu'il rend les vues de portail, si bien
+        // que la position obtenue ne correspondait pas à la passe dessinée.
+        Vector3f viewpoint = new Matrix4f(entry.pose()).invert().transformPosition(new Vector3f());
+        return viewpoint.z() < 0.0f;
     }
 
     /**
