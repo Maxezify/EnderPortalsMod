@@ -18,8 +18,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
-import org.joml.Matrix4f;
-import org.joml.Vector3f;
 
 /**
  * Dessine la Porte de l'Ender : un caisson d'un bloc d'épaisseur composé de
@@ -106,15 +104,19 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
                 : RenderType.entityTranslucent(TEXTURE));
 
         // La coque : dos, flancs, plafond, plancher — des pavés fins disjoints.
-        // La paroi arrière. Porte fermée, on la dessine toujours. Porte
-        // ouverte, elle ne doit apparaître que si l'on regarde la porte DE
-        // DERRIÈRE : vue de face elle recouvrirait la vue traversante du
-        // portail, dont le contenu porte la profondeur de la scène lointaine
-        // de destination. On tranche d'après le point de vue de la passe de
-        // rendu en cours (cf. isCameraBehind), plutôt que de compter sur
-        // l'élimination des faces arrière du GPU — dont le comportement n'est
-        // pas fiable avec les shaders.
-        if (!open || isCameraBehind(entry)) {
+        //
+        // La paroi arrière occupe exactement l'embrasure, donc le même espace
+        // que la vue traversante du portail — dont le contenu porte la
+        // profondeur de la scène lointaine de destination et se fait donc
+        // recouvrir. Les deux sont géométriquement inconciliables : quand
+        // Immersive Portals est installé et la porte ouverte, on renonce à la
+        // paroi et on laisse le portail. Sans le mod, la paroi reste (le voile
+        // de vide ci-dessous ferme alors l'embrasure).
+        //
+        // Ce critère ne dépend d'aucune hypothèse de rendu (élimination des
+        // faces arrière du GPU, position de caméra pendant les passes de
+        // portail) : il est déterministe et identique sur tous les clients.
+        if (!open || !ImmPtlCompat.isLoaded()) {
             drawBox(vertexBuffer, entry, -0.41f, 0.0f, -0.47f, 0.41f, 2.0f, -0.42f, AXIS_Z, BACK, BACK, alpha, lightCoord, overlay);
         }
         drawBox(vertexBuffer, entry, -0.47f, 0.0f, -0.47f, -0.42f, 2.0f, 0.47f, AXIS_X, BACK, BACK, alpha, lightCoord, overlay);
@@ -191,24 +193,6 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
                 poseStack.last().pose(), buffer, Font.DisplayMode.NORMAL, 0,
                 LightTexture.FULL_BRIGHT);
         poseStack.popPose();
-    }
-
-    /**
-     * La caméra est-elle derrière la porte ? On projette le vecteur
-     * porte → caméra sur la direction de façade : un produit scalaire négatif
-     * signifie que l'on observe la porte par l'arrière.
-     */
-    private static boolean isCameraBehind(PoseStack.Pose entry) {
-        // Le point de vue est toujours à l'origine de l'espace de vue : on l'y
-        // reprend et on le ramène dans le repère local de la porte en inversant
-        // la matrice de pose courante (+Z local = façade).
-        //
-        // On lit ainsi le point de vue de la passe de rendu réellement en
-        // cours. Interroger la caméra principale ne convient pas : Immersive
-        // Portals la déplace pendant qu'il rend les vues de portail, si bien
-        // que la position obtenue ne correspondait pas à la passe dessinée.
-        Vector3f viewpoint = new Matrix4f(entry.pose()).invert().transformPosition(new Vector3f());
-        return viewpoint.z() < 0.0f;
     }
 
     /**
