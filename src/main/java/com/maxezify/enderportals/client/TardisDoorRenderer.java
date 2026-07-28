@@ -120,12 +120,21 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
 
         // La coque : dos, flancs, plafond, plancher — des pavés fins disjoints.
         //
-        // Le fond, logé dans l'extension arrière (le bloc suivant), et dessiné
-        // en toutes circonstances. Le plan du portail Immersive Portals reste
-        // dans le premier bloc : on vérifie ainsi si une géométrie située au-delà
-        // de la limite de bloc laisse la vue traversante intacte, comme les
-        // blocs situés derrière un portail du Nether.
-        drawBox(vertexBuffer, entry, -0.41f, 0.0f, REAR_Z, 0.41f, 2.0f, REAR_Z + SHELL, AXIS_Z, BACK, BACK, alpha, lightCoord, overlay);
+        // Le fond, logé dans l'extension arrière.
+        //
+        // Il est incompatible avec la vue traversante : Immersive Portals
+        // s'appuie sur des requêtes d'occlusion pour décider s'il rend un
+        // portail, et renonce à le rendre dès que de la géométrie opaque
+        // occupe son tunnel. C'est la PRÉSENCE de la surface qui compte, non
+        // sa distance — vérifié en jeu avec le fond à 0,45, puis à 1,9, puis
+        // au-delà de la limite de bloc : la vue disparaît dans les trois cas.
+        //
+        // Porte ouverte avec Immersive Portals, on renonce donc au fond au
+        // profit du portail. Sans le mod, il reste et le voile de vide ferme
+        // l'embrasure.
+        if (!open || !ImmPtlCompat.isLoaded()) {
+            drawBox(vertexBuffer, entry, -0.41f, 0.0f, REAR_Z, 0.41f, 2.0f, REAR_Z + SHELL, AXIS_Z, BACK, BACK, alpha, lightCoord, overlay);
+        }
         // Flancs, plafond et plancher, filés jusqu'à l'extension arrière.
         drawBox(vertexBuffer, entry, -0.47f, 0.0f, REAR_Z, -0.42f, 2.0f, FRONT_Z, AXIS_X, BACK, BACK, alpha, lightCoord, overlay);
         drawBox(vertexBuffer, entry, 0.42f, 0.0f, REAR_Z, 0.47f, 2.0f, FRONT_Z, AXIS_X, BACK, BACK, alpha, lightCoord, overlay);
