@@ -3,7 +3,7 @@
 Mod **Minecraft 1.21.1 / NeoForge** : une porte d'obsidienne plus grande à
 l'intérieur qu'à l'extérieur, qui s'ouvre sur **le monde de l'Ender** — le
 paradis des cubes, un monde-caverne où viennent se reposer les blocs
-détruits. Version courante : **0.9.0**.
+détruits. Version courante : **0.9.1**.
 
 ## La progression
 
@@ -49,16 +49,19 @@ lumineux** de froglight perlescent traversent la masse en longs semis de
 lueurs violettes : les seuls repères d'un monde qui se ressemble partout, et
 la seule lumière — l'obscurité y est totale partout ailleurs. Une **cendre
 claire** tombe en continu.
-Quelques cavernes et tunnels étroits serpentent dans la masse — l'essentiel
-reste plein, et c'est à la Pioche de l'Ender qu'on s'y fraie un chemin.
+La masse est **pleine d'un bout à l'autre** : pas la moindre caverne, pas un
+tunnel. On ne s'y déplace qu'à la Pioche de l'Ender, en taillant sa propre
+galerie — et le brouillard ne se dissipe jamais dans un vide.
 
 Chaque porte éveillée reçoit sa parcelle — une case de 8192 blocs de côté,
 attribuée en spirale autour de l'origine : construisez-y base, fermes et
 stockage, les lits et ancres de réapparition y fonctionnent. Les cases sont **cloisonnées par un quadrillage
 de murs de bedrock de 2 blocs d'épaisseur**, montant d'une calotte de bedrock
 à l'autre : on ne peut pas marcher jusque chez le voisin, ni passer
-par-dessus ou par-dessous. Le monde s'étend de **−64 à 320** comme le monde
-normal, fermé en haut et en bas par 2 couches de bedrock.
+par-dessus ou par-dessous. Le monde s'étend de **0 à 128**, comme le Nether :
+c'est l'altitude qui commande le brouillard des shaders, et cette plage est
+celle où leurs effets existent. Il est fermé en haut et en bas par 2 couches
+de bedrock.
 
 Le pseudo du propriétaire s'affiche sur un petit panneau à l'avant de la
 porte, et tout fonctionne en multijoueur (logique côté serveur, données
@@ -193,7 +196,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.9.0.jar
+# → build/libs/enderportals-0.9.1.jar
 ```
 
 Notes :

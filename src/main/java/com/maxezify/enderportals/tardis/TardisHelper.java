@@ -95,8 +95,10 @@ public final class TardisHelper {
                 }
             }
         }
-        // Un peu de lumière aux quatre coins du sol.
-        BlockState lantern = Blocks.SEA_LANTERN.defaultBlockState();
+        // Un peu de lumière aux quatre coins du sol — du froglight perlescent,
+        // la même matière que les filons du monde, pour que la salle appartienne
+        // au même univers lumineux.
+        BlockState lantern = Blocks.PEARLESCENT_FROGLIGHT.defaultBlockState();
         enderWorld.setBlock(cursor.set(x0 + 1, y0, z0 + 2), lantern, Block.UPDATE_CLIENTS);
         enderWorld.setBlock(cursor.set(x1 - 1, y0, z0 + 2), lantern, Block.UPDATE_CLIENTS);
         enderWorld.setBlock(cursor.set(x0 + 1, y0, z1 - 2), lantern, Block.UPDATE_CLIENTS);

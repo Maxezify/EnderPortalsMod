@@ -29,10 +29,16 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Le monde de l'Ender : un monde entièrement souterrain, une masse de blocs
- * de l'Ender semi-transparents creusée de cavernes et de tunnels. Des
- * "reliques" — des blocs ordinaires venus mourir ici, le paradis des cubes —
- * sont prises dans la masse et se devinent au travers des blocs.
+ * Le monde de l'Ender : une masse pleine et continue de blocs de l'Ender
+ * semi-transparents, sans la moindre cavité. Des "reliques" — des blocs
+ * ordinaires venus mourir ici, le paradis des cubes — y sont prises en nuées,
+ * et de rares filons lumineux la traversent ; les unes comme les autres se
+ * devinent au travers de la matière translucide.
+ *
+ * <p>Le creusement a été retiré : cavernes et tunnels ouvraient des vides qui
+ * cassaient la lecture de la masse et, sous shader, dissipaient le brouillard
+ * là où il faisait tout l'intérêt du lieu. On ne s'y déplace donc qu'à la
+ * Pioche de l'Ender, en taillant sa propre galerie.</p>
  */
 public class EnderWorldChunkGenerator extends ChunkGenerator {
 
@@ -42,13 +48,21 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
             ).apply(instance, EnderWorldChunkGenerator::new));
 
     /**
-     * Plage de construction, identique à celle du monde normal : de −64 à 320.
-     * Doit rester d'accord avec {@code min_y} et {@code height} du fichier
+     * Plage de construction, identique à celle du Nether : de 0 à 128.
+     *
+     * <p>C'est l'altitude qui commande le brouillard des shaders. Complementary
+     * Reimagined fait décroître son brouillard atmosphérique au-dessus de 55,1
+     * et l'éteint à 85,1 ; son brouillard de caverne meurt à 61,9. Un monde de
+     * 384 blocs de haut plaçait l'essentiel du volume hors de ces bandes.
+     * Ramené aux 128 du Nether, le monde de l'Ender tient tout entier dans la
+     * plage où ces effets existent.</p>
+     *
+     * <p>Doit rester d'accord avec {@code min_y} et {@code height} du fichier
      * {@code dimension_type/ender_world.json} — le jeu lit le type de dimension
-     * pour dimensionner les chunks, et le générateur pour les remplir.
+     * pour dimensionner les chunks, et le générateur pour les remplir.</p>
      */
-    private static final int MIN_Y = -64;
-    private static final int HEIGHT = 384;
+    private static final int MIN_Y = 0;
+    private static final int HEIGHT = 128;
 
     /**
      * Épaisseur des calottes de bedrock qui ferment le monde en haut et en bas
@@ -57,9 +71,6 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
     private static final int CAP_THICKNESS = 2;
 
     // Bruits fixes : le paradis des blocs est le même dans toutes les graines.
-    private static final ImprovedNoise CAVERN = new ImprovedNoise(RandomSource.create(0x7A4D15L));
-    private static final ImprovedNoise TUNNEL_A = new ImprovedNoise(RandomSource.create(0xE17EBEEFL));
-    private static final ImprovedNoise TUNNEL_B = new ImprovedNoise(RandomSource.create(0x0DD5EEDL));
     private static final ImprovedNoise VEIN_A = new ImprovedNoise(RandomSource.create(0x1105EAL));
     private static final ImprovedNoise VEIN_B = new ImprovedNoise(RandomSource.create(0x0FEC0DEL));
 
@@ -168,7 +179,6 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
     // ne peut pas être capturé ici : le registre n'est pas encore peuplé au
     // chargement de la classe — il est résolu une fois par appel.
     private static final BlockState BEDROCK = Blocks.BEDROCK.defaultBlockState();
-    private static final BlockState AIR = Blocks.AIR.defaultBlockState();
 
     /** Épaisseur du mur de bedrock qui sépare deux parcelles voisines. */
     private static final int PLOT_WALL_THICKNESS = 2;
@@ -223,13 +233,8 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
                 int x = chunkPos.getMinBlockX() + dx;
                 int z = chunkPos.getMinBlockZ() + dz;
                 for (int y = bottom; y < top; y++) {
-                    BlockState state = stateAt(x, y, z, bottom, top, random, enderBlock);
-                    // Le chunk arrive déjà rempli d'air : écrire l'air des
-                    // cavernes ne servait qu'à repayer le coût de
-                    // setBlockState (palette, sections, heightmaps).
-                    if (!state.isAir()) {
-                        chunk.setBlockState(cursor.set(x, y, z), state, false);
-                    }
+                    chunk.setBlockState(cursor.set(x, y, z),
+                            stateAt(x, y, z, bottom, top, random, enderBlock), false);
                 }
             }
         }
@@ -240,13 +245,8 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
 
     private static BlockState stateAt(int x, int y, int z, int bottom, int top,
                                       RandomSource random, BlockState enderBlock) {
-        // Le mur passe avant le creusement : aucune caverne ne doit le percer.
         if (isPlotWall(x, z) || y < bottom + CAP_THICKNESS || y >= top - CAP_THICKNESS) {
             return BEDROCK;
-        }
-        if (isCarved(x, y, z, bottom, top)) {
-            // Une caverne qui recoupe un filon le met à nu dans sa paroi.
-            return AIR;
         }
         BlockState luminous = luminousAt(x, y, z, random);
         if (luminous != null) {
@@ -316,37 +316,10 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
         return LUMINOUS.get((int) Math.floorMod(tint, (long) LUMINOUS.size()));
     }
 
-    private static boolean isCarved(int x, int y, int z, int bottom, int top) {
-        // Pénalité près du sol et du plafond pour garder des bords pleins.
-        double edge = 0.0;
-        if (y < bottom + 10) {
-            edge += (bottom + 10 - y) * 0.06;
-        }
-        if (y > top - 18) {
-            edge += (y - (top - 18)) * 0.05;
-        }
-
-        // Cavernes. Le seuil est passé de 0,34 à 0,50 et la fréquence a été
-        // relevée : moins de poches franchissent la barre, et celles qui la
-        // franchissent sont plus resserrées autour de leur sommet. Mesuré hors
-        // du jeu sur le même bruit (écart-type 0,268) : 8,11 % du volume
-        // creusé auparavant, 1,94 % désormais.
-        double cavern = CAVERN.noise(x * 0.016, y * 0.030, z * 0.016);
-        if (cavern > 0.50 + edge) {
-            return true;
-        }
-        // Tunnels « spaghetti », resserrés dans les mêmes proportions :
-        // 4,70 % du volume auparavant, 1,98 % désormais. Le budget joue sur le
-        // carré du rayon, donc 0,0075 → 0,0028 les amincit d'environ 40 %.
-        double a = TUNNEL_A.noise(x * 0.013, y * 0.024, z * 0.013);
-        double b = TUNNEL_B.noise(x * 0.013, y * 0.024, z * 0.013);
-        return a * a + b * b < Math.max(0.0, 0.0028 - edge * 0.01);
-    }
-
     @Override
     public void applyCarvers(WorldGenRegion level, long seed, RandomState random, BiomeManager biomeManager,
                              StructureManager structureManager, ChunkAccess chunk, GenerationStep.Carving step) {
-        // Le creusement est intégré à fillFromNoise.
+        // Aucun creusement : la masse est pleine d'un bout à l'autre.
     }
 
     @Override
@@ -379,17 +352,9 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
 
     @Override
     public int getBaseHeight(int x, int z, Heightmap.Types type, LevelHeightAccessor level, RandomState random) {
-        int bottom = level.getMinBuildHeight();
-        int top = bottom + level.getHeight();
-        if (isPlotWall(x, z)) {
-            return top;
-        }
-        for (int y = top - CAP_THICKNESS - 1; y >= bottom + CAP_THICKNESS; y--) {
-            if (!isCarved(x, y, z, bottom, top)) {
-                return y + 1;
-            }
-        }
-        return bottom + CAP_THICKNESS;
+        // La masse est pleine partout : la première surface libre est le
+        // dessous de la calotte de bedrock, et le mur monte jusqu'en haut.
+        return level.getMinBuildHeight() + level.getHeight() - (isPlotWall(x, z) ? 0 : CAP_THICKNESS);
     }
 
     @Override
@@ -401,13 +366,8 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
         boolean wall = isPlotWall(x, z);
         for (int i = 0; i < states.length; i++) {
             int y = bottom + i;
-            if (wall || y < bottom + CAP_THICKNESS || y >= top - CAP_THICKNESS) {
-                states[i] = BEDROCK;
-            } else if (isCarved(x, y, z, bottom, top)) {
-                states[i] = AIR;
-            } else {
-                states[i] = enderBlock;
-            }
+            states[i] = wall || y < bottom + CAP_THICKNESS || y >= top - CAP_THICKNESS
+                    ? BEDROCK : enderBlock;
         }
         return new NoiseColumn(bottom, states);
     }
