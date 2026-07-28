@@ -104,28 +104,36 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
                 : RenderType.entityTranslucent(TEXTURE));
 
         // La coque : dos, flancs, plafond, plancher — des pavés fins disjoints.
-        // La paroi arrière n'est dessinée que porte fermée : ouverte, elle
-        // boucherait l'embrasure. Surtout, elle se trouve juste derrière le plan
-        // du portail Immersive Portals ; le contenu d'un portail portant la
-        // profondeur de la scène lointaine de destination, une paroi à 50 cm
-        // recouvre la vue traversante dès que l'occlusion de profondeur des
-        // portails fonctionne correctement.
-        if (!open) {
-            drawBox(vertexBuffer, entry, -0.41f, 0.0f, -0.47f, 0.41f, 2.0f, -0.42f, AXIS_Z, BACK, BACK, alpha, lightCoord, overlay);
-        } else {
-            // Porte ouverte : on ne conserve que la face extérieure du dos, sur
-            // une couche qui élimine les faces arrière. Vue de derrière, la
-            // porte garde sa texture ; vue de face, cette face est éliminée et
-            // laisse voir le portail — dont le contenu porte la profondeur de
-            // la scène lointaine de destination et serait sinon recouvert.
-            VertexConsumer backFace = buffer.getBuffer(RenderType.entityCutout(TEXTURE));
-            region(backFace, entry,
-                    0.41f, 0.0f, -0.47f,
-                    -0.41f, 0.0f, -0.47f,
-                    -0.41f, 2.0f, -0.47f,
-                    0.41f, 2.0f, -0.47f,
-                    BACK, alpha, lightCoord, overlay, 0, 0, -1);
-        }
+        //
+        // Le fond est là en permanence, porte ouverte comme fermée, mais il
+        // n'a qu'une face : l'extérieure. La face intérieure n'est jamais
+        // émise — c'est elle qui bouchait l'embrasure.
+        //
+        // Et surtout, cette face extérieure passe par une couche qui n'écrit
+        // PAS dans le tampon de profondeur (entityTranslucentEmissive : masque
+        // COLOR_WRITE). Deux conséquences, qui sont exactement le comportement
+        // recherché depuis la 0.4.7 :
+        //
+        //  · le fond ne peut plus faire échouer les requêtes d'occlusion dont
+        //    Immersive Portals se sert pour décider s'il rend un portail. Les
+        //    tentatives précédentes — élimination des faces arrière (0.4.9),
+        //    suivi de caméra (0.5.0/0.5.1), éloignement du fond (0.5.3/0.5.6)
+        //    — laissaient toutes le fond écrire sa profondeur, et le portail
+        //    restait non rendu ;
+        //  · le fond reste soumis au test de profondeur. Vu de l'avant, le
+        //    portail est devant lui et impose sa profondeur : le fond est
+        //    rejeté, l'embrasure est traversante. Vu de l'arrière, le fond est
+        //    l'élément le plus proche : il passe le test et garde sa texture.
+        //
+        // Contrepartie assumée : la couche est émissive (pas de lightmap), le
+        // dos de la porte est donc rendu à pleine luminosité.
+        VertexConsumer rearFace = buffer.getBuffer(RenderType.entityTranslucentEmissive(TEXTURE));
+        region(rearFace, entry,
+                0.41f, 0.0f, -0.47f,
+                -0.41f, 0.0f, -0.47f,
+                -0.41f, 2.0f, -0.47f,
+                0.41f, 2.0f, -0.47f,
+                BACK, alpha, lightCoord, overlay, 0, 0, -1);
         drawBox(vertexBuffer, entry, -0.47f, 0.0f, -0.47f, -0.42f, 2.0f, 0.47f, AXIS_X, BACK, BACK, alpha, lightCoord, overlay);
         drawBox(vertexBuffer, entry, 0.42f, 0.0f, -0.47f, 0.47f, 2.0f, 0.47f, AXIS_X, BACK, BACK, alpha, lightCoord, overlay);
         drawBox(vertexBuffer, entry, -0.41f, 1.95f, -0.41f, 0.41f, 1.98f, 0.44f, AXIS_Y, EDGE, EDGE, alpha, lightCoord, overlay);
