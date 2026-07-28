@@ -129,13 +129,22 @@ public final class ImmPtlCompat {
                     data.exteriorWorld, exteriorCenter, Mth.wrapDegrees(-rotation));
             data.portalIds.add(inner.getUUID());
 
-            // Chaque portail est complété par sa face opposée : l'ensemble
-            // devient bi-way ET bi-faced (4 entités), comme un portail du
-            // Nether. La porte ouverte montre alors la destination des DEUX
-            // côtés — l'arrière du caisson n'apparaît plus comme un
-            // encadrement vide, faute de portail de ce côté.
-            addFlipped(data, outer);
-            addFlipped(data, inner);
+            // La paire est bi-way et s'arrête là — pas de faces opposées.
+            //
+            // Elles avaient été ajoutées en 0.5.8 pour que l'arrière de la
+            // porte montre la destination plutôt qu'un encadrement vide. La
+            // 0.6.1 a rendu au caisson son fond opaque : ces faces sont depuis
+            // cachées derrière lui, donc sans effet visible.
+            //
+            // Sans effet, mais pas sans conséquence. createFlippedPortal
+            // inverse axisW en gardant axisH et la rotation : le repère de la
+            // face opposée est l'original tourné de 180° autour de la
+            // verticale. Immersive Portals ne s'en accommode que parce que son
+            // completeBiWayBiFacedPortal construit les quatre entités
+            // ensemble — il dérive le portail inverse du premier et supprime à
+            // chaque étape les portails qui se recouvrent. Ici les deux
+            // portails sont fabriqués à la main puis retournés isolément :
+            // rien ne réconcilie les quatre, et la traversée s'en ressentait.
             data.immptlActive = true;
             EnderPortalsMod.LOGGER.info("Portails Immersive Portals créés pour le TARDIS {}", data.id);
         } catch (Throwable t) {
@@ -291,35 +300,6 @@ public final class ImmPtlCompat {
             api = cached;
         }
         return cached;
-    }
-
-    private static Method completeBiFacedPortal;
-
-    /**
-     * Complète un portail par sa face opposée (bi-faced) via
-     * {@code PortalManipulation.completeBiFacedPortal}, qui crée ET fait
-     * apparaître le portail retourné. Son identifiant rejoint la liste pour que
-     * la fermeture de la porte le supprime aussi.
-     *
-     * <p>Un échec ici n'est pas fatal : la paire principale reste fonctionnelle,
-     * seule la visibilité par l'arrière est perdue.</p>
-     */
-    private static void addFlipped(TardisData data, Entity portal) {
-        try {
-            Method complete = completeBiFacedPortal;
-            if (complete == null) {
-                complete = Class.forName("qouteall.imm_ptl.core.portal.PortalManipulation")
-                        .getMethod("completeBiFacedPortal", api().portal, EntityType.class);
-                completeBiFacedPortal = complete;
-            }
-            Object flipped = complete.invoke(null, portal, portal.getType());
-            if (flipped instanceof Entity entity) {
-                data.portalIds.add(entity.getUUID());
-            }
-        } catch (Throwable t) {
-            EnderPortalsMod.LOGGER.warn(
-                    "Face opposée du portail indisponible — la porte ne sera traversable que par l'avant.", t);
-        }
     }
 
     /**

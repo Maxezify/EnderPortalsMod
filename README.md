@@ -3,7 +3,7 @@
 Mod **Minecraft 1.21.1 / NeoForge** : une porte d'obsidienne plus grande à
 l'intérieur qu'à l'extérieur, qui s'ouvre sur **le monde de l'Ender** — le
 paradis des cubes, un monde-caverne où viennent se reposer les blocs
-détruits. Version courante : **0.8.3**.
+détruits. Version courante : **0.8.4**.
 
 ## La progression
 
@@ -141,9 +141,9 @@ Si [Immersive Portals pour NeoForge](https://github.com/iPortalTeam/ImmersivePor
 (mods `imm_ptl` / `immersive_portals_core`) est installé, l'ouverture de la
 porte crée des portails « voir au travers » entre l'embrasure extérieure et
 la salle intérieure — la continuité visuelle entre les deux dimensions,
-comme un portail du Nether d'Immersive Portals. Les portails sont **bi-way
-et bi-faced** (quatre entités, la topologie d'un portail du Nether) : la
-destination se voit des deux côtés.
+comme un portail du Nether d'Immersive Portals. La paire est **bi-way** :
+deux entités, une par embrasure, traversables dans les deux sens. Pas de
+faces opposées — le fond opaque du caisson les cacherait de toute façon.
 
 Pendant qu'Immersive Portals rend le monde d'en face, la porte n'est pas
 dessinée : sa caméra virtuelle est placée derrière la porte opposée, dont le
@@ -168,7 +168,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.8.3.jar
+# → build/libs/enderportals-0.8.4.jar
 ```
 
 Notes :
