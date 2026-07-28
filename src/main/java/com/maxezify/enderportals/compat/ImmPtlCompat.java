@@ -114,12 +114,16 @@ public final class ImmPtlCompat {
             double rotation = Mth.wrapDegrees(
                     data.exteriorFacing.toYRot() - data.interiorFacing.toYRot() + 180.0);
 
+            // Chaque portail est enregistré dès sa création : si le suivant
+            // échoue, removePortals (bloc catch) sait encore le supprimer.
+            // Les enregistrer tous les deux à la fin laissait le premier
+            // orphelin dans le monde, sans personne pour le nettoyer.
             Entity outer = spawnPortal(exteriorWorld, exteriorCenter, data.exteriorFacing,
                     ModDimensions.ENDER_WORLD, interiorCenter, rotation);
+            data.portalIds.add(outer.getUUID());
+
             Entity inner = spawnPortal(enderWorld, interiorCenter, data.interiorFacing,
                     data.exteriorWorld, exteriorCenter, Mth.wrapDegrees(-rotation));
-
-            data.portalIds.add(outer.getUUID());
             data.portalIds.add(inner.getUUID());
 
             // Chaque portail est complété par sa face opposée : l'ensemble

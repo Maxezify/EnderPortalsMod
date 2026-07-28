@@ -111,7 +111,12 @@ public class TardisDoorBlockEntity extends BlockEntity {
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, TardisDoorBlockEntity door) {
-        door.age++;
+        // L'âge se fige une fois la matérialisation terminée : il ne sert plus
+        // à rien passé ce point, et il grimpait sans fin (dérive du compteur,
+        // perte de précision de age + tickDelta en float à la longue).
+        if (door.dematerializing || door.age < FADE_IN_TICKS) {
+            door.age++;
+        }
         if (level.isClientSide) {
             boolean fading = door.dematerializing || door.age < FADE_IN_TICKS;
             if (fading && level.random.nextInt(2) == 0) {

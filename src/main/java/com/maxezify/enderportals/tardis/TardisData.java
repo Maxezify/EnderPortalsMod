@@ -93,8 +93,12 @@ public class TardisData {
         data.ownerName = nbt.getString("OwnerName");
         data.interiorDoorPos = getPos(nbt, "Interior");
         data.interiorFacing = directionOrDefault(nbt.getString("InteriorFacing"), Direction.SOUTH);
-        data.exteriorWorld = ResourceKey.create(Registries.DIMENSION,
-                ResourceLocation.parse(nbt.getString("ExteriorWorld")));
+        // tryParse plutôt que parse : une sauvegarde abîmée ferait échouer le
+        // chargement du monde entier plutôt que de dégrader une seule porte.
+        ResourceLocation exteriorWorld = ResourceLocation.tryParse(nbt.getString("ExteriorWorld"));
+        data.exteriorWorld = exteriorWorld != null
+                ? ResourceKey.create(Registries.DIMENSION, exteriorWorld)
+                : Level.OVERWORLD;
         data.exteriorPos = getPos(nbt, "Exterior");
         data.exteriorFacing = directionOrDefault(nbt.getString("ExteriorFacing"), Direction.NORTH);
         data.deployed = nbt.getBoolean("Deployed");

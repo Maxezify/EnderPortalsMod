@@ -157,8 +157,11 @@ public class TardisKeyItem extends Item {
                                 TooltipFlag flag) {
         String bound = stack.get(ModComponents.TARDIS_ID.get());
         if (bound != null) {
+            // Le composant est une chaîne libre : une clé forgée à la commande
+            // peut en porter une plus courte que 8 caractères, et un
+            // substring(0, 8) sec ferait planter le client au survol.
             tooltip.add(Component.translatable("enderportals.tooltip.key_bound",
-                    bound.substring(0, 8)).withStyle(ChatFormatting.AQUA));
+                    bound.substring(0, Math.min(8, bound.length()))).withStyle(ChatFormatting.AQUA));
         } else {
             tooltip.add(Component.translatable("enderportals.tooltip.key_unbound").withStyle(ChatFormatting.GRAY));
         }

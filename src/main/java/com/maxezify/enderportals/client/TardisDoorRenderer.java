@@ -21,11 +21,14 @@ import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 
 /**
  * Dessine la Porte de l'Ender : un caisson d'un bloc d'épaisseur composé de
- * pavés fins (aucune face coplanaire — pas de scintillement), avec un
- * panneau qui pivote instantanément contre le flanc gauche à l'ouverture,
- * façon porte vanilla. Hors fondu de matérialisation, tout est rendu sur
- * une couche opaque (z-buffer propre) ; le voile de vide n'apparaît que si
- * aucun portail Immersive Portals ne couvre l'embrasure.
+ * pavés fins (aucune face coplanaire — pas de scintillement). Le battant
+ * s'efface entièrement à l'ouverture : plaqué contre un flanc, il traversait
+ * le plan du portail et gênait autant l'entrée que la vue traversante.
+ *
+ * <p>Hors fondu de matérialisation, tout est rendu sur une couche opaque
+ * (z-buffer propre). Le voile de vide ne bouche l'embrasure ouverte qu'en
+ * l'absence d'Immersive Portals, et la porte n'est pas dessinée du tout dans
+ * les passes de rendu de portail (voir {@link ImmPtlRenderCompat}).</p>
  */
 public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEntity> {
 

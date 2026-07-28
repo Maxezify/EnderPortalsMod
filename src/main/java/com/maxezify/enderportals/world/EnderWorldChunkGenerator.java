@@ -84,6 +84,12 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
     /** Une relique tous les ~N blocs pleins. */
     private static final int RELIC_RARITY = 256;
 
+    // États constants, résolus une fois pour toutes. Le Bloc de l'Ender, lui,
+    // ne peut pas être capturé ici : le registre n'est pas encore peuplé au
+    // chargement de la classe — il est résolu une fois par appel.
+    private static final BlockState BEDROCK = Blocks.BEDROCK.defaultBlockState();
+    private static final BlockState AIR = Blocks.AIR.defaultBlockState();
+
     public EnderWorldChunkGenerator(BiomeSource biomeSource) {
         super(biomeSource);
     }
@@ -100,12 +106,25 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         int bottom = chunk.getMinBuildHeight();
         int top = bottom + chunk.getHeight();
+        // Un seul générateur pour tout le chunk, re-graîné bloc par bloc.
+        // setSeed remet exactement l'état qu'installait le constructeur, donc
+        // les reliques tombent aux mêmes endroits qu'avant — mais sans les
+        // ~32 000 RandomSource alloués par chunk que coûtait un create() par
+        // bloc plein.
+        RandomSource random = RandomSource.create(0L);
+        BlockState enderBlock = ModBlocks.ENDER_BLOCK.get().defaultBlockState();
         for (int dx = 0; dx < 16; dx++) {
             for (int dz = 0; dz < 16; dz++) {
                 int x = chunkPos.getMinBlockX() + dx;
                 int z = chunkPos.getMinBlockZ() + dz;
                 for (int y = bottom; y < top; y++) {
-                    chunk.setBlockState(cursor.set(x, y, z), stateAt(x, y, z, bottom, top), false);
+                    BlockState state = stateAt(x, y, z, bottom, top, random, enderBlock);
+                    // Le chunk arrive déjà rempli d'air : écrire l'air des
+                    // cavernes ne servait qu'à repayer le coût de
+                    // setBlockState (palette, sections, heightmaps).
+                    if (!state.isAir()) {
+                        chunk.setBlockState(cursor.set(x, y, z), state, false);
+                    }
                 }
             }
         }
@@ -114,19 +133,19 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
         return CompletableFuture.completedFuture(chunk);
     }
 
-    private static BlockState stateAt(int x, int y, int z, int bottom, int top) {
+    private static BlockState stateAt(int x, int y, int z, int bottom, int top,
+                                      RandomSource random, BlockState enderBlock) {
         if (y <= bottom + 1 || y >= top - 2) {
-            return Blocks.BEDROCK.defaultBlockState();
+            return BEDROCK;
         }
         if (isCarved(x, y, z, bottom, top)) {
-            return Blocks.AIR.defaultBlockState();
+            return AIR;
         }
-        long hash = Mth.getSeed(x, y, z);
-        RandomSource random = RandomSource.create(hash);
+        random.setSeed(Mth.getSeed(x, y, z));
         if (random.nextInt(RELIC_RARITY) == 0) {
             return RELICS.get(random.nextInt(RELICS.size()));
         }
-        return ModBlocks.ENDER_BLOCK.get().defaultBlockState();
+        return enderBlock;
     }
 
     private static boolean isCarved(int x, int y, int z, int bottom, int top) {
@@ -199,14 +218,15 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
         int bottom = level.getMinBuildHeight();
         int top = bottom + level.getHeight();
         BlockState[] states = new BlockState[level.getHeight()];
+        BlockState enderBlock = ModBlocks.ENDER_BLOCK.get().defaultBlockState();
         for (int i = 0; i < states.length; i++) {
             int y = bottom + i;
             if (y <= bottom + 1 || y >= top - 2) {
-                states[i] = Blocks.BEDROCK.defaultBlockState();
+                states[i] = BEDROCK;
             } else if (isCarved(x, y, z, bottom, top)) {
-                states[i] = Blocks.AIR.defaultBlockState();
+                states[i] = AIR;
             } else {
-                states[i] = ModBlocks.ENDER_BLOCK.get().defaultBlockState();
+                states[i] = enderBlock;
             }
         }
         return new NoiseColumn(bottom, states);

@@ -3,14 +3,15 @@
 Mod **Minecraft 1.21.1 / NeoForge** : une porte d'obsidienne plus grande à
 l'intérieur qu'à l'extérieur, qui s'ouvre sur **le monde de l'Ender** — le
 paradis des cubes, un monde-caverne où viennent se reposer les blocs
-détruits. Version courante : **0.3.0**.
+détruits. Version courante : **0.6.2**.
 
 ## La progression
 
 1. **Le Minerai de l'Ender** se génère dans la pierre de l'End (Y 10–70).
    Minez-le (pioche en fer minimum) pour obtenir des **Cristaux de l'Ender**
    (Fortune fonctionne, Silk Touch ramasse le minerai).
-2. **La Porte inactive** se crafte avec 5 cristaux et une **nether star**.
+2. **La Porte inactive** se crafte avec 8 **obsidiennes pleureuses**, un
+   cristal et une **nether star**.
    C'est une porte normale : elle se pose et se récupère à la pioche.
 3. **Le rituel de la Mace** : munissez-vous d'une **Mace vanilla** (heavy
    core + breeze rod), posez la porte où vous voulez, sautez d'au moins
@@ -124,9 +125,15 @@ rangement cible.
 Le mod fonctionne seul (traversée par contact avec l'embrasure ouverte).
 Si [Immersive Portals pour NeoForge](https://github.com/iPortalTeam/ImmersivePortalsModForNeo)
 (mods `imm_ptl` / `immersive_portals_core`) est installé, l'ouverture de la
-porte crée une paire de portails « voir au travers » entre l'embrasure
-extérieure et la salle intérieure — la continuité visuelle entre les deux
-dimensions, comme un portail du Nether d'Immersive Portals.
+porte crée des portails « voir au travers » entre l'embrasure extérieure et
+la salle intérieure — la continuité visuelle entre les deux dimensions,
+comme un portail du Nether d'Immersive Portals. Les portails sont **bi-way
+et bi-faced** (quatre entités, la topologie d'un portail du Nether) : la
+destination se voit des deux côtés.
+
+Pendant qu'Immersive Portals rend le monde d'en face, la porte n'est pas
+dessinée : sa caméra virtuelle est placée derrière la porte opposée, dont le
+fond boucherait sinon toute la vue traversante.
 
 L'intégration passe par réflexion (aucune dépendance de compilation) : si
 l'API d'Immersive Portals change, le mod bascule automatiquement sur sa
@@ -147,7 +154,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.3.0.jar
+# → build/libs/enderportals-0.6.2.jar
 ```
 
 Notes :

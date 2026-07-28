@@ -27,8 +27,18 @@ versionRange = "[1.21.1,1.22)"
 ordering = "NONE"
 side = "BOTH"
 
+# Immersive Portals : intégration facultative, par réflexion. Les deux modIds
+# sont déclarés — la version NeoForge officielle et ses forks n'utilisent pas
+# le même — pour que le mod soit toujours chargé après lui.
 [[dependencies.enderportals]]
 modId = "imm_ptl"
+type = "optional"
+versionRange = "*"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.enderportals]]
+modId = "immersive_portals_core"
 type = "optional"
 versionRange = "*"
 ordering = "AFTER"
