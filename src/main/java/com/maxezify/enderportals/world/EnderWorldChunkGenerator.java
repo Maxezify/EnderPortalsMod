@@ -148,11 +148,21 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
     /** Sel du tirage des filons : sans lui, ils partageraient leur hasard avec les poches. */
     private static final long VEIN_SEED_SALT = 17L;
 
-    /** Matières des filons. Une seule par filon : la teinte reste franche. */
+    /**
+     * Matières des filons. Une seule par filon : la teinte reste franche.
+     *
+     * <p>La glowstone et le shroomlight — jaune chaud et orange — ont laissé la
+     * place au froglight perlescent, d'un violet pâle. C'est une palette
+     * d'Ender et non de Nether, et surtout Complementary Reimagined connaît ce
+     * bloc nommément dans son {@code block.properties} : il lui applique sa
+     * propre couleur d'éclairage. Avec l'option de lumière colorée du shader,
+     * la brume autour d'un filon se teinte donc de violet sur des dizaines de
+     * blocs. Le froglight est doublé pour dominer la sea lantern.</p>
+     */
     private static final List<BlockState> LUMINOUS = List.of(
-            Blocks.GLOWSTONE.defaultBlockState(),
-            Blocks.SEA_LANTERN.defaultBlockState(),
-            Blocks.SHROOMLIGHT.defaultBlockState());
+            Blocks.PEARLESCENT_FROGLIGHT.defaultBlockState(),
+            Blocks.PEARLESCENT_FROGLIGHT.defaultBlockState(),
+            Blocks.SEA_LANTERN.defaultBlockState());
 
     // États constants, résolus une fois pour toutes. Le Bloc de l'Ender, lui,
     // ne peut pas être capturé ici : le registre n'est pas encore peuplé au

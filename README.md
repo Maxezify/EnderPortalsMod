@@ -3,7 +3,7 @@
 Mod **Minecraft 1.21.1 / NeoForge** : une porte d'obsidienne plus grande à
 l'intérieur qu'à l'extérieur, qui s'ouvre sur **le monde de l'Ender** — le
 paradis des cubes, un monde-caverne où viennent se reposer les blocs
-détruits. Version courante : **0.8.5**.
+détruits. Version courante : **0.9.0**.
 
 ## La progression
 
@@ -45,8 +45,10 @@ ici : pierre, troncs, minerais (jusqu'au diamant), bibliothèques, éponges…
 Ils ne sont pas éparpillés un par un mais **groupés en nuées** d'une même
 matière, si ténues qu'aucun bloc n'en touche un autre : la nuée s'effiloche
 dans la masse au lieu de s'arrêter net. De rares **filons
-lumineux** traversent la masse en longs semis de lueurs obliques : les seuls
-repères d'un monde qui se ressemble partout. Une **cendre claire** tombe en continu.
+lumineux** de froglight perlescent traversent la masse en longs semis de
+lueurs violettes : les seuls repères d'un monde qui se ressemble partout, et
+la seule lumière — l'obscurité y est totale partout ailleurs. Une **cendre
+claire** tombe en continu.
 Quelques cavernes et tunnels étroits serpentent dans la masse — l'essentiel
 reste plein, et c'est à la Pioche de l'Ender qu'on s'y fraie un chemin.
 
@@ -155,6 +157,28 @@ l'API d'Immersive Portals change, le mod bascule automatiquement sur sa
 téléportation classique et l'indique dans les logs. Au démarrage, une ligne
 `Immersive Portals détecté : true/false` confirme la détection.
 
+## Shaders (Complementary Reimagined)
+
+Le monde de l'Ender a ses propres effets de dimension, pensés pour les
+shaders autant que pour le jeu nu : brouillard dense, teinte rendue **sans
+délavage** (c'est elle qui alimente l'uniforme `fogColor` dont Complementary
+tire sa couleur de brume), éclairage **directionnel** — contrairement au
+Nether dont la dimension empruntait les effets, et qui aplatissait le relief
+des galeries. Lumière ambiante à **zéro** : loin d'un filon, il fait
+réellement noir.
+
+Une ligne reste à ajouter de votre côté, dans le fichier
+`shaderpacks/ComplementaryReimagined…/shaders/dimension.properties` — son
+`dimension.world0=*` attrape sinon toute dimension inconnue et traite le
+monde de l'Ender comme l'Overworld :
+
+```
+dimension.world-1=minecraft:the_nether minecraft:nether enderportals:ender_world
+```
+
+Elle débloque le brouillard atmosphérique du Nether et sa tempête de cendres
+volumétrique. Le mod ne peut pas l'écrire : c'est un fichier du shaderpack.
+
 ## Compatibilité générale
 
 Le mod est conçu pour cohabiter sereinement avec d'autres mods : aucun
@@ -169,7 +193,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.8.5.jar
+# → build/libs/enderportals-0.9.0.jar
 ```
 
 Notes :
