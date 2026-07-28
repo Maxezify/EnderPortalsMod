@@ -114,13 +114,21 @@ public final class ImmPtlCompat {
             double rotation = Mth.wrapDegrees(
                     data.exteriorFacing.toYRot() - data.interiorFacing.toYRot() + 180.0);
 
-            UUID outer = spawnPortal(exteriorWorld, exteriorCenter, data.exteriorFacing,
+            Entity outer = spawnPortal(exteriorWorld, exteriorCenter, data.exteriorFacing,
                     ModDimensions.ENDER_WORLD, interiorCenter, rotation);
-            UUID inner = spawnPortal(enderWorld, interiorCenter, data.interiorFacing,
+            Entity inner = spawnPortal(enderWorld, interiorCenter, data.interiorFacing,
                     data.exteriorWorld, exteriorCenter, Mth.wrapDegrees(-rotation));
 
-            data.portalIds.add(outer);
-            data.portalIds.add(inner);
+            data.portalIds.add(outer.getUUID());
+            data.portalIds.add(inner.getUUID());
+
+            // Chaque portail est complété par sa face opposée : l'ensemble
+            // devient bi-way ET bi-faced (4 entités), comme un portail du
+            // Nether. La porte ouverte montre alors la destination des DEUX
+            // côtés — l'arrière du caisson n'apparaît plus comme un
+            // encadrement vide, faute de portail de ce côté.
+            addFlipped(data, outer);
+            addFlipped(data, inner);
             data.immptlActive = true;
             EnderPortalsMod.LOGGER.info("Portails Immersive Portals créés pour le TARDIS {}", data.id);
         } catch (Throwable t) {
@@ -198,7 +206,7 @@ public final class ImmPtlCompat {
      * Crée un portail Immersive Portals par réflexion.
      * Plan 0.9 × 2.0, normale = {@code facing}.
      */
-    private static UUID spawnPortal(ServerLevel level, Vec3 origin, Direction facing,
+    private static Entity spawnPortal(ServerLevel level, Vec3 origin, Direction facing,
                                     ResourceKey<Level> destinationWorld, Vec3 destination,
                                     double rotationDegrees) throws Exception {
         Class<?> portalClass = Class.forName(PORTAL_CLASS);
@@ -226,7 +234,32 @@ public final class ImmPtlCompat {
         if (!level.addFreshEntity(portal)) {
             throw new IllegalStateException("Le monde a refusé le portail");
         }
-        return portal.getUUID();
+        return portal;
+    }
+
+    /**
+     * Complète un portail par sa face opposée (bi-faced) via
+     * {@code PortalManipulation.completeBiFacedPortal}, qui crée ET fait
+     * apparaître le portail retourné. Son identifiant rejoint la liste pour que
+     * la fermeture de la porte le supprime aussi.
+     *
+     * <p>Un échec ici n'est pas fatal : la paire principale reste fonctionnelle,
+     * seule la visibilité par l'arrière est perdue.</p>
+     */
+    private static void addFlipped(TardisData data, Entity portal) {
+        try {
+            Class<?> portalClass = Class.forName(PORTAL_CLASS);
+            Class<?> manipulation = Class.forName("qouteall.imm_ptl.core.portal.PortalManipulation");
+            Object flipped = manipulation
+                    .getMethod("completeBiFacedPortal", portalClass, EntityType.class)
+                    .invoke(null, portal, portal.getType());
+            if (flipped instanceof Entity entity) {
+                data.portalIds.add(entity.getUUID());
+            }
+        } catch (Throwable t) {
+            EnderPortalsMod.LOGGER.warn(
+                    "Face opposée du portail indisponible — la porte ne sera traversable que par l'avant.", t);
+        }
     }
 
     /**
