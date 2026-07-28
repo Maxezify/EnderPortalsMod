@@ -27,8 +27,9 @@ import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
  *
  * <p>Hors fondu de matérialisation, tout est rendu sur une couche opaque
  * (z-buffer propre). Le voile de vide ne bouche l'embrasure ouverte qu'en
- * l'absence d'Immersive Portals, et la porte n'est pas dessinée du tout dans
- * les passes de rendu de portail (voir {@link ImmPtlRenderCompat}).</p>
+ * l'absence d'Immersive Portals. Dans une passe de rendu de portail (voir
+ * {@link ImmPtlRenderCompat}), le caisson reste dessiné mais son fond est
+ * omis : c'est lui, et lui seul, que la caméra virtuelle a devant elle.</p>
  */
 public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEntity> {
 
@@ -74,8 +75,7 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
      *
      * <p>En revanche on ne redéfinit pas {@code shouldRenderOffScreen} : le
      * dessiner hors du champ de vision, à chaque image et pour chaque porte à
-     * portée, ne servait plus à rien depuis que la porte est simplement
-     * ignorée dans les passes de rendu de portail.</p>
+     * portée, coûtait sans rien apporter.</p>
      */
     @Override
     public int getViewDistance() {
@@ -98,12 +98,13 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
         // éloigner le fond ne change rien puisqu'il est devant elle quoi qu'il
         // arrive.
         //
-        // On ne dessine donc pas la porte dans les passes de rendu de portail —
-        // la solution retenue par NTM Immersive Portals, qui annule de la même
-        // façon le rendu de l'extérieur et de la porte intérieure du TARDIS.
-        if (ImmPtlRenderCompat.isRenderingThroughPortal(door.getLevel())) {
-            return;
-        }
+        // Seul le fond gêne. La 0.6.1 supprimait la porte entière dans ces
+        // passes — la solution de NTM Immersive Portals — mais la porte d'en
+        // face disparaissait alors de la vue traversante, pour ne réapparaître
+        // qu'une fois le seuil franchi : c'est ce saut que l'on voyait. On ne
+        // retire donc que le fond, et le caisson d'en face reste visible au
+        // travers du portail, des deux côtés.
+        boolean insidePortal = ImmPtlRenderCompat.isRenderingThroughPortal(door.getLevel());
         float alpha = door.getAlpha(tickDelta);
         if (alpha <= 0.02f) {
             return;
@@ -126,11 +127,16 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
                 : RenderType.entityTranslucent(TEXTURE));
 
         // La coque : dos, flancs, plafond, plancher — des pavés fins disjoints.
+        //
         // Le fond est un pavé plein, opaque, éclairé normalement, présent porte
-        // ouverte comme fermée : la vue traversante ne dépend plus de lui, mais
-        // du fait que la porte d'en face n'est pas dessinée dans les passes de
-        // portail (garde en tête de render).
-        drawBox(vertexBuffer, entry, -0.41f, 0.0f, -0.47f, 0.41f, 2.0f, -0.42f, AXIS_Z, BACK, BACK, alpha, lightCoord, overlay);
+        // ouverte comme fermée — sauf dans une passe de portail, où il est
+        // précisément l'obstacle que la caméra virtuelle a devant elle. Les
+        // montants, le plafond et le plancher, eux, restent : ce sont eux qui
+        // encadrent la vue traversante et évitent que le caisson d'en face
+        // surgisse au franchissement.
+        if (!insidePortal) {
+            drawBox(vertexBuffer, entry, -0.41f, 0.0f, -0.47f, 0.41f, 2.0f, -0.42f, AXIS_Z, BACK, BACK, alpha, lightCoord, overlay);
+        }
         drawBox(vertexBuffer, entry, -0.47f, 0.0f, -0.47f, -0.42f, 2.0f, 0.47f, AXIS_X, BACK, BACK, alpha, lightCoord, overlay);
         drawBox(vertexBuffer, entry, 0.42f, 0.0f, -0.47f, 0.47f, 2.0f, 0.47f, AXIS_X, BACK, BACK, alpha, lightCoord, overlay);
         drawBox(vertexBuffer, entry, -0.41f, 1.95f, -0.41f, 0.41f, 1.98f, 0.44f, AXIS_Y, EDGE, EDGE, alpha, lightCoord, overlay);
