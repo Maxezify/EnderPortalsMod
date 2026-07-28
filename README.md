@@ -3,7 +3,7 @@
 Mod **Minecraft 1.21.1 / NeoForge** : une porte d'obsidienne plus grande à
 l'intérieur qu'à l'extérieur, qui s'ouvre sur **le monde de l'Ender** — le
 paradis des cubes, un monde-caverne où viennent se reposer les blocs
-détruits. Version courante : **0.8.1**.
+détruits. Version courante : **0.8.2**.
 
 ## La progression
 
@@ -42,9 +42,9 @@ Un monde entièrement souterrain de **Blocs de l'Ender** — gris,
 semi-transparents comme le bloc de miel, doucement luminescents. Au travers
 de la masse translucide, on **entrevoit les blocs-reliques** venus mourir
 ici : pierre, troncs, minerais (jusqu'au diamant), bibliothèques, éponges…
-Ils ne sont pas éparpillés un par un mais **groupés en nuées** d'une
-vingtaine de blocs d'une même matière, dispersés et jamais collés : la nuée
-s'effiloche dans la masse au lieu de s'arrêter net. De rares **filons
+Ils ne sont pas éparpillés un par un mais **groupés en nuées** d'une même
+matière, si ténues qu'aucun bloc n'en touche un autre : la nuée s'effiloche
+dans la masse au lieu de s'arrêter net. De rares **filons
 lumineux** traversent la masse en longs semis de lueurs obliques : les seuls
 repères d'un monde qui se ressemble partout. Une **cendre claire** tombe en continu.
 Quelques cavernes et tunnels étroits serpentent dans la masse — l'essentiel
@@ -168,7 +168,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.8.1.jar
+# → build/libs/enderportals-0.8.2.jar
 ```
 
 Notes :

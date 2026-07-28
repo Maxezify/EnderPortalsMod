@@ -110,18 +110,20 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
      * n'est donc jamais compact, et les bords se dissolvent dans la masse au
      * lieu de s'arrêter net sur une surface de sphère.</p>
      *
-     * <p>Mesuré hors du jeu sur 144 chunks : 4,0 poches et 83 blocs de relique
-     * par chunk, soit 20 blocs dispersés dans une sphère de rayon 3,25 —
-     * 14 % de remplissage. L'ancien monde semait 112 blocs isolés par chunk sur
-     * une hauteur trois fois moindre : la densité par volume tombe au quart.</p>
+     * <p>Mesuré hors du jeu sur 144 chunks : 6,3 poches et 82 blocs de relique
+     * par chunk, soit 13 blocs dispersés dans une sphère de rayon 3,5 —
+     * 7,2 % de remplissage. Autant de matière qu'auparavant, mais deux fois
+     * plus diluée : des nuées plus nombreuses, plus petites et plus ténues.
+     * L'ancien monde semait 112 blocs isolés par chunk sur une hauteur trois
+     * fois moindre — la densité par volume tombe au quart.</p>
      */
     private static final int CLUSTER_CELL = 16;
-    private static final int CLUSTER_RARITY = 6;
+    private static final int CLUSTER_RARITY = 4;
     /** Rayon des poches, en blocs. Le maximum tient dans la maille (voir relicAt). */
-    private static final double CLUSTER_MIN_RADIUS = 2.5;
-    private static final double CLUSTER_RADIUS_SPREAD = 1.5;
+    private static final double CLUSTER_MIN_RADIUS = 3.0;
+    private static final double CLUSTER_RADIUS_SPREAD = 1.0;
     /** Remplissage au cœur d'une poche. En dessous de 1, rien n'est jamais collé. */
-    private static final double CLUSTER_DENSITY = 0.55;
+    private static final double CLUSTER_DENSITY = 0.28;
 
     /**
      * Filons lumineux : là où deux bruits de basse fréquence s'annulent
@@ -134,14 +136,15 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
      * plafonne à {@value #VEIN_DENSITY}. La traînée se lit comme un semis de
      * lueurs le long d'une courbe, pas comme un câble.
      *
-     * <p>Mesuré hors du jeu : l'enveloppe à 0,0008 est huit fois plus
+     * <p>Mesuré hors du jeu : l'enveloppe à 0,0016 est seize fois plus
      * volumineuse qu'un fil plein à 0,0001, et la dispersion ramène le compte à
-     * environ 65 blocs lumineux par chunk — le même qu'avant, étalé huit fois
-     * plus large. Le Bloc de l'Ender n'atténuant pas la lumière (il ne masque
-     * pas la vue), chacun éclaire loin : inutile d'en mettre davantage.</p>
+     * environ 62 blocs lumineux par chunk — le même compte depuis la 0.8.0,
+     * pour un remplissage tombé à 5 % de l'enveloppe. Le Bloc de l'Ender
+     * n'atténuant pas la lumière (il ne masque pas la vue), chacun éclaire
+     * loin : inutile d'en mettre davantage.</p>
      */
-    private static final double VEIN_BUDGET = 0.0008;
-    private static final double VEIN_DENSITY = 0.20;
+    private static final double VEIN_BUDGET = 0.0016;
+    private static final double VEIN_DENSITY = 0.10;
     /** Sel du tirage des filons : sans lui, ils partageraient leur hasard avec les poches. */
     private static final long VEIN_SEED_SALT = 17L;
 
