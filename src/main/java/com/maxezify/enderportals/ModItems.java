@@ -2,6 +2,7 @@ package com.maxezify.enderportals;
 
 import com.maxezify.enderportals.item.CentralizerBlockItem;
 import com.maxezify.enderportals.item.EnderBagItem;
+import com.maxezify.enderportals.item.EnderPickaxeItem;
 import com.maxezify.enderportals.item.EnderToolMaterial;
 import com.maxezify.enderportals.item.TardisKeyItem;
 import net.minecraft.core.component.DataComponents;
