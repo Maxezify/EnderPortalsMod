@@ -45,16 +45,18 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
 
     /** Face avant extérieure du caisson. */
     private static final float FRONT_Z = 0.47f;
+    /** Épaisseur d'une trappe posée à la verticale (3/16) : battant et extension arrière. */
+    private static final float PANEL_THICKNESS = 0.1875f;
     /**
-     * Face arrière extérieure. Le caisson est dessiné sur DEUX blocs de
-     * profondeur ; le bloc, lui, n'en occupe toujours qu'un (aucun impact sur
-     * la pose, les collisions ni les bases existantes).
+     * Face arrière extérieure. Le caisson occupe le premier bloc en entier
+     * (jusqu'à la limite z = −0,5) puis déborde sur le bloc suivant d'une
+     * simple épaisseur de trappe : c'est là que se trouve le fond. Le bloc,
+     * lui, n'occupe toujours qu'un emplacement — aucun impact sur la pose, les
+     * collisions ni les bases existantes.
      */
-    private static final float REAR_Z = -1.47f;
+    private static final float REAR_Z = -0.5f - PANEL_THICKNESS;
     /** Épaisseur des parois de la coque. */
     private static final float SHELL = 0.05f;
-    /** Épaisseur du battant : celle d'une trappe posée à la verticale (3/16). */
-    private static final float PANEL_THICKNESS = 0.1875f;
 
     /**
      * Haut du panneau de pseudo, juste sous le motif étoile. L'étoile occupe
@@ -118,16 +120,13 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
 
         // La coque : dos, flancs, plafond, plancher — des pavés fins disjoints.
         //
-        // Le fond, au bout du second bloc de profondeur. Il occupe la même
-        // embrasure que la vue traversante du portail — dont le contenu porte
-        // la profondeur de la scène lointaine de destination et se fait donc
-        // recouvrir, quelle que soit la distance du fond. Porte ouverte avec
-        // Immersive Portals, on y renonce au profit du portail ; sans le mod,
-        // il reste et le voile de vide ci-dessous ferme l'embrasure.
-        if (!open || !ImmPtlCompat.isLoaded()) {
-            drawBox(vertexBuffer, entry, -0.41f, 0.0f, REAR_Z, 0.41f, 2.0f, REAR_Z + SHELL, AXIS_Z, BACK, BACK, alpha, lightCoord, overlay);
-        }
-        // Flancs, plafond et plancher, filés sur les deux blocs de profondeur.
+        // Le fond, logé dans l'extension arrière (le bloc suivant), et dessiné
+        // en toutes circonstances. Le plan du portail Immersive Portals reste
+        // dans le premier bloc : on vérifie ainsi si une géométrie située au-delà
+        // de la limite de bloc laisse la vue traversante intacte, comme les
+        // blocs situés derrière un portail du Nether.
+        drawBox(vertexBuffer, entry, -0.41f, 0.0f, REAR_Z, 0.41f, 2.0f, REAR_Z + SHELL, AXIS_Z, BACK, BACK, alpha, lightCoord, overlay);
+        // Flancs, plafond et plancher, filés jusqu'à l'extension arrière.
         drawBox(vertexBuffer, entry, -0.47f, 0.0f, REAR_Z, -0.42f, 2.0f, FRONT_Z, AXIS_X, BACK, BACK, alpha, lightCoord, overlay);
         drawBox(vertexBuffer, entry, 0.42f, 0.0f, REAR_Z, 0.47f, 2.0f, FRONT_Z, AXIS_X, BACK, BACK, alpha, lightCoord, overlay);
         drawBox(vertexBuffer, entry, -0.41f, 1.95f, REAR_Z + SHELL, 0.41f, 1.98f, 0.44f, AXIS_Y, EDGE, EDGE, alpha, lightCoord, overlay);
