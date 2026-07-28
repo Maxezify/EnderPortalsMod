@@ -41,8 +41,20 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
                     BiomeSource.CODEC.fieldOf("biome_source").forGetter(generator -> generator.biomeSource)
             ).apply(instance, EnderWorldChunkGenerator::new));
 
-    private static final int MIN_Y = 0;
-    private static final int HEIGHT = 128;
+    /**
+     * Plage de construction, identique à celle du monde normal : de −64 à 320.
+     * Doit rester d'accord avec {@code min_y} et {@code height} du fichier
+     * {@code dimension_type/ender_world.json} — le jeu lit le type de dimension
+     * pour dimensionner les chunks, et le générateur pour les remplir.
+     */
+    private static final int MIN_Y = -64;
+    private static final int HEIGHT = 384;
+
+    /**
+     * Épaisseur des calottes de bedrock qui ferment le monde en haut et en bas
+     * — la même que celle des murs de séparation.
+     */
+    private static final int CAP_THICKNESS = 2;
 
     // Bruits fixes : le paradis des blocs est le même dans toutes les graines.
     private static final ImprovedNoise CAVERN = new ImprovedNoise(RandomSource.create(0x7A4D15L));
@@ -105,8 +117,9 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
      * Cette colonne fait-elle partie d'un mur de séparation ? Les parcelles
      * s'enroulent en spirale dans le plan XZ : il faut donc un quadrillage,
      * deux familles de murs perpendiculaires, pour enfermer chaque porte dans
-     * sa propre case de {@code PLOT_SPACING} blocs de côté. Les murs sont
-     * infinis en hauteur : impossible de passer par-dessus ni par-dessous.
+     * sa propre case de {@code PLOT_SPACING} blocs de côté. Les murs montent
+     * de la calotte de bedrock du bas à celle du haut, sans interruption :
+     * impossible de passer par-dessus ni par-dessous.
      */
     private static boolean isPlotWall(int x, int z) {
         return isWallAxis(x) || isWallAxis(z);
@@ -163,7 +176,7 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
     private static BlockState stateAt(int x, int y, int z, int bottom, int top,
                                       RandomSource random, BlockState enderBlock) {
         // Le mur passe avant le creusement : aucune caverne ne doit le percer.
-        if (isPlotWall(x, z) || y <= bottom + 1 || y >= top - 2) {
+        if (isPlotWall(x, z) || y < bottom + CAP_THICKNESS || y >= top - CAP_THICKNESS) {
             return BEDROCK;
         }
         if (isCarved(x, y, z, bottom, top)) {
@@ -221,7 +234,9 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
 
     @Override
     public int getSeaLevel() {
-        return MIN_Y;
+        // Aucune mer ici. La valeur reste 0, celle qu'elle avait quand le monde
+        // commençait à 0 : la faire suivre MIN_Y l'aurait passée à -64 sans raison.
+        return 0;
     }
 
     @Override
@@ -236,12 +251,12 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
         if (isPlotWall(x, z)) {
             return top;
         }
-        for (int y = top - 3; y > bottom + 1; y--) {
+        for (int y = top - CAP_THICKNESS - 1; y >= bottom + CAP_THICKNESS; y--) {
             if (!isCarved(x, y, z, bottom, top)) {
                 return y + 1;
             }
         }
-        return bottom + 2;
+        return bottom + CAP_THICKNESS;
     }
 
     @Override
@@ -253,7 +268,7 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
         boolean wall = isPlotWall(x, z);
         for (int i = 0; i < states.length; i++) {
             int y = bottom + i;
-            if (wall || y <= bottom + 1 || y >= top - 2) {
+            if (wall || y < bottom + CAP_THICKNESS || y >= top - CAP_THICKNESS) {
                 states[i] = BEDROCK;
             } else if (isCarved(x, y, z, bottom, top)) {
                 states[i] = AIR;
