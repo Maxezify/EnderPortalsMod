@@ -3,7 +3,7 @@
 Mod **Minecraft 1.21.1 / NeoForge** : une porte d'obsidienne plus grande à
 l'intérieur qu'à l'extérieur, qui s'ouvre sur **le monde de l'Ender** — le
 paradis des cubes, un monde-caverne où viennent se reposer les blocs
-détruits. Version courante : **0.6.2**.
+détruits. Version courante : **0.7.0**.
 
 ## La progression
 
@@ -43,10 +43,13 @@ semi-transparents comme le bloc de miel, doucement luminescents. Au travers
 de la masse translucide, on **entrevoit les blocs-reliques** venus mourir
 ici : pierre, troncs, minerais (jusqu'au diamant), glowstone, éponges…
 Cavernes et tunnels serpentent dans la masse. Chaque porte éveillée reçoit
-sa parcelle (espacées de 8192 blocs) : construisez-y base, fermes et
-stockage — les lits et ancres de réapparition y fonctionnent. Le pseudo du
-propriétaire s'affiche sur un petit panneau à l'avant de la porte, et tout
-fonctionne en multijoueur (logique côté serveur, données synchronisées).
+sa parcelle — une case de 8192 blocs de côté, attribuée en spirale autour de
+l'origine : construisez-y base, fermes et stockage, les lits et ancres de
+réapparition y fonctionnent. Les cases sont **cloisonnées par un quadrillage
+de murs de bedrock de 2 blocs d'épaisseur**, infinis en hauteur : on ne peut
+pas marcher jusque chez le voisin. Le pseudo du propriétaire s'affiche sur un
+petit panneau à l'avant de la porte, et tout fonctionne en multijoueur
+(logique côté serveur, données synchronisées).
 
 ## Le stockage : Transmetteur d'objet & Sac de l'Ender
 
@@ -154,7 +157,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.6.2.jar
+# → build/libs/enderportals-0.7.0.jar
 ```
 
 Notes :

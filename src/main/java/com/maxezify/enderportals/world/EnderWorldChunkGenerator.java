@@ -1,6 +1,7 @@
 package com.maxezify.enderportals.world;
 
 import com.maxezify.enderportals.ModBlocks;
+import com.maxezify.enderportals.tardis.TardisStateManager;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
@@ -90,6 +91,32 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
     private static final BlockState BEDROCK = Blocks.BEDROCK.defaultBlockState();
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
 
+    /** Épaisseur du mur de bedrock qui sépare deux parcelles voisines. */
+    private static final int PLOT_WALL_THICKNESS = 2;
+    /**
+     * Décalage du mur dans le pas des parcelles. Les portes intérieures sont
+     * posées à {@code n × PLOT_SPACING + 8} ; en plaçant les murs à mi-pas, on
+     * enferme chaque porte au centre de son enclos plutôt que de l'adosser
+     * aussitôt à une paroi.
+     */
+    private static final int PLOT_WALL_OFFSET = TardisStateManager.PLOT_SPACING / 2;
+
+    /**
+     * Cette colonne fait-elle partie d'un mur de séparation ? Les parcelles
+     * s'enroulent en spirale dans le plan XZ : il faut donc un quadrillage,
+     * deux familles de murs perpendiculaires, pour enfermer chaque porte dans
+     * sa propre case de {@code PLOT_SPACING} blocs de côté. Les murs sont
+     * infinis en hauteur : impossible de passer par-dessus ni par-dessous.
+     */
+    private static boolean isPlotWall(int x, int z) {
+        return isWallAxis(x) || isWallAxis(z);
+    }
+
+    private static boolean isWallAxis(int coordinate) {
+        return Math.floorMod(coordinate - PLOT_WALL_OFFSET, TardisStateManager.PLOT_SPACING)
+                < PLOT_WALL_THICKNESS;
+    }
+
     public EnderWorldChunkGenerator(BiomeSource biomeSource) {
         super(biomeSource);
     }
@@ -135,7 +162,8 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
 
     private static BlockState stateAt(int x, int y, int z, int bottom, int top,
                                       RandomSource random, BlockState enderBlock) {
-        if (y <= bottom + 1 || y >= top - 2) {
+        // Le mur passe avant le creusement : aucune caverne ne doit le percer.
+        if (isPlotWall(x, z) || y <= bottom + 1 || y >= top - 2) {
             return BEDROCK;
         }
         if (isCarved(x, y, z, bottom, top)) {
@@ -205,6 +233,9 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
     public int getBaseHeight(int x, int z, Heightmap.Types type, LevelHeightAccessor level, RandomState random) {
         int bottom = level.getMinBuildHeight();
         int top = bottom + level.getHeight();
+        if (isPlotWall(x, z)) {
+            return top;
+        }
         for (int y = top - 3; y > bottom + 1; y--) {
             if (!isCarved(x, y, z, bottom, top)) {
                 return y + 1;
@@ -219,9 +250,10 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
         int top = bottom + level.getHeight();
         BlockState[] states = new BlockState[level.getHeight()];
         BlockState enderBlock = ModBlocks.ENDER_BLOCK.get().defaultBlockState();
+        boolean wall = isPlotWall(x, z);
         for (int i = 0; i < states.length; i++) {
             int y = bottom + i;
-            if (y <= bottom + 1 || y >= top - 2) {
+            if (wall || y <= bottom + 1 || y >= top - 2) {
                 states[i] = BEDROCK;
             } else if (isCarved(x, y, z, bottom, top)) {
                 states[i] = AIR;

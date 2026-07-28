@@ -213,33 +213,68 @@ public final class ImmPtlCompat {
     private static Entity spawnPortal(ServerLevel level, Vec3 origin, Direction facing,
                                     ResourceKey<Level> destinationWorld, Vec3 destination,
                                     double rotationDegrees) throws Exception {
-        Class<?> portalClass = Class.forName(PORTAL_CLASS);
-        EntityType<?> type = (EntityType<?>) staticFieldValue(portalClass, "entityType", "ENTITY_TYPE");
-        Entity portal = type.create(level);
+        Api portalApi = api();
+        Entity portal = portalApi.entityType.create(level);
         if (portal == null) {
             throw new IllegalStateException("EntityType du portail introuvable");
         }
 
-        invoke(portalClass, portal, "setOriginPos", new Class<?>[]{Vec3.class}, origin);
-        invoke(portalClass, portal, "setDestinationDimension", new Class<?>[]{ResourceKey.class}, destinationWorld);
-        invoke(portalClass, portal, "setDestination", new Class<?>[]{Vec3.class}, destination);
+        portalApi.setOriginPos.invoke(portal, origin);
+        portalApi.setDestinationDimension.invoke(portal, destinationWorld);
+        portalApi.setDestination.invoke(portal, destination);
 
         // axisW × axisH doit pointer vers l'extérieur de la porte (= facing).
         Vec3 axisW = vector(facing.getCounterClockWise());
         Vec3 axisH = new Vec3(0.0, 1.0, 0.0);
         // 0,8 × 1,9 : le plan du portail doit tenir dans l'embrasure du caisson
         // (parois à ±0,44, plancher/plafond à 0,03/1,97) sans les traverser.
-        invoke(portalClass, portal, "setOrientationAndSize",
-                new Class<?>[]{Vec3.class, Vec3.class, double.class, double.class},
-                axisW, axisH, 0.8, 1.9);
+        portalApi.setOrientationAndSize.invoke(portal, axisW, axisH, 0.8, 1.9);
 
-        applyRotation(portalClass, portal, rotationDegrees);
+        applyRotation(portal, rotationDegrees);
 
         if (!level.addFreshEntity(portal)) {
             throw new IllegalStateException("Le monde a refusé le portail");
         }
         return portal;
     }
+
+    /**
+     * Les poignées de réflexion vers le cœur d'Immersive Portals, résolues une
+     * seule fois. Elles n'ont rien à faire dans le chemin chaud — mais surtout,
+     * les tenir groupées ici met en un seul endroit tout ce que le mod attend
+     * de l'API, et un journal d'échec précis le jour où elle bouge.
+     */
+    private static final class Api {
+        final Class<?> portal;
+        final EntityType<?> entityType;
+        final Method setOriginPos;
+        final Method setDestinationDimension;
+        final Method setDestination;
+        final Method setOrientationAndSize;
+
+        Api() throws Exception {
+            portal = Class.forName(PORTAL_CLASS);
+            entityType = (EntityType<?>) staticFieldValue(portal, "entityType", "ENTITY_TYPE");
+            setOriginPos = portal.getMethod("setOriginPos", Vec3.class);
+            setDestinationDimension = portal.getMethod("setDestinationDimension", ResourceKey.class);
+            setDestination = portal.getMethod("setDestination", Vec3.class);
+            setOrientationAndSize = portal.getMethod("setOrientationAndSize",
+                    Vec3.class, Vec3.class, double.class, double.class);
+        }
+    }
+
+    private static Api api;
+
+    private static Api api() throws Exception {
+        Api cached = api;
+        if (cached == null) {
+            cached = new Api();
+            api = cached;
+        }
+        return cached;
+    }
+
+    private static Method completeBiFacedPortal;
 
     /**
      * Complète un portail par sa face opposée (bi-faced) via
@@ -252,11 +287,13 @@ public final class ImmPtlCompat {
      */
     private static void addFlipped(TardisData data, Entity portal) {
         try {
-            Class<?> portalClass = Class.forName(PORTAL_CLASS);
-            Class<?> manipulation = Class.forName("qouteall.imm_ptl.core.portal.PortalManipulation");
-            Object flipped = manipulation
-                    .getMethod("completeBiFacedPortal", portalClass, EntityType.class)
-                    .invoke(null, portal, portal.getType());
+            Method complete = completeBiFacedPortal;
+            if (complete == null) {
+                complete = Class.forName("qouteall.imm_ptl.core.portal.PortalManipulation")
+                        .getMethod("completeBiFacedPortal", api().portal, EntityType.class);
+                completeBiFacedPortal = complete;
+            }
+            Object flipped = complete.invoke(null, portal, portal.getType());
             if (flipped instanceof Entity entity) {
                 data.portalIds.add(entity.getUUID());
             }
@@ -271,24 +308,58 @@ public final class ImmPtlCompat {
      * en cas d'échec on préfère lever l'exception et laisser
      * {@link #tryCreatePortals} retomber sur la téléportation classique.
      */
-    private static void applyRotation(Class<?> portalClass, Entity portal, double degrees) throws Exception {
+    private static void applyRotation(Entity portal, double degrees) throws Exception {
         if (Math.abs(Mth.wrapDegrees(degrees)) < 1.0) {
             return;
         }
-        Class<?> quaternionClass = Class.forName("qouteall.q_misc_util.my_util.DQuaternion");
-        Object rotation = quaternionClass
-                .getMethod("rotationByDegrees", Vec3.class, double.class)
-                .invoke(null, new Vec3(0.0, 1.0, 0.0), degrees);
-        for (String methodName : new String[]{"setRotationTransformation", "setRotation", "setRotationTransformationD"}) {
-            try {
-                portalClass.getMethod(methodName, quaternionClass).invoke(portal, rotation);
-                return;
-            } catch (NoSuchMethodException ignored) {
-                // On tente le nom suivant.
-            }
+        Rotation handles = rotationHandles();
+        Object quaternion = handles.rotationByDegrees.invoke(null, new Vec3(0.0, 1.0, 0.0), degrees);
+        if (handles.setter != null) {
+            handles.setter.invoke(portal, quaternion);
+        } else {
+            handles.field.set(portal, quaternion);
         }
-        Field field = portalClass.getField("rotation");
-        field.set(portal, rotation);
+    }
+
+    /**
+     * Poignées de la rotation, résolues à part et seulement à la demande : une
+     * porte orientée nord ou sud n'a besoin d'aucune rotation, et doit
+     * continuer de fonctionner même sur une version d'Immersive Portals dont
+     * le quaternion aurait changé de nom.
+     */
+    private static final class Rotation {
+        final Method rotationByDegrees;
+        /** Le premier des noms connus qui existe, ou null si aucun. */
+        final Method setter;
+        /** Repli sur le champ public, seulement si aucune méthode ne convient. */
+        final Field field;
+
+        Rotation(Class<?> portalClass) throws Exception {
+            Class<?> quaternion = Class.forName("qouteall.q_misc_util.my_util.DQuaternion");
+            rotationByDegrees = quaternion.getMethod("rotationByDegrees", Vec3.class, double.class);
+            Method found = null;
+            for (String name : new String[]{"setRotationTransformation", "setRotation", "setRotationTransformationD"}) {
+                try {
+                    found = portalClass.getMethod(name, quaternion);
+                    break;
+                } catch (NoSuchMethodException ignored) {
+                    // On tente le nom suivant.
+                }
+            }
+            setter = found;
+            field = found == null ? portalClass.getField("rotation") : null;
+        }
+    }
+
+    private static Rotation rotationHandles;
+
+    private static Rotation rotationHandles() throws Exception {
+        Rotation cached = rotationHandles;
+        if (cached == null) {
+            cached = new Rotation(api().portal);
+            rotationHandles = cached;
+        }
+        return cached;
     }
 
     private static Object staticFieldValue(Class<?> owner, String... names) throws Exception {
@@ -301,12 +372,6 @@ public final class ImmPtlCompat {
             }
         }
         throw new NoSuchFieldException(String.join("/", names));
-    }
-
-    private static void invoke(Class<?> owner, Object target, String name, Class<?>[] parameterTypes, Object... args)
-            throws Exception {
-        Method method = owner.getMethod(name, parameterTypes);
-        method.invoke(target, args);
     }
 
     private ImmPtlCompat() {

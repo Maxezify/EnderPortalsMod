@@ -13,6 +13,13 @@ import net.minecraft.world.level.block.Block;
  * rapide. Son « incorrect tag » est vide : la pioche de l'Ender récolte tout,
  * y compris les Blocs de l'Ender (que les pioches vanilla ne peuvent pas
  * faire tomber, via les tags incorrect_for_*_tool).
+ *
+ * <p>Attention : la pioche n'étant pas un {@code TieredItem} (elle porte un
+ * composant {@code Tool} sur mesure), le jeu ne consulte de ce palier que
+ * {@link #getSpeed()} et {@link #getAttackDamageBonus()}, via
+ * {@code PickaxeItem.createAttributes}. Le reste n'est là que pour honorer
+ * l'interface — la réparation, elle, est déclarée par
+ * {@link EnderPickaxeItem#isValidRepairItem}.</p>
  */
 public enum EnderToolMaterial implements Tier {
     INSTANCE;

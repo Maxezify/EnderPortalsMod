@@ -20,8 +20,13 @@ import java.util.UUID;
  */
 public class TardisStateManager extends SavedData {
 
-    /** Espacement entre deux parcelles intérieures, en blocs. */
-    private static final int PLOT_SPACING = 8192;
+    /**
+     * Espacement entre deux parcelles intérieures, en blocs. Les parcelles
+     * s'égrènent sur l'axe X. Le générateur du monde de l'Ender s'appuie sur
+     * cette valeur pour placer ses murs de bedrock : les deux doivent rester
+     * d'accord, d'où la constante partagée.
+     */
+    public static final int PLOT_SPACING = 8192;
     /** Hauteur de la porte intérieure dans le monde de l'Ender. */
     private static final int PLOT_Y = 64;
 
@@ -82,8 +87,45 @@ public class TardisStateManager extends SavedData {
         }
     }
 
+    /**
+     * Emplacement de la porte intérieure de la n-ième parcelle. Les parcelles
+     * s'enroulent en spirale carrée autour de l'origine plutôt que de filer sur
+     * le seul axe X : en ligne, la ~3660ᵉ porte serait sortie de la bordure du
+     * monde (±29 999 984), alors que la spirale tient plus de 13 millions de
+     * parcelles dans la même bordure.
+     *
+     * <p>Les parcelles 0 et 1 tombent aux mêmes coordonnées qu'avec l'ancienne
+     * disposition en ligne, et les positions déjà attribuées sont de toute
+     * façon persistées : aucune base existante ne bouge.</p>
+     */
     private static BlockPos plotOrigin(int plot) {
-        return new BlockPos(plot * PLOT_SPACING + 8, PLOT_Y, 8);
+        int[] cell = spiralCell(plot);
+        return new BlockPos(cell[0] * PLOT_SPACING + 8, PLOT_Y, cell[1] * PLOT_SPACING + 8);
+    }
+
+    /**
+     * Coordonnées de cellule {@code {x, z}} du n-ième point d'une spirale
+     * carrée centrée sur l'origine : l'anneau {@code r} porte ses {@code 8r}
+     * cellules, parcourues bord est, sud, ouest puis nord.
+     */
+    private static int[] spiralCell(int index) {
+        if (index <= 0) {
+            return new int[]{0, 0};
+        }
+        int ring = 0;
+        while ((2 * ring + 1) * (2 * ring + 1) <= index) {
+            ring++;
+        }
+        // Cellules des anneaux précédents, puis rang sur l'anneau courant.
+        int offset = index - (2 * ring - 1) * (2 * ring - 1);
+        int side = offset / (2 * ring);
+        int step = offset % (2 * ring);
+        return switch (side) {
+            case 0 -> new int[]{ring, -ring + 1 + step};
+            case 1 -> new int[]{ring - 1 - step, ring};
+            case 2 -> new int[]{-ring, ring - 1 - step};
+            default -> new int[]{-ring + 1 + step, -ring};
+        };
     }
 
     public static TardisStateManager load(CompoundTag nbt, HolderLookup.Provider registries) {

@@ -68,11 +68,15 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
         this.font = context.getFont();
     }
 
-    @Override
-    public boolean shouldRenderOffScreen(TardisDoorBlockEntity blockEntity) {
-        return true;
-    }
-
+    /**
+     * Portée de rendu de la porte, un peu au-delà des 64 blocs par défaut :
+     * elle reste visible d'assez loin pour qu'on la repère dans le paysage.
+     *
+     * <p>En revanche on ne redéfinit pas {@code shouldRenderOffScreen} : le
+     * dessiner hors du champ de vision, à chaque image et pour chaque porte à
+     * portée, ne servait plus à rien depuis que la porte est simplement
+     * ignorée dans les passes de rendu de portail.</p>
+     */
     @Override
     public int getViewDistance() {
         return 96;

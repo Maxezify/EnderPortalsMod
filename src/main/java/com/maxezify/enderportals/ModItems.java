@@ -29,8 +29,8 @@ public final class ModItems {
             () -> new TardisKeyItem(new Item.Properties().stacksTo(1).rarity(Rarity.EPIC).fireResistant()));
 
     /** Pioche de l'Ender — seule capable de récolter les Blocs de l'Ender. */
-    public static final DeferredItem<Item> ENDER_PICKAXE = ITEMS.register("ender_pickaxe",
-            () -> new Item(new Item.Properties()
+    public static final DeferredItem<EnderPickaxeItem> ENDER_PICKAXE = ITEMS.register("ender_pickaxe",
+            () -> new EnderPickaxeItem(new Item.Properties()
                     .durability(2031)
                     .rarity(Rarity.RARE)
                     .attributes(PickaxeItem.createAttributes(EnderToolMaterial.INSTANCE, 1.0f, -2.8f))
