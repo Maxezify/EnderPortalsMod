@@ -3,7 +3,7 @@
 Mod **Minecraft 1.21.1 / NeoForge** : une porte d'obsidienne plus grande à
 l'intérieur qu'à l'extérieur, qui s'ouvre sur **le monde de l'Ender** — le
 paradis des cubes, un monde-caverne où viennent se reposer les blocs
-détruits. Version courante : **0.7.1**.
+détruits. Version courante : **0.8.0**.
 
 ## La progression
 
@@ -41,11 +41,18 @@ détruits. Version courante : **0.7.1**.
 Un monde entièrement souterrain de **Blocs de l'Ender** — gris,
 semi-transparents comme le bloc de miel, doucement luminescents. Au travers
 de la masse translucide, on **entrevoit les blocs-reliques** venus mourir
-ici : pierre, troncs, minerais (jusqu'au diamant), glowstone, éponges…
-Cavernes et tunnels serpentent dans la masse. Chaque porte éveillée reçoit
-sa parcelle — une case de 8192 blocs de côté, attribuée en spirale autour de
-l'origine : construisez-y base, fermes et stockage, les lits et ancres de
-réapparition y fonctionnent. Les cases sont **cloisonnées par un quadrillage
+ici : pierre, troncs, minerais (jusqu'au diamant), bibliothèques, éponges…
+Ils ne sont pas éparpillés un par un mais **groupés en poches** d'une
+vingtaine de blocs d'une même matière — une veine de diamant devinée à dix
+blocs de distance vaut mille cubes perdus. De rares **filons lumineux**
+traversent la masse en longues traînées obliques : les seuls repères d'un
+monde qui se ressemble partout. Une **cendre claire** tombe en continu.
+Quelques cavernes et tunnels étroits serpentent dans la masse — l'essentiel
+reste plein, et c'est à la Pioche de l'Ender qu'on s'y fraie un chemin.
+
+Chaque porte éveillée reçoit sa parcelle — une case de 8192 blocs de côté,
+attribuée en spirale autour de l'origine : construisez-y base, fermes et
+stockage, les lits et ancres de réapparition y fonctionnent. Les cases sont **cloisonnées par un quadrillage
 de murs de bedrock de 2 blocs d'épaisseur**, montant d'une calotte de bedrock
 à l'autre : on ne peut pas marcher jusque chez le voisin, ni passer
 par-dessus ou par-dessous. Le monde s'étend de **−64 à 320** comme le monde
@@ -161,7 +168,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.7.1.jar
+# → build/libs/enderportals-0.8.0.jar
 ```
 
 Notes :
