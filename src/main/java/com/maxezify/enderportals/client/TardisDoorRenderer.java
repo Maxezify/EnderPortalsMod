@@ -82,6 +82,21 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
         if (!state.is(ModBlocks.TARDIS_DOOR.get()) || state.getValue(TardisDoorBlock.HALF) != DoubleBlockHalf.LOWER) {
             return;
         }
+        // Quand on regarde la porte extérieure, Immersive Portals rend le monde
+        // de l'Ender avec une caméra virtuelle placée DERRIÈRE la porte
+        // intérieure, tournée vers elle : c'est le fond de CETTE porte-là, vu
+        // par sa face extérieure, qui bouchait la vue traversante. D'où l'échec
+        // de toutes les tentatives 0.4.7 → 0.6.0 : l'élimination des faces
+        // arrière conserve précisément la face que voit cette caméra, et
+        // éloigner le fond ne change rien puisqu'il est devant elle quoi qu'il
+        // arrive.
+        //
+        // On ne dessine donc pas la porte dans les passes de rendu de portail —
+        // la solution retenue par NTM Immersive Portals, qui annule de la même
+        // façon le rendu de l'extérieur et de la porte intérieure du TARDIS.
+        if (ImmPtlRenderCompat.isRenderingThroughPortal(door.getLevel())) {
+            return;
+        }
         float alpha = door.getAlpha(tickDelta);
         if (alpha <= 0.02f) {
             return;
@@ -104,36 +119,11 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
                 : RenderType.entityTranslucent(TEXTURE));
 
         // La coque : dos, flancs, plafond, plancher — des pavés fins disjoints.
-        //
-        // Le fond est là en permanence, porte ouverte comme fermée, mais il
-        // n'a qu'une face : l'extérieure. La face intérieure n'est jamais
-        // émise — c'est elle qui bouchait l'embrasure.
-        //
-        // Et surtout, cette face extérieure passe par une couche qui n'écrit
-        // PAS dans le tampon de profondeur (entityTranslucentEmissive : masque
-        // COLOR_WRITE). Deux conséquences, qui sont exactement le comportement
-        // recherché depuis la 0.4.7 :
-        //
-        //  · le fond ne peut plus faire échouer les requêtes d'occlusion dont
-        //    Immersive Portals se sert pour décider s'il rend un portail. Les
-        //    tentatives précédentes — élimination des faces arrière (0.4.9),
-        //    suivi de caméra (0.5.0/0.5.1), éloignement du fond (0.5.3/0.5.6)
-        //    — laissaient toutes le fond écrire sa profondeur, et le portail
-        //    restait non rendu ;
-        //  · le fond reste soumis au test de profondeur. Vu de l'avant, le
-        //    portail est devant lui et impose sa profondeur : le fond est
-        //    rejeté, l'embrasure est traversante. Vu de l'arrière, le fond est
-        //    l'élément le plus proche : il passe le test et garde sa texture.
-        //
-        // Contrepartie assumée : la couche est émissive (pas de lightmap), le
-        // dos de la porte est donc rendu à pleine luminosité.
-        VertexConsumer rearFace = buffer.getBuffer(RenderType.entityTranslucentEmissive(TEXTURE));
-        region(rearFace, entry,
-                0.41f, 0.0f, -0.47f,
-                -0.41f, 0.0f, -0.47f,
-                -0.41f, 2.0f, -0.47f,
-                0.41f, 2.0f, -0.47f,
-                BACK, alpha, lightCoord, overlay, 0, 0, -1);
+        // Le fond est un pavé plein, opaque, éclairé normalement, présent porte
+        // ouverte comme fermée : la vue traversante ne dépend plus de lui, mais
+        // du fait que la porte d'en face n'est pas dessinée dans les passes de
+        // portail (garde en tête de render).
+        drawBox(vertexBuffer, entry, -0.41f, 0.0f, -0.47f, 0.41f, 2.0f, -0.42f, AXIS_Z, BACK, BACK, alpha, lightCoord, overlay);
         drawBox(vertexBuffer, entry, -0.47f, 0.0f, -0.47f, -0.42f, 2.0f, 0.47f, AXIS_X, BACK, BACK, alpha, lightCoord, overlay);
         drawBox(vertexBuffer, entry, 0.42f, 0.0f, -0.47f, 0.47f, 2.0f, 0.47f, AXIS_X, BACK, BACK, alpha, lightCoord, overlay);
         drawBox(vertexBuffer, entry, -0.41f, 1.95f, -0.41f, 0.41f, 1.98f, 0.44f, AXIS_Y, EDGE, EDGE, alpha, lightCoord, overlay);
