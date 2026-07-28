@@ -104,17 +104,24 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
      * bloc mort. Au travers de la masse translucide, une veine de diamant
      * entrevue à dix blocs vaut mille cubes éparpillés.
      *
-     * <p>Mesuré hors du jeu sur 400 chunks : 4,0 poches et 85 blocs de relique
-     * par chunk, soit 21 blocs par poche. L'ancien monde en semait 112 par
-     * chunk, isolés — et il était trois fois moins haut, ce qui met la nouvelle
-     * densité à environ un quart de l'ancienne par unité de volume, pour
-     * 4 trouvailles franches au lieu de 112 cubes perdus.</p>
+     * <p>Une poche n'est pas une boule pleine : à l'intérieur de son rayon,
+     * chaque bloc est tiré au sort avec une probabilité qui décroît du centre
+     * vers le bord, et plafonnée à {@value #CLUSTER_DENSITY}. Le cœur lui-même
+     * n'est donc jamais compact, et les bords se dissolvent dans la masse au
+     * lieu de s'arrêter net sur une surface de sphère.</p>
+     *
+     * <p>Mesuré hors du jeu sur 144 chunks : 4,0 poches et 83 blocs de relique
+     * par chunk, soit 20 blocs dispersés dans une sphère de rayon 3,25 —
+     * 14 % de remplissage. L'ancien monde semait 112 blocs isolés par chunk sur
+     * une hauteur trois fois moindre : la densité par volume tombe au quart.</p>
      */
     private static final int CLUSTER_CELL = 16;
     private static final int CLUSTER_RARITY = 6;
-    /** Rayon des poches, en blocs. Mesuré : 21 blocs de matière en moyenne. */
-    private static final double CLUSTER_MIN_RADIUS = 1.2;
-    private static final double CLUSTER_RADIUS_SPREAD = 1.0;
+    /** Rayon des poches, en blocs. Le maximum tient dans la maille (voir relicAt). */
+    private static final double CLUSTER_MIN_RADIUS = 2.5;
+    private static final double CLUSTER_RADIUS_SPREAD = 1.5;
+    /** Remplissage au cœur d'une poche. En dessous de 1, rien n'est jamais collé. */
+    private static final double CLUSTER_DENSITY = 0.55;
 
     /**
      * Filons lumineux : là où deux bruits de basse fréquence s'annulent
@@ -122,12 +129,21 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
      * annulation est une courbe — d'où de longues traînées obliques,
      * perceptibles de très loin au travers du translucide.
      *
-     * <p>Le seuil est le bouton de réglage : mesuré hors du jeu, 0,0001 donne
-     * 0,064 % du volume, soit une soixantaine de blocs lumineux par chunk.
-     * Le Bloc de l'Ender n'atténuant pas la lumière (il ne masque pas la vue),
-     * chacun éclaire loin : inutile d'en mettre davantage.</p>
+     * <p>Le filon n'est pas un fil plein : dans son enveloppe, chaque bloc est
+     * tiré au sort avec une probabilité qui décroît du cœur vers le bord et
+     * plafonne à {@value #VEIN_DENSITY}. La traînée se lit comme un semis de
+     * lueurs le long d'une courbe, pas comme un câble.
+     *
+     * <p>Mesuré hors du jeu : l'enveloppe à 0,0008 est huit fois plus
+     * volumineuse qu'un fil plein à 0,0001, et la dispersion ramène le compte à
+     * environ 65 blocs lumineux par chunk — le même qu'avant, étalé huit fois
+     * plus large. Le Bloc de l'Ender n'atténuant pas la lumière (il ne masque
+     * pas la vue), chacun éclaire loin : inutile d'en mettre davantage.</p>
      */
-    private static final double VEIN_BUDGET = 0.0001;
+    private static final double VEIN_BUDGET = 0.0008;
+    private static final double VEIN_DENSITY = 0.20;
+    /** Sel du tirage des filons : sans lui, ils partageraient leur hasard avec les poches. */
+    private static final long VEIN_SEED_SALT = 17L;
 
     /** Matières des filons. Une seule par filon : la teinte reste franche. */
     private static final List<BlockState> LUMINOUS = List.of(
@@ -219,8 +235,9 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
             // Une caverne qui recoupe un filon le met à nu dans sa paroi.
             return AIR;
         }
-        if (isLuminousVein(x, y, z)) {
-            return luminousAt(x, y, z);
+        BlockState luminous = luminousAt(x, y, z, random);
+        if (luminous != null) {
+            return luminous;
         }
         BlockState relic = relicAt(x, y, z, random);
         return relic != null ? relic : enderBlock;
@@ -228,9 +245,10 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
 
     /**
      * La relique de la poche qui couvre ce bloc, ou {@code null}. Une seule
-     * maille est interrogée : le centre est tiré à au moins 4 blocs de chaque
-     * bord et le rayon plafonné à 2,2, donc aucune poche ne déborde chez la
-     * voisine et un seul tirage par bloc suffit.
+     * maille est interrogée : le centre est tiré entre 4 et 11 blocs du coin de
+     * la maille et le rayon plafonné à 4, donc une poche atteint au plus les
+     * bords de sa maille sans jamais empiéter sur la voisine — un seul tirage
+     * par bloc suffit.
      */
     private static BlockState relicAt(int x, int y, int z, RandomSource random) {
         int cellX = Math.floorDiv(x, CLUSTER_CELL);
@@ -251,24 +269,38 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
         double dx = x - centerX;
         double dy = y - centerY;
         double dz = z - centerZ;
-        return dx * dx + dy * dy + dz * dz <= radius * radius ? relic : null;
-    }
-
-    /** Ce bloc est-il sur un filon lumineux ? */
-    private static boolean isLuminousVein(int x, int y, int z) {
-        double a = VEIN_A.noise(x * 0.008, y * 0.010, z * 0.008);
-        double b = VEIN_B.noise(x * 0.008, y * 0.010, z * 0.008);
-        return a * a + b * b < VEIN_BUDGET;
+        double distanceSq = dx * dx + dy * dy + dz * dz;
+        if (distanceSq > radius * radius) {
+            return null;
+        }
+        // Densité décroissante du centre au bord : la poche s'effiloche au lieu
+        // de s'arrêter sur une surface de sphère.
+        double density = (1.0 - Math.sqrt(distanceSq) / radius) * CLUSTER_DENSITY;
+        random.setSeed(Mth.getSeed(x, y, z));
+        return random.nextFloat() < density ? relic : null;
     }
 
     /**
-     * Matière du filon. Elle est tirée sur une maille grossière de 64 blocs :
-     * une même traînée garde sa teinte sur toute sa longueur visible, au lieu
-     * de papilloter d'un bloc à l'autre.
+     * La matière lumineuse de ce bloc s'il tombe sur un filon, ou {@code null}.
+     *
+     * <p>La teinte est tirée sur une maille grossière de 64 blocs : une même
+     * traînée la garde sur toute sa longueur visible, au lieu de papilloter
+     * d'un bloc à l'autre.</p>
      */
-    private static BlockState luminousAt(int x, int y, int z) {
-        long seed = Mth.getSeed(x >> 6, y >> 6, z >> 6);
-        return LUMINOUS.get((int) Math.floorMod(seed, (long) LUMINOUS.size()));
+    private static BlockState luminousAt(int x, int y, int z, RandomSource random) {
+        double a = VEIN_A.noise(x * 0.008, y * 0.010, z * 0.008);
+        double b = VEIN_B.noise(x * 0.008, y * 0.010, z * 0.008);
+        double distanceSq = a * a + b * b;
+        if (distanceSq >= VEIN_BUDGET) {
+            return null;
+        }
+        double density = (1.0 - distanceSq / VEIN_BUDGET) * VEIN_DENSITY;
+        random.setSeed(Mth.getSeed(x, y, z) * 31L + VEIN_SEED_SALT);
+        if (random.nextFloat() >= density) {
+            return null;
+        }
+        long tint = Mth.getSeed(x >> 6, y >> 6, z >> 6);
+        return LUMINOUS.get((int) Math.floorMod(tint, (long) LUMINOUS.size()));
     }
 
     private static boolean isCarved(int x, int y, int z, int bottom, int top) {
