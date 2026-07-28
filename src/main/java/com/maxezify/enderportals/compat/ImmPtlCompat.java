@@ -176,20 +176,13 @@ public final class ImmPtlCompat {
 
     /**
      * Décalage du plan du portail par rapport au centre du bloc, le long de la
-     * façade. Valeur négative : le portail est placé au FOND du caisson.
+     * façade — le portail est un plan sans épaisseur (0,8 × 1,9).
      *
-     * <p>Le portail est un plan sans épaisseur ; ce que l'on voit au travers
-     * est la scène de destination, rendue avec sa profondeur lointaine. Placé
-     * à l'avant, il laissait la paroi arrière du caisson entre l'observateur
-     * et cette scène : plus proche, la paroi gagnait le test de profondeur et
-     * recouvrait la vue. Placé au fond, la paroi passe derrière le plan du
-     * portail, où le plan de clipping d'Immersive Portals l'écarte.</p>
-     *
-     * <p>−0,36 est la limite basse utile : la paroi arrière est solide sur les
-     * 0,125 bloc du fond (z ≤ −0,375 en repère local), il faut donc rester
-     * devant elle pour que le portail demeure franchissable.</p>
+     * <p>Le placer au fond du caisson (−0,36) a été essayé pour que la paroi
+     * arrière tombe derrière lui : la vue traversante disparaissait et la
+     * porte n'était plus franchissable. On le garde donc à l'avant.</p>
      */
-    private static final double PORTAL_DEPTH_OFFSET = -0.36;
+    private static final double PORTAL_DEPTH_OFFSET = 0.06;
 
     /** Centre de l'embrasure (1 × 2 blocs) d'une porte. */
     private static Vec3 doorwayCenter(BlockPos base, Direction facing) {
