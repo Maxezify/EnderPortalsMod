@@ -43,21 +43,6 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
     private static final int AXIS_Y = 1;
     private static final int AXIS_Z = 2;
 
-    /** Face avant extérieure du caisson. */
-    private static final float FRONT_Z = 0.47f;
-    /** Épaisseur d'une trappe posée à la verticale (3/16) : battant et extension arrière. */
-    private static final float PANEL_THICKNESS = 0.1875f;
-    /**
-     * Face arrière extérieure. Le caisson occupe le premier bloc en entier
-     * (jusqu'à la limite z = −0,5) puis déborde sur le bloc suivant d'une
-     * simple épaisseur de trappe : c'est là que se trouve le fond. Le bloc,
-     * lui, n'occupe toujours qu'un emplacement — aucun impact sur la pose, les
-     * collisions ni les bases existantes.
-     */
-    private static final float REAR_Z = -0.5f - PANEL_THICKNESS;
-    /** Épaisseur des parois de la coque. */
-    private static final float SHELL = 0.05f;
-
     /**
      * Haut du panneau de pseudo, juste sous le motif étoile. L'étoile occupe
      * les rangées v = 4…6 de la région FRONT ; le battant s'étend de y = 0,06 à
@@ -119,34 +104,38 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
                 : RenderType.entityTranslucent(TEXTURE));
 
         // La coque : dos, flancs, plafond, plancher — des pavés fins disjoints.
-        //
-        // Le fond, logé dans l'extension arrière.
-        //
-        // Il est incompatible avec la vue traversante : Immersive Portals
-        // s'appuie sur des requêtes d'occlusion pour décider s'il rend un
-        // portail, et renonce à le rendre dès que de la géométrie opaque
-        // occupe son tunnel. C'est la PRÉSENCE de la surface qui compte, non
-        // sa distance — vérifié en jeu avec le fond à 0,45, puis à 1,9, puis
-        // au-delà de la limite de bloc : la vue disparaît dans les trois cas.
-        //
-        // Porte ouverte avec Immersive Portals, on renonce donc au fond au
-        // profit du portail. Sans le mod, il reste et le voile de vide ferme
-        // l'embrasure.
-        if (!open || !ImmPtlCompat.isLoaded()) {
-            drawBox(vertexBuffer, entry, -0.41f, 0.0f, REAR_Z, 0.41f, 2.0f, REAR_Z + SHELL, AXIS_Z, BACK, BACK, alpha, lightCoord, overlay);
+        // La paroi arrière n'est dessinée que porte fermée : ouverte, elle
+        // boucherait l'embrasure. Surtout, elle se trouve juste derrière le plan
+        // du portail Immersive Portals ; le contenu d'un portail portant la
+        // profondeur de la scène lointaine de destination, une paroi à 50 cm
+        // recouvre la vue traversante dès que l'occlusion de profondeur des
+        // portails fonctionne correctement.
+        if (!open) {
+            drawBox(vertexBuffer, entry, -0.41f, 0.0f, -0.47f, 0.41f, 2.0f, -0.42f, AXIS_Z, BACK, BACK, alpha, lightCoord, overlay);
+        } else {
+            // Porte ouverte : on ne conserve que la face extérieure du dos, sur
+            // une couche qui élimine les faces arrière. Vue de derrière, la
+            // porte garde sa texture ; vue de face, cette face est éliminée et
+            // laisse voir le portail — dont le contenu porte la profondeur de
+            // la scène lointaine de destination et serait sinon recouvert.
+            VertexConsumer backFace = buffer.getBuffer(RenderType.entityCutout(TEXTURE));
+            region(backFace, entry,
+                    0.41f, 0.0f, -0.47f,
+                    -0.41f, 0.0f, -0.47f,
+                    -0.41f, 2.0f, -0.47f,
+                    0.41f, 2.0f, -0.47f,
+                    BACK, alpha, lightCoord, overlay, 0, 0, -1);
         }
-        // Flancs, plafond et plancher, filés jusqu'à l'extension arrière.
-        drawBox(vertexBuffer, entry, -0.47f, 0.0f, REAR_Z, -0.42f, 2.0f, FRONT_Z, AXIS_X, BACK, BACK, alpha, lightCoord, overlay);
-        drawBox(vertexBuffer, entry, 0.42f, 0.0f, REAR_Z, 0.47f, 2.0f, FRONT_Z, AXIS_X, BACK, BACK, alpha, lightCoord, overlay);
-        drawBox(vertexBuffer, entry, -0.41f, 1.95f, REAR_Z + SHELL, 0.41f, 1.98f, 0.44f, AXIS_Y, EDGE, EDGE, alpha, lightCoord, overlay);
-        drawBox(vertexBuffer, entry, -0.41f, 0.02f, REAR_Z + SHELL, 0.41f, 0.05f, 0.44f, AXIS_Y, EDGE, EDGE, alpha, lightCoord, overlay);
+        drawBox(vertexBuffer, entry, -0.47f, 0.0f, -0.47f, -0.42f, 2.0f, 0.47f, AXIS_X, BACK, BACK, alpha, lightCoord, overlay);
+        drawBox(vertexBuffer, entry, 0.42f, 0.0f, -0.47f, 0.47f, 2.0f, 0.47f, AXIS_X, BACK, BACK, alpha, lightCoord, overlay);
+        drawBox(vertexBuffer, entry, -0.41f, 1.95f, -0.41f, 0.41f, 1.98f, 0.44f, AXIS_Y, EDGE, EDGE, alpha, lightCoord, overlay);
+        drawBox(vertexBuffer, entry, -0.41f, 0.02f, -0.41f, 0.41f, 0.05f, 0.44f, AXIS_Y, EDGE, EDGE, alpha, lightCoord, overlay);
 
-        // Le battant, dans l'embrasure, à l'épaisseur d'une trappe posée à la
-        // verticale (3/16 de bloc). Porte ouverte il s'efface entièrement :
+        // Le battant, dans l'embrasure. Porte ouverte il s'efface entièrement :
         // plaqué contre le flanc gauche, il traversait le plan du portail et
         // gênait l'entrée comme la vue traversante.
         if (!open) {
-            drawBox(vertexBuffer, entry, -0.44f, 0.06f, 0.44f - PANEL_THICKNESS, 0.44f, 1.94f, 0.44f, AXIS_Z, FRONT, BACK, alpha, lightCoord, overlay);
+            drawBox(vertexBuffer, entry, -0.44f, 0.06f, 0.36f, 0.44f, 1.94f, 0.44f, AXIS_Z, FRONT, BACK, alpha, lightCoord, overlay);
         }
 
         // Voile de vide dans l'embrasure ouverte : c'est le repli visuel quand
