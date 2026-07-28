@@ -103,25 +103,11 @@ public final class ImmPtlCompat {
             if (exteriorWorld == null || enderWorld == null) {
                 return;
             }
-            // Le plan d'un portail est posé 6 cm DEVANT son embrasure, pour
-            // rester atteignable. Le point de sortie, lui, doit être pris 6 cm
-            // DERRIÈRE l'embrasure d'arrivée.
-            //
-            // Un portail Immersive Portals applique dest = D + R(p − O), où O
-            // est sa position et D sa destination. Pour que la traversée soit
-            // le simple déplacement rigide qui envoie une embrasure sur
-            // l'autre, il faut D = C_arrivée + R(O − C_départ). Or la rotation
-            // retourne la façade : R·facing_départ = −facing_arrivée. Le terme
-            // R(O − C_départ) vaut donc −6 cm le long de la façade d'arrivée.
-            //
-            // Prendre la destination 6 cm devant l'embrasure d'arrivée, comme
-            // c'était le cas, additionnait les deux décalages au lieu de les
-            // annuler : le joueur ressortait 12 cm trop loin, et la vue
-            // traversante était décalée d'autant.
-            Vec3 exteriorPlane = doorwayCenter(data.exteriorPos, data.exteriorFacing, PORTAL_DEPTH_OFFSET);
-            Vec3 interiorPlane = doorwayCenter(data.interiorDoorPos, data.interiorFacing, PORTAL_DEPTH_OFFSET);
-            Vec3 exteriorExit = doorwayCenter(data.exteriorPos, data.exteriorFacing, -PORTAL_DEPTH_OFFSET);
-            Vec3 interiorExit = doorwayCenter(data.interiorDoorPos, data.interiorFacing, -PORTAL_DEPTH_OFFSET);
+            // Chaque plan est posé au centre exact de son embrasure, et la
+            // destination de chacun est la position de l'autre (voir
+            // doorwayCenter) : les deux conditions tiennent ensemble.
+            Vec3 exteriorCenter = doorwayCenter(data.exteriorPos);
+            Vec3 interiorCenter = doorwayCenter(data.interiorDoorPos);
             // La traversée mappe la direction d'entrée (−facing extérieur) sur la
             // direction de sortie (+facing intérieur), d'où le +180°. Le signe est
             // inversé car le yaw Minecraft est horaire (vu de dessus) alors que la
@@ -135,12 +121,12 @@ public final class ImmPtlCompat {
             // échoue, removePortals (bloc catch) sait encore le supprimer.
             // Les enregistrer tous les deux à la fin laissait le premier
             // orphelin dans le monde, sans personne pour le nettoyer.
-            Entity outer = spawnPortal(exteriorWorld, exteriorPlane, data.exteriorFacing,
-                    ModDimensions.ENDER_WORLD, interiorExit, rotation);
+            Entity outer = spawnPortal(exteriorWorld, exteriorCenter, data.exteriorFacing,
+                    ModDimensions.ENDER_WORLD, interiorCenter, rotation);
             data.portalIds.add(outer.getUUID());
 
-            Entity inner = spawnPortal(enderWorld, interiorPlane, data.interiorFacing,
-                    data.exteriorWorld, exteriorExit, Mth.wrapDegrees(-rotation));
+            Entity inner = spawnPortal(enderWorld, interiorCenter, data.interiorFacing,
+                    data.exteriorWorld, exteriorCenter, Mth.wrapDegrees(-rotation));
             data.portalIds.add(inner.getUUID());
 
             // Chaque portail est complété par sa face opposée : l'ensemble
@@ -204,22 +190,35 @@ public final class ImmPtlCompat {
     }
 
     /**
-     * Décalage du plan du portail par rapport au centre de l'embrasure, le long
-     * de la façade — le portail est un plan sans épaisseur (0,8 × 1,9).
+     * Centre exact de l'embrasure (1 × 2 blocs) d'une porte. Le plan du portail
+     * y est posé sans aucun décalage le long de la façade, et pour deux raisons
+     * qu'il faut satisfaire ensemble.
      *
-     * <p>Le placer au fond du caisson (−0,36) a été essayé pour que la paroi
-     * arrière tombe derrière lui : la vue traversante disparaissait et la
-     * porte n'était plus franchissable. On le garde donc à l'avant.</p>
+     * <p><b>Continuité.</b> Un portail applique {@code dest = D + R(p − O)}, où
+     * {@code O} est sa position et {@code D} sa destination. La traversée n'est
+     * le déplacement rigide qui envoie une embrasure sur l'autre que si
+     * {@code D = C_arrivée + R(O − C_départ)}. La rotation retournant la façade
+     * ({@code R·facing_départ = −facing_arrivée}), tout décalage {@code s} de
+     * {@code O} se paie en {@code −s} à l'arrivée. Deux portails poussés chacun
+     * de 6 cm vers l'avant, comme c'était le cas jusqu'à la 0.8.1, faisaient
+     * donc ressortir le joueur 12 cm trop loin.</p>
+     *
+     * <p><b>Invariant d'Immersive Portals.</b> La destination d'un portail doit
+     * être la position de son vis-à-vis. Corriger le décalage en reculant la
+     * seule destination, comme tenté en 0.8.2, rompt cet invariant : le joueur
+     * arrivait 12 cm derrière le plan du portail d'arrivée, franchissait ce
+     * plan au premier pas, et la face opposée de ce portail — l'ensemble est
+     * bi-faced — le renvoyait aussitôt. D'où l'arrivée derrière la salle.</p>
+     *
+     * <p>Poser les deux plans au centre de leur embrasure annule le décalage
+     * sans toucher aux destinations : {@code D = C_arrivée} est à la fois la
+     * valeur qui rend la traversée continue et la position du portail d'en
+     * face. Le placer au fond du caisson (−0,36) avait par ailleurs été essayé
+     * pour que la paroi arrière tombe derrière lui : la vue traversante
+     * disparaissait et la porte n'était plus franchissable.</p>
      */
-    private static final double PORTAL_DEPTH_OFFSET = 0.06;
-
-    /**
-     * Centre de l'embrasure (1 × 2 blocs) d'une porte, décalé de {@code offset}
-     * le long de sa façade — positif vers l'extérieur, négatif vers l'intérieur.
-     */
-    private static Vec3 doorwayCenter(BlockPos base, Direction facing, double offset) {
-        return Vec3.atCenterOf(base).add(0.0, 0.5, 0.0)
-                .add(vector(facing).scale(offset));
+    private static Vec3 doorwayCenter(BlockPos base) {
+        return Vec3.atCenterOf(base).add(0.0, 0.5, 0.0);
     }
 
     private static Vec3 vector(Direction direction) {

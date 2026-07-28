@@ -3,7 +3,7 @@
 Mod **Minecraft 1.21.1 / NeoForge** : une porte d'obsidienne plus grande à
 l'intérieur qu'à l'extérieur, qui s'ouvre sur **le monde de l'Ender** — le
 paradis des cubes, un monde-caverne où viennent se reposer les blocs
-détruits. Version courante : **0.8.2**.
+détruits. Version courante : **0.8.3**.
 
 ## La progression
 
@@ -168,7 +168,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.8.2.jar
+# → build/libs/enderportals-0.8.3.jar
 ```
 
 Notes :
