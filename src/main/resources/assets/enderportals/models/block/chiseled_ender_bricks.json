@@ -2,6 +2,6 @@
   "parent": "minecraft:block/cube_all",
   "render_type": "minecraft:translucent",
   "textures": {
-    "all": "enderportals:block/ender_bricks"
+    "all": "enderportals:block/chiseled_ender_bricks"
   }
 }

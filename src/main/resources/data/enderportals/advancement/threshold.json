@@ -1,0 +1,37 @@
+{
+  "parent": "enderportals:root",
+  "display": {
+    "icon": {
+      "id": "enderportals:inactive_tardis_door"
+    },
+    "title": {
+      "translate": "advancements.enderportals.threshold.title"
+    },
+    "description": {
+      "translate": "advancements.enderportals.threshold.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "door": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "enderportals:inactive_tardis_door"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "door"
+    ]
+  ]
+}

@@ -2,6 +2,10 @@
   "replace": false,
   "values": [
     "enderportals:ender_block",
-    "enderportals:ender_bricks"
+    "enderportals:ender_bricks",
+    "enderportals:ender_brick_stairs",
+    "enderportals:ender_brick_slab",
+    "enderportals:ender_brick_wall",
+    "enderportals:chiseled_ender_bricks"
   ]
 }

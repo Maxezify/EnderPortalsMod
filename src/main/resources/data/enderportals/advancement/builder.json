@@ -1,0 +1,37 @@
+{
+  "parent": "enderportals:paradise",
+  "display": {
+    "icon": {
+      "id": "enderportals:chiseled_ender_bricks"
+    },
+    "title": {
+      "translate": "advancements.enderportals.builder.title"
+    },
+    "description": {
+      "translate": "advancements.enderportals.builder.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "chiseled": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "enderportals:chiseled_ender_bricks"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "chiseled"
+    ]
+  ]
+}

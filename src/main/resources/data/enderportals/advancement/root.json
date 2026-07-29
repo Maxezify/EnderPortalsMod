@@ -1,0 +1,37 @@
+{
+  "display": {
+    "icon": {
+      "id": "enderportals:ender_crystal"
+    },
+    "title": {
+      "translate": "advancements.enderportals.root.title"
+    },
+    "description": {
+      "translate": "advancements.enderportals.root.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false,
+    "background": "enderportals:textures/block/ender_block.png"
+  },
+  "criteria": {
+    "crystal": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "enderportals:ender_crystal"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "crystal"
+    ]
+  ]
+}

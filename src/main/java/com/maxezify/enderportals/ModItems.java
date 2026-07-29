@@ -50,6 +50,18 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> ENDER_BRICKS = ITEMS.register("ender_bricks",
             () -> new BlockItem(ModBlocks.ENDER_BRICKS.get(), new Item.Properties()));
 
+    public static final DeferredItem<BlockItem> CHISELED_ENDER_BRICKS = ITEMS.register("chiseled_ender_bricks",
+            () -> new BlockItem(ModBlocks.CHISELED_ENDER_BRICKS.get(), new Item.Properties()));
+
+    public static final DeferredItem<BlockItem> ENDER_BRICK_STAIRS = ITEMS.register("ender_brick_stairs",
+            () -> new BlockItem(ModBlocks.ENDER_BRICK_STAIRS.get(), new Item.Properties()));
+
+    public static final DeferredItem<BlockItem> ENDER_BRICK_SLAB = ITEMS.register("ender_brick_slab",
+            () -> new BlockItem(ModBlocks.ENDER_BRICK_SLAB.get(), new Item.Properties()));
+
+    public static final DeferredItem<BlockItem> ENDER_BRICK_WALL = ITEMS.register("ender_brick_wall",
+            () -> new BlockItem(ModBlocks.ENDER_BRICK_WALL.get(), new Item.Properties()));
+
     public static final DeferredItem<CentralizerBlockItem> CENTRALIZER = ITEMS.register("centralizer",
             () -> new CentralizerBlockItem(ModBlocks.CENTRALIZER.get(), new Item.Properties().rarity(Rarity.RARE)));
 

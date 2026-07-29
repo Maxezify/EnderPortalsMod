@@ -1,0 +1,31 @@
+{
+  "parent": "enderportals:ritual",
+  "display": {
+    "icon": {
+      "id": "enderportals:ender_block"
+    },
+    "title": {
+      "translate": "advancements.enderportals.paradise.title"
+    },
+    "description": {
+      "translate": "advancements.enderportals.paradise.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "entered": {
+      "trigger": "minecraft:changed_dimension",
+      "conditions": {
+        "to": "enderportals:ender_world"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "entered"
+    ]
+  ]
+}

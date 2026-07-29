@@ -5,9 +5,12 @@ import com.maxezify.enderportals.block.EnderBlock;
 import com.maxezify.enderportals.block.InactiveTardisDoorBlock;
 import com.maxezify.enderportals.block.TardisDoorBlock;
 import net.minecraft.util.valueproviders.UniformInt;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.DropExperienceBlock;
+import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.StairBlock;
+import net.minecraft.world.level.block.TransparentBlock;
+import net.minecraft.world.level.block.WallBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
@@ -42,13 +45,48 @@ public final class ModBlocks {
                     .isViewBlocking((state, level, pos) -> false)
                     .sound(SoundType.AMETHYST)));
 
-    /** Briques de l'Ender — variante opaque, pratique pour construire sa base. */
-    public static final DeferredBlock<Block> ENDER_BRICKS = BLOCKS.register("ender_bricks",
-            () -> new Block(BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.COLOR_GRAY)
-                    .strength(3.5f, 8.0f)
-                    .requiresCorrectToolForDrops()
-                    .sound(SoundType.DEEPSLATE_BRICKS)));
+    /**
+     * Briques de l'Ender — taillées dans le Bloc de l'Ender, et translucides
+     * au même titre que lui : un mur de briques laisse deviner ce qu'il y a
+     * derrière exactement comme la masse dans laquelle on le bâtit.
+     *
+     * <p>{@link TransparentBlock} n'est pas là pour la transparence — c'est la
+     * texture et la couche de rendu du modèle qui s'en chargent — mais pour son
+     * {@code skipRendering} : les faces entre deux briques voisines ne sont pas
+     * dessinées, sans quoi un mur épais empilerait ses vitres et s'assombrirait
+     * couche après couche.</p>
+     */
+    public static final DeferredBlock<TransparentBlock> ENDER_BRICKS = BLOCKS.register("ender_bricks",
+            () -> new TransparentBlock(brickProperties()));
+
+    /** Briques de l'Ender ciselées — l'œil des cadres de portail, gravé. */
+    public static final DeferredBlock<TransparentBlock> CHISELED_ENDER_BRICKS = BLOCKS.register(
+            "chiseled_ender_bricks",
+            () -> new TransparentBlock(brickProperties()));
+
+    public static final DeferredBlock<StairBlock> ENDER_BRICK_STAIRS = BLOCKS.register("ender_brick_stairs",
+            () -> new StairBlock(ENDER_BRICKS.get().defaultBlockState(), brickProperties()));
+
+    public static final DeferredBlock<SlabBlock> ENDER_BRICK_SLAB = BLOCKS.register("ender_brick_slab",
+            () -> new SlabBlock(brickProperties()));
+
+    public static final DeferredBlock<WallBlock> ENDER_BRICK_WALL = BLOCKS.register("ender_brick_wall",
+            () -> new WallBlock(brickProperties()));
+
+    /**
+     * Propriétés communes à toute la famille des briques. Une instance neuve à
+     * chaque appel : un {@code Properties} est un constructeur mutable, le
+     * partager entre deux blocs les ferait se marcher dessus.
+     */
+    private static BlockBehaviour.Properties brickProperties() {
+        return BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_GRAY)
+                .strength(3.5f, 8.0f)
+                .requiresCorrectToolForDrops()
+                .noOcclusion()
+                .isViewBlocking((state, level, pos) -> false)
+                .sound(SoundType.DEEPSLATE_BRICKS);
+    }
 
     /**
      * Porte de l'Ender inactive — caisson dormant de deux blocs, posable et

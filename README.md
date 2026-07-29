@@ -3,7 +3,7 @@
 Mod **Minecraft 1.21.1 / NeoForge** : une porte d'obsidienne plus grande à
 l'intérieur qu'à l'extérieur, qui s'ouvre sur **le monde de l'Ender** — le
 paradis des cubes, un monde-caverne où viennent se reposer les blocs
-détruits. Version courante : **0.9.6**.
+détruits. Version courante : **0.10.0**.
 
 ## La progression
 
@@ -114,9 +114,27 @@ consommée, juste un peu usée à chaque éveil).
 
 Bonus : 4 cristaux → 1 Bloc de l'Ender ; 4 Blocs de l'Ender → 4 Briques de l'Ender.
 
+### La famille des briques
+
+Les **Briques de l'Ender** sont **translucides au même titre que le Bloc de
+l'Ender** — même opacité exactement. Un mur de briques laisse deviner ce qu'il
+y a derrière, comme la masse dans laquelle on le bâtit. Elles déclinent
+escaliers, dalles, muret et une variante **ciselée** gravée de l'œil des cadres
+de portail. Tout se taille aussi au **tailleur de pierre**.
+
+Les faces entre deux briques voisines ne sont pas dessinées : un mur épais ne
+s'assombrit donc pas couche après couche, il reste une seule vitre.
+
 **Le Guide de la Porte de l'Ender** : 8 cristaux autour d'un livre → un
 livre écrit (10 pages) contenant le lore, tous les crafts et la
 compatibilité rangement, traduit dans la langue du jeu (FR/EN).
+
+## Les progrès
+
+Un arbre complet, « Le paradis des cubes » : *Une pierre qui n'est pas d'ici* →
+*Le seuil* → *Frapper le ciel* → *Le paradis des cubes*, puis quatre branches —
+*Tailler sa galerie* (mille Blocs de l'Ender), *Le fond du monde*, *L'entrepôt*
+→ *Tout ranger d'un geste*, et *Bâtir dans le translucide*.
 
 ## Compatibilité rangement
 
@@ -268,7 +286,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.9.6.jar
+# → build/libs/enderportals-0.10.0.jar
 ```
 
 Notes :

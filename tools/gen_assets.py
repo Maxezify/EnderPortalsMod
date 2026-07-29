@@ -90,8 +90,13 @@ def shade(palette, v):
 
 # ---------------------------------------------------------------- palettes
 
+# Opacité commune au Bloc de l'Ender et à toute sa famille de briques : c'est
+# elle qui fait qu'on voit au travers de la matière du monde.
+ENDER_ALPHA = 210
+
 # Bloc de l'Ender : gris froids sombres, translucides, grain « stone ».
-P_ENDER = [(64, 66, 76, 210), (76, 79, 89, 210), (89, 92, 102, 210), (101, 104, 115, 210)]
+P_ENDER = [(64, 66, 76, ENDER_ALPHA), (76, 79, 89, ENDER_ALPHA),
+           (89, 92, 102, ENDER_ALPHA), (101, 104, 115, ENDER_ALPHA)]
 
 # Obsidienne : noirs violacés, rehauts visibles comme la texture vanilla.
 OBS = [(24, 19, 41, 255), (37, 29, 62, 255), (52, 41, 87, 255), (70, 55, 113, 255)]
@@ -127,10 +132,15 @@ def tex_ender_block():
 
 def tex_ender_bricks():
     """Façon stone bricks vanilla : 2 rangées de gros pavés, joints sombres,
-    grain en taches et rehaut haut-gauche par pavé."""
-    mortar = (46, 48, 56, 255)
-    palette = [(88, 92, 102, 255), (99, 103, 113, 255), (110, 114, 124, 255)]
-    highlight = (124, 128, 139, 255)
+    grain en taches et rehaut haut-gauche par pavé.
+
+    Translucides au même titre que le Bloc de l'Ender : même alpha (210), pour
+    qu'un mur de briques laisse deviner ce qu'il y a derrière exactement comme
+    la masse dans laquelle on le bâtit."""
+    mortar = (46, 48, 56, ENDER_ALPHA)
+    palette = [(88, 92, 102, ENDER_ALPHA), (99, 103, 113, ENDER_ALPHA),
+               (110, 114, 124, ENDER_ALPHA)]
+    highlight = (124, 128, 139, ENDER_ALPHA)
     noise = blob_noise(16, 16, seed=1212, scale=3)
     px = canvas(16, 16, mortar)
     # (x0, y0, x1, y1) intérieurs des pavés ; joints d'1 px autour.
@@ -590,9 +600,154 @@ def door_models():
         print("json", path)
 
 
+def tex_chiseled_ender_bricks():
+    """Brique ciselée : un cadre de pierre et, gravé au centre, l'œil pâle des
+    cadres de portail de l'End — le même motif que les portes du mod. Même
+    alpha que le reste de la famille."""
+    frame_dark = (40, 42, 50, ENDER_ALPHA)
+    frame = (72, 76, 86, ENDER_ALPHA)
+    panel = [(84, 88, 98, ENDER_ALPHA), (94, 98, 108, ENDER_ALPHA),
+             (104, 108, 118, ENDER_ALPHA)]
+    noise = blob_noise(16, 16, seed=3131, scale=4)
+    px = canvas(16, 16)
+    for y in range(16):
+        for x in range(16):
+            put(px, x, y, shade(panel, noise[y][x]))
+    # Cadre : bord sombre d'1 px, liseré clair juste à l'intérieur.
+    outline(px, 0, 0, 15, 15, frame_dark)
+    outline(px, 1, 1, 14, 14, frame)
+    outline(px, 2, 2, 13, 13, frame_dark)
+    # L'œil, gravé : amande pâle sur fond creusé.
+    eye_bg = (54, 46, 74, ENDER_ALPHA)
+    pale = EYE_PALE[:3] + (ENDER_ALPHA,)
+    core = EYE_CORE[:3] + (ENDER_ALPHA,)
+    rect(px, 4, 6, 11, 9, eye_bg)
+    rect(px, 5, 7, 10, 8, pale)
+    rect(px, 7, 7, 8, 8, core)
+    put(px, 4, 7, pale)
+    put(px, 11, 7, pale)
+    put(px, 4, 8, pale)
+    put(px, 11, 8, pale)
+    write_png(f"{ASSETS}/textures/block/chiseled_ender_bricks.png", 16, 16, px)
+
+
+# ------------------------------------------------- famille des briques
+
+TRANSLUCENT = "minecraft:translucent"
+BRICK_TEX = "enderportals:block/ender_bricks"
+
+
+def _model(name, parent, textures):
+    path = f"{ASSETS}/models/block/{name}.json"
+    body = {"parent": parent, "render_type": TRANSLUCENT, "textures": textures}
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(body, f, indent=2)
+        f.write("\n")
+    print("json", path)
+
+
+def _item_model(name, parent):
+    path = f"{ASSETS}/models/item/{name}.json"
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump({"parent": parent}, f, indent=2)
+        f.write("\n")
+    print("json", path)
+
+
+def _blockstate(name, body):
+    path = f"{ASSETS}/blockstates/{name}.json"
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(body, f, indent=2)
+        f.write("\n")
+    print("json", path)
+
+
+def brick_family_models():
+    """Modèles de la famille : on hérite des gabarits vanilla, en n'ajoutant
+    que la texture et la couche de rendu translucide."""
+    faces = {"bottom": BRICK_TEX, "top": BRICK_TEX, "side": BRICK_TEX}
+    _model("ender_bricks", "minecraft:block/cube_all", {"all": BRICK_TEX})
+    _model("chiseled_ender_bricks", "minecraft:block/cube_all",
+           {"all": "enderportals:block/chiseled_ender_bricks"})
+    _model("ender_brick_stairs", "minecraft:block/stairs", faces)
+    _model("ender_brick_stairs_inner", "minecraft:block/inner_stairs", faces)
+    _model("ender_brick_stairs_outer", "minecraft:block/outer_stairs", faces)
+    _model("ender_brick_slab", "minecraft:block/slab", faces)
+    _model("ender_brick_slab_top", "minecraft:block/slab_top", faces)
+    _model("ender_brick_wall_post", "minecraft:block/template_wall_post", {"wall": BRICK_TEX})
+    _model("ender_brick_wall_side", "minecraft:block/template_wall_side", {"wall": BRICK_TEX})
+    _model("ender_brick_wall_side_tall", "minecraft:block/template_wall_side_tall",
+           {"wall": BRICK_TEX})
+    _model("ender_brick_wall_inventory", "minecraft:block/wall_inventory", {"wall": BRICK_TEX})
+
+    _item_model("ender_bricks", "enderportals:block/ender_bricks")
+    _item_model("chiseled_ender_bricks", "enderportals:block/chiseled_ender_bricks")
+    _item_model("ender_brick_stairs", "enderportals:block/ender_brick_stairs")
+    _item_model("ender_brick_slab", "enderportals:block/ender_brick_slab")
+    _item_model("ender_brick_wall", "enderportals:block/ender_brick_wall_inventory")
+
+
+# Rotation de base des escaliers, par orientation.
+_STAIR_Y = {"east": 0, "south": 90, "west": 180, "north": 270}
+# Modèle et décalage de rotation par forme, pour la moitié basse puis haute.
+_STAIR_SHAPES = {
+    "straight": ("ender_brick_stairs", 0, 0),
+    "inner_right": ("ender_brick_stairs_inner", 0, 90),
+    "inner_left": ("ender_brick_stairs_inner", -90, 0),
+    "outer_right": ("ender_brick_stairs_outer", 0, 90),
+    "outer_left": ("ender_brick_stairs_outer", -90, 0),
+}
+
+
+def brick_family_blockstates():
+    # --- escaliers : 4 orientations x 2 moitiés x 5 formes.
+    variants = {}
+    for half in ("bottom", "top"):
+        for shape, (model, off_bottom, off_top) in _STAIR_SHAPES.items():
+            offset = off_bottom if half == "bottom" else off_top
+            for facing, base in _STAIR_Y.items():
+                entry = {"model": f"enderportals:block/{model}"}
+                if half == "top":
+                    entry["x"] = 180
+                y = (base + offset) % 360
+                if y:
+                    entry["y"] = y
+                if len(entry) > 1:
+                    entry["uvlock"] = True
+                variants[f"facing={facing},half={half},shape={shape}"] = entry
+    _blockstate("ender_brick_stairs", {"variants": variants})
+
+    # --- dalles : la double reprend le bloc plein.
+    _blockstate("ender_brick_slab", {"variants": {
+        "type=bottom": {"model": "enderportals:block/ender_brick_slab"},
+        "type=top": {"model": "enderportals:block/ender_brick_slab_top"},
+        "type=double": {"model": "enderportals:block/ender_bricks"},
+    }})
+
+    # --- murs : poteau central plus une branche par côté, basse ou haute.
+    parts = [{"when": {"up": "true"},
+              "apply": {"model": "enderportals:block/ender_brick_wall_post"}}]
+    for suffix, model in (("low", "ender_brick_wall_side"),
+                          ("tall", "ender_brick_wall_side_tall")):
+        for side, y in (("north", 0), ("east", 90), ("south", 180), ("west", 270)):
+            apply = {"model": f"enderportals:block/{model}"}
+            if y:
+                apply["y"] = y
+            apply["uvlock"] = True
+            parts.append({"when": {side: suffix}, "apply": apply})
+    _blockstate("ender_brick_wall", {"multipart": parts})
+
+    _blockstate("chiseled_ender_bricks", {"variants": {
+        "": {"model": "enderportals:block/chiseled_ender_bricks"}}})
+
+
 def main():
     tex_ender_block()
     tex_ender_bricks()
+    tex_chiseled_ender_bricks()
     tex_inactive_door_sides()
     tex_ender_ore()
     tex_doors()
@@ -606,6 +761,8 @@ def main():
     tex_icon()
     door_blockstate()
     door_models()
+    brick_family_models()
+    brick_family_blockstates()
 
 
 if __name__ == "__main__":

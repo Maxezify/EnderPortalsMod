@@ -1,0 +1,34 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_ender_bricks": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "enderportals:ender_bricks"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_ender_bricks"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "enderportals:ender_brick_stairs",
+      "enderportals:ender_brick_slab",
+      "enderportals:ender_brick_wall",
+      "enderportals:chiseled_ender_bricks",
+      "enderportals:ender_brick_stairs_from_ender_bricks_stonecutting",
+      "enderportals:ender_brick_slab_from_ender_bricks_stonecutting",
+      "enderportals:ender_brick_wall_from_ender_bricks_stonecutting",
+      "enderportals:chiseled_ender_bricks_from_ender_bricks_stonecutting"
+    ]
+  }
+}

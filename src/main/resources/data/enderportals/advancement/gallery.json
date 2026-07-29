@@ -1,0 +1,28 @@
+{
+  "parent": "enderportals:paradise",
+  "display": {
+    "icon": {
+      "id": "enderportals:ender_pickaxe"
+    },
+    "title": {
+      "translate": "advancements.enderportals.gallery.title"
+    },
+    "description": {
+      "translate": "advancements.enderportals.gallery.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "code": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "code"
+    ]
+  ]
+}

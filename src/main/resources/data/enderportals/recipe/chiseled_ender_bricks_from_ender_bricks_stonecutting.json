@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": {
+    "item": "enderportals:ender_bricks"
+  },
+  "result": {
+    "id": "enderportals:chiseled_ender_bricks",
+    "count": 1
+  }
+}

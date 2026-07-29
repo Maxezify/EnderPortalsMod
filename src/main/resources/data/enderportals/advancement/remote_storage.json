@@ -1,0 +1,37 @@
+{
+  "parent": "enderportals:warehouse",
+  "display": {
+    "icon": {
+      "id": "enderportals:ender_bag"
+    },
+    "title": {
+      "translate": "advancements.enderportals.remote_storage.title"
+    },
+    "description": {
+      "translate": "advancements.enderportals.remote_storage.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "bag": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "enderportals:ender_bag"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "bag"
+    ]
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "parent": "enderportals:paradise",
+  "display": {
+    "icon": {
+      "id": "minecraft:bedrock"
+    },
+    "title": {
+      "translate": "advancements.enderportals.bottom_of_the_world.title"
+    },
+    "description": {
+      "translate": "advancements.enderportals.bottom_of_the_world.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "deep": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "player": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "location": {
+                "position": {
+                  "y": {
+                    "max": -60.0
+                  }
+                },
+                "dimension": "enderportals:ender_world"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "deep"
+    ]
+  ]
+}

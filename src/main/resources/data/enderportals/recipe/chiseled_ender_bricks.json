@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "S",
+    "S"
+  ],
+  "key": {
+    "S": {
+      "item": "enderportals:ender_brick_slab"
+    }
+  },
+  "result": {
+    "id": "enderportals:chiseled_ender_bricks",
+    "count": 1
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/outer_stairs",
+  "render_type": "minecraft:translucent",
+  "textures": {
+    "bottom": "enderportals:block/ender_bricks",
+    "top": "enderportals:block/ender_bricks",
+    "side": "enderportals:block/ender_bricks"
+  }
+}

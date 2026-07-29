@@ -38,6 +38,10 @@ public final class ModRegistries {
                         output.accept(ModItems.ENDER_ORE.get());
                         output.accept(ModItems.ENDER_BLOCK.get());
                         output.accept(ModItems.ENDER_BRICKS.get());
+                        output.accept(ModItems.CHISELED_ENDER_BRICKS.get());
+                        output.accept(ModItems.ENDER_BRICK_STAIRS.get());
+                        output.accept(ModItems.ENDER_BRICK_SLAB.get());
+                        output.accept(ModItems.ENDER_BRICK_WALL.get());
                         output.accept(ModItems.CENTRALIZER.get());
                         output.accept(ModItems.ENDER_BAG.get());
                     })

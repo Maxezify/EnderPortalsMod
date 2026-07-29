@@ -9,9 +9,11 @@ import net.minecraft.world.InteractionHand;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import net.minecraft.stats.Stats;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.level.BlockEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +46,7 @@ public class EnderPortalsMod {
 
         NeoForge.EVENT_BUS.addListener(this::onLeftClickBlock);
         NeoForge.EVENT_BUS.addListener(this::onBreakSpeed);
+        NeoForge.EVENT_BUS.addListener(this::onBlockBroken);
 
         LOGGER.info("Ender Portals (NeoForge) initialisé — le vortex vous attend.");
         LOGGER.info("Immersive Portals détecté : {}", ImmPtlCompat.isLoaded());
@@ -74,9 +77,29 @@ public class EnderPortalsMod {
             return;
         }
         if (event.getLevel().getBlockState(event.getPos()).is(ModBlocks.INACTIVE_TARDIS_DOOR.get())
-                && player.getMainHandItem().is(net.minecraft.world.item.Items.MACE)) {
-            InactiveTardisDoorBlock.tryActivate((ServerLevel) event.getLevel(), event.getPos(),
-                    player, player.getMainHandItem());
+                && player.getMainHandItem().is(net.minecraft.world.item.Items.MACE)
+                && InactiveTardisDoorBlock.tryActivate((ServerLevel) event.getLevel(), event.getPos(),
+                        player, player.getMainHandItem())) {
+            ModAdvancements.award(player, ModAdvancements.RITUAL);
+        }
+    }
+
+    /**
+     * « Tailler sa galerie » : mille Blocs de l'Ender cassés. Le compte est
+     * celui de la statistique vanilla, pas un compteur maison — il survit donc
+     * aux redémarrages et reste juste si le progrès arrive après coup.
+     *
+     * <p>La statistique n'est incrémentée qu'après l'événement, d'où le
+     * {@code + 1} : sans lui, le progrès tomberait au 1001ᵉ bloc.</p>
+     */
+    private void onBlockBroken(BlockEvent.BreakEvent event) {
+        if (!(event.getPlayer() instanceof ServerPlayer player)
+                || !event.getState().is(ModBlocks.ENDER_BLOCK.get())) {
+            return;
+        }
+        int mined = player.getStats().getValue(Stats.BLOCK_MINED.get(ModBlocks.ENDER_BLOCK.get()));
+        if (mined + 1 >= ModAdvancements.GALLERY_TARGET) {
+            ModAdvancements.award(player, ModAdvancements.GALLERY);
         }
     }
 }
