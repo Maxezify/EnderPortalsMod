@@ -3,7 +3,7 @@
 Mod **Minecraft 1.21.1 / NeoForge** : une porte d'obsidienne plus grande à
 l'intérieur qu'à l'extérieur, qui s'ouvre sur **le monde de l'Ender** — le
 paradis des cubes, un monde-caverne où viennent se reposer les blocs
-détruits. Version courante : **0.9.2**.
+détruits. Version courante : **0.9.3**.
 
 ## La progression
 
@@ -173,7 +173,14 @@ réellement noir.
 Le regard porte au travers de la masse translucide, donc jusqu'au bord de la
 zone chargée. Un **fondu au noir** asservi à la distance de rendu ferme donc
 la vue à 55 % de celle-ci, quel que soit le réglage : la frontière des chunks
-n'est jamais visible.
+n'est jamais visible. De loin en loin, ce lointain s'embrase une fraction de
+seconde — de **silencieuses lueurs d'orage**, souvent redoublées.
+
+Pour un **flou croissant avec la distance**, Complementary a ce qu'il faut
+nativement, désactivé par défaut : *Camera Settings → World Blur Settings →
+World Blur*, puis l'intensité `WB_DB_NETHER_I` (plus la valeur est basse, plus
+le flou est marqué). C'est une option du shader, pas quelque chose que le mod
+puisse fournir — sous Iris, les post-traitements de Minecraft sont court-circuités.
 
 Une ligne reste à ajouter de votre côté, dans le fichier
 `shaderpacks/ComplementaryReimagined…/shaders/dimension.properties` — son
@@ -207,7 +214,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.9.2.jar
+# → build/libs/enderportals-0.9.3.jar
 ```
 
 Notes :

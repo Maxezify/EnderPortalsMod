@@ -121,20 +121,19 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
      * n'est donc jamais compact, et les bords se dissolvent dans la masse au
      * lieu de s'arrêter net sur une surface de sphère.</p>
      *
-     * <p>Mesuré hors du jeu sur 144 chunks : 6,3 poches et 82 blocs de relique
-     * par chunk, soit 13 blocs dispersés dans une sphère de rayon 3,5 —
-     * 7,2 % de remplissage. Autant de matière qu'auparavant, mais deux fois
-     * plus diluée : des nuées plus nombreuses, plus petites et plus ténues.
-     * L'ancien monde semait 112 blocs isolés par chunk sur une hauteur trois
-     * fois moindre — la densité par volume tombe au quart.</p>
+     * <p>Mesuré hors du jeu sur 144 chunks : 4,0 poches et 30 blocs de relique
+     * par chunk, soit 7 à 8 blocs dispersés dans une sphère de rayon 3,5 —
+     * 4,2 % de remplissage. À quantité de matière constante, la dilution a
+     * encore été doublée : deux fois plus de nuées, deux fois plus ténues.
+     * À ce remplissage, un bloc de poche n'a en moyenne aucun voisin.</p>
      */
     private static final int CLUSTER_CELL = 16;
-    private static final int CLUSTER_RARITY = 4;
+    private static final int CLUSTER_RARITY = 2;
     /** Rayon des poches, en blocs. Le maximum tient dans la maille (voir relicAt). */
     private static final double CLUSTER_MIN_RADIUS = 3.0;
     private static final double CLUSTER_RADIUS_SPREAD = 1.0;
     /** Remplissage au cœur d'une poche. En dessous de 1, rien n'est jamais collé. */
-    private static final double CLUSTER_DENSITY = 0.28;
+    private static final double CLUSTER_DENSITY = 0.16;
 
     /**
      * Filons lumineux : là où deux bruits de basse fréquence s'annulent
