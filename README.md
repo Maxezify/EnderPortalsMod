@@ -3,7 +3,7 @@
 Mod **Minecraft 1.21.1 / NeoForge** : une porte d'obsidienne plus grande à
 l'intérieur qu'à l'extérieur, qui s'ouvre sur **le monde de l'Ender** — le
 paradis des cubes, un monde-caverne où viennent se reposer les blocs
-détruits. Version courante : **0.9.1**.
+détruits. Version courante : **0.9.2**.
 
 ## La progression
 
@@ -170,6 +170,11 @@ Nether dont la dimension empruntait les effets, et qui aplatissait le relief
 des galeries. Lumière ambiante à **zéro** : loin d'un filon, il fait
 réellement noir.
 
+Le regard porte au travers de la masse translucide, donc jusqu'au bord de la
+zone chargée. Un **fondu au noir** asservi à la distance de rendu ferme donc
+la vue à 55 % de celle-ci, quel que soit le réglage : la frontière des chunks
+n'est jamais visible.
+
 Une ligne reste à ajouter de votre côté, dans le fichier
 `shaderpacks/ComplementaryReimagined…/shaders/dimension.properties` — son
 `dimension.world0=*` attrape sinon toute dimension inconnue et traite le
@@ -181,6 +186,12 @@ dimension.world-1=minecraft:the_nether minecraft:nether enderportals:ender_world
 
 Elle débloque le brouillard atmosphérique du Nether et sa tempête de cendres
 volumétrique. Le mod ne peut pas l'écrire : c'est un fichier du shaderpack.
+
+Elle change aussi la **forme** du fondu au loin, et c'est ce qui compte ici :
+la courbe de bordure de l'Overworld est en `(distance / portée)^16`, donc
+plate sur presque toute la vue puis brutale au dernier moment — d'où le bord
+net que l'on aperçoit. Celle du Nether est linéaire : un dégradé régulier sur
+toute la distance.
 
 ## Compatibilité générale
 
@@ -196,7 +207,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.9.1.jar
+# → build/libs/enderportals-0.9.2.jar
 ```
 
 Notes :
