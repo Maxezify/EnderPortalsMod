@@ -201,6 +201,8 @@ flou est proportionnel à cette valeur — `coc = clamp(distance × 0,001 ; 0 ;
 0,1) × intensité × 0,03` — donc **plus la valeur est haute, plus c'est
 flou**, et l'effet sature à 100 blocs. La valeur par défaut est 64.
 
+### La ligne à ajouter (indispensable sous Complementary)
+
 Une ligne reste à ajouter de votre côté, dans le fichier
 `shaderpacks/ComplementaryReimagined…/shaders/dimension.properties` — son
 `dimension.world0=*` attrape sinon toute dimension inconnue et traite le
@@ -210,14 +212,30 @@ monde de l'Ender comme l'Overworld :
 dimension.world-1=minecraft:the_nether minecraft:nether enderportals:ender_world
 ```
 
-Elle débloque le brouillard atmosphérique du Nether et sa tempête de cendres
-volumétrique. Le mod ne peut pas l'écrire : c'est un fichier du shaderpack.
+Le mod ne peut pas l'écrire : c'est un fichier du shaderpack. Sans elle, le
+`DoBorderFog` de Complementary (`lib/atmospherics/fog/mainFog.glsl`) prend sa
+branche Overworld, et trois choses en découlent :
 
-Elle change aussi la **forme** du fondu au loin, et c'est ce qui compte ici :
-la courbe de bordure de l'Overworld est en `(distance / portée)^16`, donc
-plate sur presque toute la vue puis brutale au dernier moment — d'où le bord
-net que l'on aperçoit. Celle du Nether est linéaire : un dégradé régulier sur
-toute la distance.
+* **un horizon en plein sous-sol.** La couleur du fondu y est
+  `GetSky(VdotU, …)` : le ciel échantillonné dans la direction du regard.
+  Au-dessus de la ligne d'horizon on récolte donc le gris du ciel, en dessous
+  le noir du vide, avec une coupure nette à hauteur d'œil — là où
+  `VdotU = 0`. La branche Nether, elle, emploie `netherColor`, une couleur
+  unique sans terme directionnel : plus d'horizon, plus de ciel.
+* **un bord cubique.** La distance de bordure est
+  `max(length(playerPos.xz), abs(playerPos.y))`, une métrique de cube et non
+  de sphère : on en voit les arêtes.
+* **une coupure brutale.** La courbe de l'Overworld est en
+  `(distance / portée)^16`, plate sur presque toute la vue puis verticale au
+  dernier moment. Celle du Nether est linéaire — un dégradé régulier.
+
+Elle débloque au passage le brouillard atmosphérique du Nether et sa tempête
+de cendres volumétrique.
+
+Le fichier vit à l'intérieur du shaderpack : si le vôtre est un `.zip`,
+éditez-le sur place (7-Zip, WinRAR) ou décompressez-le en dossier — Iris
+accepte les deux. Réappliquez ensuite le pack dans *Options vidéo → Shader
+Packs* pour qu'il soit relu.
 
 ## Compatibilité générale
 
