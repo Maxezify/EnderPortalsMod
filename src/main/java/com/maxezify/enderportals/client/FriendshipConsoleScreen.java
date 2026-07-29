@@ -3,7 +3,6 @@ package com.maxezify.enderportals.client;
 import com.maxezify.enderportals.EnderPortalsMod;
 import com.maxezify.enderportals.network.ConsoleActionPayload;
 import com.maxezify.enderportals.network.ConsoleStatePayload;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -37,7 +36,7 @@ public class FriendshipConsoleScreen extends Screen {
             EnderPortalsMod.id("textures/gui/friendship_console.png");
 
     private static final int WIDTH = 220;
-    private static final int HEIGHT = 176;
+    private static final int HEIGHT = 192;
 
     /** Longueur d'un code d'ami. Voir {@code TardisStateManager}. */
     private static final int CODE_LENGTH = 8;
@@ -58,6 +57,14 @@ public class FriendshipConsoleScreen extends Screen {
     private static final int KEY_H = 24;
     private static final int KEY_GAP = 3;
     private static final int KEYS_Y = 36;
+
+    /**
+     * Bande d'état en pied de panneau : elle est dessinée sur la face claire, pas
+     * dans l'encart sombre du carnet, donc son texte doit être foncé.
+     */
+    private static final int STATUS_Y = 172;
+    private static final int COLOR_ON_PANEL = 0xFF3F3B46;
+    private static final int COLOR_WARN = 0xFFA02020;
 
     private static final int COLOR_TEXT = 0xFFE8E4F0;
     private static final int COLOR_DIM = 0xFF9A93AD;
@@ -165,6 +172,7 @@ public class FriendshipConsoleScreen extends Screen {
         super.render(guiGraphics, mouseX, mouseY, partialTick);
         renderDisplay(guiGraphics);
         renderList(guiGraphics, mouseX, mouseY);
+        renderStatus(guiGraphics);
     }
 
     private void renderDisplay(GuiGraphics guiGraphics) {
@@ -181,11 +189,21 @@ public class FriendshipConsoleScreen extends Screen {
         guiGraphics.drawCenteredString(font, spaced.toString(),
                 leftPos + PAD_X + 48, textY, 0xFFF2ECFF);
 
-        // Mon propre code, sous le pavé : c'est celui qu'on dicte à l'autre.
-        int ownY = topPos + HEIGHT - 12;
+    }
+
+    /**
+     * Le pied du panneau : mon code à gauche — celui qu'on dicte à l'autre — et
+     * l'avertissement d'un passage non accolé à droite, quand il y a lieu.
+     */
+    private void renderStatus(GuiGraphics guiGraphics) {
         guiGraphics.drawString(font, Component.translatable("enderportals.console.my_code",
-                        formatCode(state.myCode())).withStyle(ChatFormatting.AQUA),
-                leftPos + LIST_X, ownY, COLOR_TEXT, false);
+                        formatCode(state.myCode())),
+                leftPos + LIST_X, topPos + STATUS_Y, COLOR_ON_PANEL, false);
+        if (!state.passageReady()) {
+            Component warning = Component.translatable("enderportals.console.no_passage");
+            guiGraphics.drawString(font, warning,
+                    leftPos + WIDTH - 8 - font.width(warning), topPos + STATUS_Y, COLOR_WARN, false);
+        }
     }
 
     private static String formatCode(int code) {
@@ -211,11 +229,6 @@ public class FriendshipConsoleScreen extends Screen {
             int x = leftPos + LIST_X;
             int y = topPos + FIRST_ROW_Y + i * ROW_H;
             renderRow(guiGraphics, ally, x, y, isOver(mouseX, mouseY, x, y));
-        }
-        if (!state.passageReady()) {
-            guiGraphics.drawString(font, Component.translatable("enderportals.console.no_passage")
-                            .withStyle(ChatFormatting.RED),
-                    leftPos + LIST_X + 4, topPos + HEIGHT - 24, COLOR_TEXT, false);
         }
     }
 

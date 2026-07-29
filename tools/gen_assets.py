@@ -834,7 +834,7 @@ def tex_friendship_console():
 def tex_console_gui():
     """Fond d'interface 256x256, façon panneau vanilla : biseau clair en haut à
     gauche, ombre en bas à droite, encarts creusés pour la liste et l'écran."""
-    W, H = 220, 176
+    W, H = 220, 192
     px = canvas(256, 256, (0, 0, 0, 0))
     face = (198, 198, 198, 255)
     light = (255, 255, 255, 255)
