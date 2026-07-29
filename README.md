@@ -3,7 +3,7 @@
 Mod **Minecraft 1.21.1 / NeoForge** : une porte d'obsidienne plus grande à
 l'intérieur qu'à l'extérieur, qui s'ouvre sur **le monde de l'Ender** — le
 paradis des cubes, un monde-caverne où viennent se reposer les blocs
-détruits. Version courante : **0.9.5**.
+détruits. Version courante : **0.9.6**.
 
 ## La progression
 
@@ -173,19 +173,63 @@ téléportation classique et l'indique dans les logs. Au démarrage, une ligne
 
 ## Shaders (Complementary Reimagined)
 
-Le monde de l'Ender a ses propres effets de dimension, pensés pour les
-shaders autant que pour le jeu nu : brouillard dense, teinte rendue **sans
-délavage** (c'est elle qui alimente l'uniforme `fogColor` dont Complementary
-tire sa couleur de brume), éclairage **directionnel** — contrairement au
-Nether dont la dimension empruntait les effets, et qui aplatissait le relief
-des galeries. Lumière ambiante à **zéro** : loin d'un filon, il fait
-réellement noir.
+Le monde de l'Ender se déclare **comme le Nether** auprès des shaders, et
+c'est ce qui fait tout : son `dimension_type` porte
+`effects: minecraft:the_nether`. **Rien à configurer.**
+
+Le détour mérite une explication, parce qu'il n'est pas évident. Iris choisit
+le dossier de shaders (`world0` / `world-1` / `world1`) dans cet ordre
+(`Iris.getCurrentDimension()`) :
+
+1. une correspondance **exacte** de l'identifiant de dimension dans le
+   `dimension.properties` du shaderpack ;
+2. à défaut, le champ **`effects` du type de dimension** — `minecraft:the_end`
+   donne `world1`, `minecraft:the_nether` donne `world-1` ;
+3. à défaut, l'identifiant brut, que le `dimension.world0=*` de Complementary
+   rattrape en Overworld.
+
+Le mod ne peut pas écrire dans un shaderpack, mais il maîtrise son champ
+`effects` : c'est la seule voie par laquelle il peut obtenir un rendu
+souterrain sans rien demander au joueur. Sans ce champ, le `DoBorderFog` de
+Complementary (`lib/atmospherics/fog/mainFog.glsl`) prenait sa branche
+Overworld, avec trois conséquences visibles :
+
+* **un horizon en plein sous-sol.** La couleur du fondu y est
+  `GetSky(VdotU, …)` : le ciel échantillonné dans la direction du regard.
+  Au-dessus de la ligne d'horizon on récoltait le gris du ciel, en dessous le
+  noir du vide, avec une coupure nette à hauteur d'œil — là où `VdotU = 0`.
+  La branche Nether emploie `netherColor`, une couleur unique sans terme
+  directionnel : plus d'horizon, plus de ciel.
+* **un bord cubique.** La distance de bordure est
+  `max(length(playerPos.xz), abs(playerPos.y))`, une métrique de cube et non
+  de sphère : on en voyait les arêtes.
+* **une coupure brutale.** La courbe de l'Overworld est en
+  `(distance / portée)^16`, plate sur presque toute la vue puis verticale au
+  dernier moment. Celle du Nether est linéaire — un dégradé régulier.
+
+En prime, la branche Nether apporte son brouillard atmosphérique et sa tempête
+de cendres volumétrique, et respecte le réglage *Nether View Limit*.
+
+Le prix à payer est mince et ne concerne que le **jeu sans shader** : la
+dimension hérite alors des `DimensionSpecialEffects` du Nether, dont
+`constantAmbientLight`. Les faces du haut et du bas des blocs sont éclairées à
+0,9 au lieu de 1,0 et 0,5 ; les faces latérales (0,8 et 0,6) ne changent pas.
+Sous shader, ce coût est nul : Complementary déclare `oldLighting = false`, et
+Iris désactive alors complètement l'ombrage directionnel de vanilla
+(`IrisRenderingPipeline.shouldDisableDirectionalShading()`).
+
+Tout le reste des effets du monde reste piloté par le mod, par événements —
+donc indépendamment du champ `effects` : lumière ambiante à **zéro** (loin
+d'un filon, il fait réellement noir), pas de ciel, pas de nuages, brouillard
+dense d'une teinte rendue **sans délavage** (c'est elle qui alimente
+l'uniforme `fogColor` dont Complementary tire sa couleur de brume).
 
 Le regard porte au travers de la masse translucide, donc jusqu'au bord de la
-zone chargée. Un **fondu au noir** asservi à la distance de rendu ferme donc
-la vue à 55 % de celle-ci, quel que soit le réglage : la frontière des chunks
-n'est jamais visible. De loin en loin, ce lointain s'embrase une fraction de
-seconde — de **silencieuses lueurs d'orage**, souvent redoublées.
+zone chargée. Un **fondu au noir** ferme la vue à 55 % de la distance de
+rendu, et **jamais au-delà de 96 blocs** : la frontière des chunks n'est
+jamais visible, quel que soit le réglage. De loin en loin, ce lointain
+s'embrase une fraction de seconde — de **silencieuses lueurs d'orage**,
+souvent redoublées.
 
 Pour un **flou croissant avec la distance**, Complementary a ce qu'il faut
 nativement, mais **désactivé par défaut** : *Camera Settings → World Blur →
@@ -193,49 +237,22 @@ World Blur → **Distance Blur***. C'est une option du shader, pas quelque chose
 que le mod puisse fournir — sous Iris, les post-traitements de Minecraft sont
 court-circuités.
 
-L'intensité se règle ensuite sur le curseur correspondant au monde en cours.
-Le monde de l'Ender n'ayant pas de lumière céleste, c'est **« Dis. Blur —
-Night & Interiors »** qui le gouverne ; il bascule sur **« Dis. Blur — The
-Nether »** une fois la ligne `dimension.properties` ci-dessous ajoutée. Le
+L'intensité se règle ensuite sur le curseur du monde en cours : le monde de
+l'Ender étant vu comme le Nether, c'est **« Dis. Blur — The Nether »**. Le
 flou est proportionnel à cette valeur — `coc = clamp(distance × 0,001 ; 0 ;
 0,1) × intensité × 0,03` — donc **plus la valeur est haute, plus c'est
 flou**, et l'effet sature à 100 blocs. La valeur par défaut est 64.
 
-### La ligne à ajouter (indispensable sous Complementary)
+### Forcer un autre rendu
 
-Une ligne reste à ajouter de votre côté, dans le fichier
-`shaderpacks/ComplementaryReimagined…/shaders/dimension.properties` — son
-`dimension.world0=*` attrape sinon toute dimension inconnue et traite le
-monde de l'Ender comme l'Overworld :
+L'étape 1 ci-dessus l'emporte sur le champ `effects` : pour reprendre la main,
+ajoutez l'identifiant du monde à la ligne de votre choix dans
+`shaderpacks/ComplementaryReimagined…/shaders/dimension.properties`. Par
+exemple, pour le faire rendre comme l'End :
 
 ```
-dimension.world-1=minecraft:the_nether minecraft:nether enderportals:ender_world
+dimension.world1=minecraft:the_end minecraft:end enderportals:ender_world
 ```
-
-Le mod ne peut pas l'écrire : c'est un fichier du shaderpack. Sans elle, le
-`DoBorderFog` de Complementary (`lib/atmospherics/fog/mainFog.glsl`) prend sa
-branche Overworld, et trois choses en découlent :
-
-* **un horizon en plein sous-sol.** La couleur du fondu y est
-  `GetSky(VdotU, …)` : le ciel échantillonné dans la direction du regard.
-  Au-dessus de la ligne d'horizon on récolte donc le gris du ciel, en dessous
-  le noir du vide, avec une coupure nette à hauteur d'œil — là où
-  `VdotU = 0`. La branche Nether, elle, emploie `netherColor`, une couleur
-  unique sans terme directionnel : plus d'horizon, plus de ciel.
-* **un bord cubique.** La distance de bordure est
-  `max(length(playerPos.xz), abs(playerPos.y))`, une métrique de cube et non
-  de sphère : on en voit les arêtes.
-* **une coupure brutale.** La courbe de l'Overworld est en
-  `(distance / portée)^16`, plate sur presque toute la vue puis verticale au
-  dernier moment. Celle du Nether est linéaire — un dégradé régulier.
-
-Elle débloque au passage le brouillard atmosphérique du Nether et sa tempête
-de cendres volumétrique.
-
-Le fichier vit à l'intérieur du shaderpack : si le vôtre est un `.zip`,
-éditez-le sur place (7-Zip, WinRAR) ou décompressez-le en dossier — Iris
-accepte les deux. Réappliquez ensuite le pack dans *Options vidéo → Shader
-Packs* pour qu'il soit relu.
 
 ## Compatibilité générale
 
@@ -251,7 +268,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.9.5.jar
+# → build/libs/enderportals-0.9.6.jar
 ```
 
 Notes :
