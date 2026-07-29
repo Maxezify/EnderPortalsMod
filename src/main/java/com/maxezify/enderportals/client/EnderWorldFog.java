@@ -22,10 +22,13 @@ import net.neoforged.neoforge.client.event.ViewportEvent;
  * bord de la zone chargée, là où le vide se découpe net. Un monde ordinaire
  * n'a pas ce problème — sa pierre arrête l'œil au premier bloc.</p>
  *
- * <p>Le brouillard est asservi à la distance de rendu plutôt qu'à une distance
- * fixe : quel que soit le réglage du joueur, il atteint son opacité pleine à
- * {@value #FULL_FOG_AT} de cette distance, avec une marge confortable avant la
- * frontière des chunks.</p>
+ * <p>Le brouillard est asservi à la distance de rendu — il atteint son opacité
+ * pleine à {@value #FULL_FOG_AT} de cette distance, avec une marge confortable
+ * avant la frontière des chunks — mais sans jamais dépasser
+ * {@value #FULL_FOG_MAX_BLOCKS} blocs. Ce plafond fixe la portée de vue du
+ * monde : c'est lui qui garantit que les calottes de bedrock, à 127 blocs sous
+ * la base et 254 au-dessus, restent hors de vue quel que soit le réglage du
+ * joueur.</p>
  *
  * <p>Sa couleur n'est pas un noir pur mais un violet très sombre. À l'œil c'est
  * du noir ; la nuance existe pour les shaders, qui ne lisent pas cette couleur
@@ -41,6 +44,20 @@ public final class EnderWorldFog {
     private static final float FULL_FOG_AT = 0.55f;
     /** Fraction où il commence à monter — en deçà, la vue reste nette. */
     private static final float FOG_STARTS_AT = 0.12f;
+
+    /**
+     * Plafonds absolus, en blocs, appliqués par-dessus les fractions ci-dessus.
+     *
+     * <p>Sans eux, la portée de vue du monde de l'Ender suivait indéfiniment le
+     * réglage du joueur : à 32 chunks, le brouillard ne saturait plus qu'à 281
+     * blocs, assez loin pour laisser apparaître les calottes de bedrock. Les
+     * fractions restent utiles en dessous — à faible distance de rendu, ce sont
+     * elles qui gardent le brouillard à l'intérieur des chunks chargés — mais
+     * au-delà de 8 chunks c'est ce plafond qui décide, et l'aspect du monde
+     * devient le même pour tout le monde.</p>
+     */
+    private static final float FULL_FOG_MAX_BLOCKS = 96.0f;
+    private static final float FOG_STARTS_MAX_BLOCKS = 20.0f;
 
     // Un violet à peine plus clair que le noir. Voir la note sur les shaders.
     private static final float FOG_RED = 0.012f;
@@ -146,8 +163,8 @@ public final class EnderWorldFog {
             return;
         }
         float blocks = Minecraft.getInstance().options.getEffectiveRenderDistance() * 16.0f;
-        event.setNearPlaneDistance(blocks * FOG_STARTS_AT);
-        event.setFarPlaneDistance(blocks * FULL_FOG_AT);
+        event.setNearPlaneDistance(Math.min(blocks * FOG_STARTS_AT, FOG_STARTS_MAX_BLOCKS));
+        event.setFarPlaneDistance(Math.min(blocks * FULL_FOG_AT, FULL_FOG_MAX_BLOCKS));
         // Sans annulation, NeoForge ignore les valeurs posées ici.
         event.setCanceled(true);
     }

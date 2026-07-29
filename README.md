@@ -3,7 +3,7 @@
 Mod **Minecraft 1.21.1 / NeoForge** : une porte d'obsidienne plus grande à
 l'intérieur qu'à l'extérieur, qui s'ouvre sur **le monde de l'Ender** — le
 paradis des cubes, un monde-caverne où viennent se reposer les blocs
-détruits. Version courante : **0.9.4**.
+détruits. Version courante : **0.9.5**.
 
 ## La progression
 
@@ -58,10 +58,21 @@ attribuée en spirale autour de l'origine : construisez-y base, fermes et
 stockage, les lits et ancres de réapparition y fonctionnent. Les cases sont **cloisonnées par un quadrillage
 de murs de bedrock de 2 blocs d'épaisseur**, montant d'une calotte de bedrock
 à l'autre : on ne peut pas marcher jusque chez le voisin, ni passer
-par-dessus ou par-dessous. Le monde s'étend de **0 à 128**, comme le Nether :
-c'est l'altitude qui commande le brouillard des shaders, et cette plage est
-celle où leurs effets existent. Il est fermé en haut et en bas par 2 couches
-de bedrock.
+par-dessus ou par-dessous. Le monde s'étend de **-64 à 320**, comme
+l'Overworld, et il est fermé en haut et en bas par 2 couches de bedrock.
+
+Cette hauteur est une contrainte optique, pas un confort. Le Bloc de l'Ender
+masque ses faces internes : la masse ne s'assombrit pas avec la profondeur, on
+la traverse du regard comme une seule vitre. Seul le brouillard arrête l'œil,
+et il ne dépend que de la distance — une calotte de bedrock trop proche se
+lit donc en clair au travers de la matière. Les 384 blocs les repoussent à 127
+en dessous de la base et 254 au-dessus, bien au-delà des **96 blocs** où le
+brouillard sature. La base, elle, reste à y = 64, dans la bande d'altitude où
+les brouillards des shaders existent.
+
+> La hauteur du monde de l'Ender a changé en 0.9.5 (elle valait 0 → 128).
+> Minecraft ne sait pas redimensionner une dimension existante : une
+> sauvegarde antérieure doit repartir d'un monde neuf.
 
 Le pseudo du propriétaire s'affiche sur un petit panneau à l'avant de la
 porte, et tout fonctionne en multijoueur (logique côté serveur, données
@@ -222,7 +233,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.9.4.jar
+# → build/libs/enderportals-0.9.5.jar
 ```
 
 Notes :

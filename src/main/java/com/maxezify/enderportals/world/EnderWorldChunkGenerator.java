@@ -48,21 +48,36 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
             ).apply(instance, EnderWorldChunkGenerator::new));
 
     /**
-     * Plage de construction, identique à celle du Nether : de 0 à 128.
+     * Plage de construction, identique à celle de l'Overworld : de -64 à 320.
      *
-     * <p>C'est l'altitude qui commande le brouillard des shaders. Complementary
-     * Reimagined fait décroître son brouillard atmosphérique au-dessus de 55,1
-     * et l'éteint à 85,1 ; son brouillard de caverne meurt à 61,9. Un monde de
-     * 384 blocs de haut plaçait l'essentiel du volume hors de ces bandes.
-     * Ramené aux 128 du Nether, le monde de l'Ender tient tout entier dans la
-     * plage où ces effets existent.</p>
+     * <p>Cette hauteur n'est pas un confort, c'est une contrainte optique. Le
+     * Bloc de l'Ender masque ses faces internes ({@link net.minecraft.world.level.block.TransparentBlock}) :
+     * la masse ne se comporte donc pas comme un empilement de vitres qui
+     * s'assombrirait avec la profondeur, mais comme une seule vitre posée sur
+     * la paroi de la galerie. Rien n'atténue ce qu'on voit au travers — sauf le
+     * brouillard, et le brouillard n'est fonction que de la distance.</p>
+     *
+     * <p>Les calottes de bedrock sont donc visibles tant qu'elles sont plus
+     * proches que la distance d'opacité du brouillard (voir
+     * {@code EnderWorldFog}). Dans un monde de 128 blocs, une base posée à
+     * {@code PLOT_Y = 64} les avait à 62 blocs — en deçà de cette distance,
+     * d'où deux bandes grises au-dessus et en dessous de l'horizon noir. Les
+     * 384 blocs de l'Overworld les repoussent à 127 en bas et 254 en haut :
+     * au-delà du brouillard dans les deux sens, quelle que soit la distance de
+     * rendu.</p>
+     *
+     * <p>L'altitude de jeu, elle, ne bouge pas : la base reste à 64, dans la
+     * bande où les brouillards des shaders existent (Complementary Reimagined
+     * fait décroître son brouillard atmosphérique au-dessus de 55,1 et
+     * l'éteint à 85,1). C'est le monde qui s'étend autour d'elle, pas elle qui
+     * se déplace.</p>
      *
      * <p>Doit rester d'accord avec {@code min_y} et {@code height} du fichier
      * {@code dimension_type/ender_world.json} — le jeu lit le type de dimension
      * pour dimensionner les chunks, et le générateur pour les remplir.</p>
      */
-    private static final int MIN_Y = 0;
-    private static final int HEIGHT = 128;
+    private static final int MIN_Y = -64;
+    private static final int HEIGHT = 384;
 
     /**
      * Épaisseur des calottes de bedrock qui ferment le monde en haut et en bas
