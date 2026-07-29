@@ -3,6 +3,7 @@ package com.maxezify.enderportals.network;
 import com.maxezify.enderportals.ModAdvancements;
 import com.maxezify.enderportals.ModBlocks;
 import com.maxezify.enderportals.block.AllyPassageBlock;
+import com.maxezify.enderportals.block.PassagePhase;
 import com.maxezify.enderportals.tardis.AllyLinks;
 import com.maxezify.enderportals.tardis.AllyPassageHelper;
 import com.maxezify.enderportals.tardis.TardisData;
@@ -236,6 +237,12 @@ public final class ConsoleServerLogic {
                         player.getGameProfile().getName());
             }
             case OPENED -> {
+                // Ouvrir peut avoir délogé un lien antérieur, d'un côté ou de
+                // l'autre : on referme les arches ainsi laissées sans pair.
+                for (UUID displaced : links.takeDisplaced()) {
+                    AllyPassageHelper.setPhase(server, displaced, PassagePhase.CLOSED);
+                    refresh(server, displaced);
+                }
                 AllyPassageHelper.openBoth(server, me, other);
                 ModAdvancements.award(player, ModAdvancements.ALLIES);
                 ServerPlayer ally = server.getPlayerList().getPlayer(other);
@@ -267,11 +274,12 @@ public final class ConsoleServerLogic {
         UUID me = player.getUUID();
         UUID other = payload.target();
         MinecraftServer server = player.server;
-        UUID wasLinkedTo = manager.allies().linkOf(me);
+        // Ne refermer que si le lien portait bien sur l'allié oublié.
+        boolean wasLinked = other.equals(manager.allies().linkOf(me));
         manager.allies().forget(me, other);
         manager.setDirty();
-        if (wasLinkedTo != null) {
-            AllyPassageHelper.closeBoth(server, me, wasLinkedTo);
+        if (wasLinked) {
+            AllyPassageHelper.closeBoth(server, me, other);
         }
         player.displayClientMessage(Component.translatable(
                 "enderportals.message.ally_forgotten", displayName(manager, other)), true);

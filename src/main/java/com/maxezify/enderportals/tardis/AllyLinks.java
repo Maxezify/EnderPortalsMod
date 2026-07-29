@@ -116,7 +116,14 @@ public class AllyLinks {
         return hasDeclared(a, b) && hasDeclared(b, a);
     }
 
-    /** Oublie complètement un joueur du carnet d'un autre, liens compris. */
+    /**
+     * Retire un joueur du carnet d'un autre.
+     *
+     * <p>Tout ce qui est touché ici est <b>circonscrit à cette paire</b>.
+     * Oublier un allié ne doit annuler aucune demande ni fermer aucun passage
+     * concernant un tiers — c'est pourquoi chaque suppression est conditionnée à
+     * ce qu'elle porte bien sur l'autre bout de la paire.</p>
+     */
     public void forget(UUID from, UUID to) {
         Set<UUID> mine = declared.get(from);
         if (mine != null) {
@@ -125,9 +132,22 @@ public class AllyLinks {
                 declared.remove(from);
             }
         }
-        requests.remove(from);
-        requests.remove(to);
-        closeLink(from);
+        if (targetOf(from) != null && to.equals(targetOf(from))) {
+            requests.remove(from);
+        }
+        if (targetOf(to) != null && from.equals(targetOf(to))) {
+            requests.remove(to);
+        }
+        if (to.equals(links.get(from))) {
+            closeLink(from);
+        }
+    }
+
+    /** Cible brute d'une demande, sans regarder sa péremption. */
+    @Nullable
+    private UUID targetOf(UUID player) {
+        Request request = requests.get(player);
+        return request == null ? null : request.target();
     }
 
     // ------------------------------------------------------------------
@@ -151,7 +171,8 @@ public class AllyLinks {
         if (theirs != null && theirs.target().equals(from)) {
             requests.remove(to);
             requests.remove(from);
-            openLink(from, to);
+            lastDisplaced.clear();
+            lastDisplaced.addAll(openLink(from, to));
             return ConnectResult.OPENED;
         }
         requests.put(from, new Request(to, gameTime + REQUEST_TIMEOUT_TICKS));
@@ -189,13 +210,35 @@ public class AllyLinks {
         return links.get(player);
     }
 
-    private void openLink(UUID a, UUID b) {
-        // Un joueur n'a qu'un passage : ouvrir un lien ferme le précédent, des
-        // deux côtés, sinon on laisserait un pair croire le sien encore ouvert.
-        closeLink(a);
-        closeLink(b);
+    /**
+     * Un joueur n'a qu'un passage : ouvrir un lien ferme donc le précédent, des
+     * deux côtés. Les pairs ainsi délogés sont rendus à l'appelant, à qui il
+     * revient de refermer leurs arches — sans quoi elles resteraient ouvertes à
+     * l'écran sans mener nulle part.
+     */
+    private List<UUID> openLink(UUID a, UUID b) {
+        List<UUID> displaced = new ArrayList<>(2);
+        UUID freedByA = closeLink(a);
+        UUID freedByB = closeLink(b);
+        if (freedByA != null && !freedByA.equals(b)) {
+            displaced.add(freedByA);
+        }
+        if (freedByB != null && !freedByB.equals(a)) {
+            displaced.add(freedByB);
+        }
         links.put(a, b);
         links.put(b, a);
+        return displaced;
+    }
+
+    /** Pairs délogés par la dernière ouverture — vidé à chaque appel. */
+    private final List<UUID> lastDisplaced = new ArrayList<>();
+
+    /** Les pairs que la dernière connexion ouverte a délogés. */
+    public List<UUID> takeDisplaced() {
+        List<UUID> copy = List.copyOf(lastDisplaced);
+        lastDisplaced.clear();
+        return copy;
     }
 
     /** Ferme le lien de ce joueur et rend le pair qui vient d'être libéré. */
