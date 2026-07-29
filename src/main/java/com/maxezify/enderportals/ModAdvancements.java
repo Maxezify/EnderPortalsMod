@@ -27,6 +27,8 @@ public final class ModAdvancements {
     public static final String RITUAL = "ritual";
     /** Avoir cassé {@value #GALLERY_TARGET} Blocs de l'Ender. */
     public static final String GALLERY = "gallery";
+    /** Avoir ouvert un Passage des Alliés. */
+    public static final String ALLIES = "allies";
 
     public static final int GALLERY_TARGET = 1000;
 

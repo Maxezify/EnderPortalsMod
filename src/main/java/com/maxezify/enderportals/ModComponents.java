@@ -17,6 +17,17 @@ public final class ModComponents {
             "tardis_id",
             builder -> builder.persistent(Codec.STRING).networkSynchronized(ByteBufCodecs.STRING_UTF8));
 
+    /**
+     * Code d'ami à huit chiffres, recopié sur la clé au moment de la liaison.
+     *
+     * <p>Il est dupliqué là volontairement : l'infobulle se dessine côté client,
+     * qui n'a aucun accès au registre des portes. Sans cette copie, le joueur
+     * devrait aller lire son code sur un panneau pour pouvoir le dicter.</p>
+     */
+    public static final Supplier<DataComponentType<Integer>> FRIEND_CODE = COMPONENTS.registerComponentType(
+            "friend_code",
+            builder -> builder.persistent(Codec.INT).networkSynchronized(ByteBufCodecs.VAR_INT));
+
     private ModComponents() {
     }
 }

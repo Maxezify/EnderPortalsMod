@@ -25,6 +25,7 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.UUID;
@@ -84,6 +85,7 @@ public class TardisKeyItem extends Item {
         String bound = stack.get(ModComponents.TARDIS_ID.get());
         if (bound == null) {
             stack.set(ModComponents.TARDIS_ID.get(), door.getTardisId().toString());
+            stampCode(stack, TardisStateManager.get(server).getTardis(door.getTardisId()));
             level.playSound(null, base, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 1.0f, 1.2f);
             player.displayClientMessage(Component.translatable("enderportals.message.key_bound"), false);
             return;
@@ -97,6 +99,10 @@ public class TardisKeyItem extends Item {
         if (data == null) {
             return;
         }
+        // Les clés liées avant l'arrivée du Passage des Alliés n'ont pas encore
+        // leur code : on le pose au premier usage plutôt que d'obliger à
+        // reforger la clé.
+        stampCode(stack, data);
         if (door.isInterior()) {
             if (data.deployed) {
                 TardisHelper.dismissExterior(server, data);
@@ -152,6 +158,14 @@ public class TardisKeyItem extends Item {
         TardisHelper.deployExterior(server, data, level, base, facing, false, player);
     }
 
+    /** Recopie le code d'ami de la porte sur la clé, s'il n'y est pas déjà. */
+    private static void stampCode(ItemStack stack, @Nullable TardisData data) {
+        if (data != null && data.friendCode != 0
+                && !Integer.valueOf(data.friendCode).equals(stack.get(ModComponents.FRIEND_CODE.get()))) {
+            stack.set(ModComponents.FRIEND_CODE.get(), data.friendCode);
+        }
+    }
+
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
                                 TooltipFlag flag) {
@@ -162,6 +176,13 @@ public class TardisKeyItem extends Item {
             // substring(0, 8) sec ferait planter le client au survol.
             tooltip.add(Component.translatable("enderportals.tooltip.key_bound",
                     bound.substring(0, Math.min(8, bound.length()))).withStyle(ChatFormatting.AQUA));
+            Integer code = stack.get(ModComponents.FRIEND_CODE.get());
+            if (code != null && code != 0) {
+                String digits = Integer.toString(code);
+                tooltip.add(Component.translatable("enderportals.tooltip.friend_code",
+                                digits.length() == 8 ? digits.substring(0, 4) + " " + digits.substring(4) : digits)
+                        .withStyle(ChatFormatting.GOLD));
+            }
         } else {
             tooltip.add(Component.translatable("enderportals.tooltip.key_unbound").withStyle(ChatFormatting.GRAY));
         }

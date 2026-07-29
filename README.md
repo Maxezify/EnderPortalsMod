@@ -3,7 +3,7 @@
 Mod **Minecraft 1.21.1 / NeoForge** : une porte d'obsidienne plus grande à
 l'intérieur qu'à l'extérieur, qui s'ouvre sur **le monde de l'Ender** — le
 paradis des cubes, un monde-caverne où viennent se reposer les blocs
-détruits. Version courante : **0.10.0**.
+détruits. Version courante : **0.11.0**.
 
 ## La progression
 
@@ -77,6 +77,47 @@ les brouillards des shaders existent.
 Le pseudo du propriétaire s'affiche sur un petit panneau à l'avant de la
 porte, et tout fonctionne en multijoueur (logique côté serveur, données
 synchronisées).
+
+## Le Passage des Alliés
+
+Deux bases de poche, un seul seuil. Le **Passage des Alliés** est une arche
+claire — quartz et veines dorées, à l'opposé de l'obsidienne de la Porte de
+l'Ender — posable dans le monde de l'Ender. Seule, elle reste scellée : il faut
+lui **accoler un Contrôle de l'amitié**, le pavé numérique qui commande tout.
+
+### Le code d'ami
+
+Chaque porte éveillée reçoit un **code de huit chiffres**, inscrit sur sa clé
+(infobulle) et rappelé en bas du panneau. C'est ce code qu'on se dicte.
+
+### Devenir amis de passage
+
+Tapez le code de l'autre au pavé, chiffre par chiffre, puis **VALIDER**
+(`EFFACER` remet à zéro, `*` corrige le dernier chiffre, `#` valide). Le nom
+apparaît dans le carnet, à gauche, avec un **sablier** : un seul des deux codes
+a été tapé. L'autre reçoit un message et doit taper le vôtre de son côté.
+
+Quand les deux l'ont fait, le sablier laisse place à la **tête du joueur**.
+L'amitié n'est jamais stockée comme telle : elle est la conjonction des deux
+déclarations, ce qui rend impossible l'état où l'un se croirait ami et l'autre
+non.
+
+### Ouvrir le passage
+
+Cliquez le nom de votre allié : sa bordure passe au **jaune** (vous attendez).
+Il reçoit un message et a **deux minutes** pour cliquer le vôtre — sa bordure
+clignote alors en **orange** chez lui, le seul état qui réclame un geste. Passé
+ce délai, la demande est abandonnée.
+
+Dès que les deux ont cliqué, l'arche s'anime **trois secondes** puis s'ouvre,
+bordure **verte** de chaque côté. Le lien reste ouvert aussi longtemps que vous
+le voulez ; traversez dans un sens ou dans l'autre. Pour le refermer, cliquez le
+nom entouré de vert — il faudra refaire la poignée de main pour rouvrir.
+
+Maj + clic sur un nom le retire du carnet.
+
+Le quadrillage de bedrock reste intact : on ne se rencontre que par un passage
+mutuellement consenti.
 
 ## Le stockage : Transmetteur d'objet & Sac de l'Ender
 
@@ -286,7 +327,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.10.0.jar
+# → build/libs/enderportals-0.11.0.jar
 ```
 
 Notes :

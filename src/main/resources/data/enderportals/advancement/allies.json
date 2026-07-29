@@ -1,0 +1,28 @@
+{
+  "parent": "enderportals:paradise",
+  "display": {
+    "icon": {
+      "id": "enderportals:ally_passage"
+    },
+    "title": {
+      "translate": "advancements.enderportals.allies.title"
+    },
+    "description": {
+      "translate": "advancements.enderportals.allies.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "code": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "code"
+    ]
+  ]
+}

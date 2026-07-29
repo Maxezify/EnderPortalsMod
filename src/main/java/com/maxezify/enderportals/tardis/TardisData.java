@@ -53,6 +53,18 @@ public class TardisData {
     @Nullable
     public BlockPos centralizerPos;
 
+    /** Passage des Alliés du joueur, dans le monde de l'Ender (ou null). */
+    @Nullable
+    public BlockPos passagePos;
+    public Direction passageFacing = Direction.NORTH;
+
+    /**
+     * Code d'ami : huit chiffres, tapés au pavé numérique du Contrôle de
+     * l'amitié. Zéro tant qu'il n'a pas été attribué — les portes créées avant
+     * l'arrivée du Passage des Alliés en reçoivent un au chargement.
+     */
+    public int friendCode;
+
     public TardisData(UUID id, int plotIndex) {
         this.id = id;
         this.plotIndex = plotIndex;
@@ -84,6 +96,11 @@ public class TardisData {
         if (centralizerPos != null) {
             putPos(nbt, "Centralizer", centralizerPos);
         }
+        if (passagePos != null) {
+            putPos(nbt, "Passage", passagePos);
+            nbt.putString("PassageFacing", passageFacing.getName());
+        }
+        nbt.putInt("FriendCode", friendCode);
         return nbt;
     }
 
@@ -109,6 +126,10 @@ public class TardisData {
         data.immptlActive = nbt.getBoolean("ImmptlActive");
         data.centralizerPos = nbt.contains("Centralizer", Tag.TAG_INT_ARRAY)
                 ? getPos(nbt, "Centralizer") : null;
+        data.passagePos = nbt.contains("Passage", Tag.TAG_INT_ARRAY)
+                ? getPos(nbt, "Passage") : null;
+        data.passageFacing = directionOrDefault(nbt.getString("PassageFacing"), Direction.NORTH);
+        data.friendCode = nbt.getInt("FriendCode");
         return data;
     }
 

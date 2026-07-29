@@ -744,6 +744,220 @@ def brick_family_blockstates():
         "": {"model": "enderportals:block/chiseled_ender_bricks"}}})
 
 
+# ============================================================ Passage des Alliés
+
+# Palette « Paradis » : quartz laiteux, veines dorées. Volontairement à
+# l'opposé de l'obsidienne de la Porte de l'Ender — deux portes, deux mondes.
+P_PARADISE = [(196, 190, 176, 255), (214, 208, 194, 255), (231, 226, 213, 255),
+              (243, 239, 229, 255)]
+PARADISE_DARK = (138, 132, 118, 255)
+PARADISE_SEAM = (206, 172, 96, 255)
+PARADISE_SEAM_LIT = (240, 214, 138, 255)
+
+# Voile du passage : or pâle lumineux, presque blanc au cœur.
+VEIL_DORMANT = [(46, 44, 52, 255), (56, 53, 62, 255), (66, 62, 72, 255)]
+VEIL_WAKING = [(120, 104, 74, 214), (162, 140, 96, 214), (204, 178, 122, 214)]
+VEIL_OPEN = [(214, 190, 130, 206), (236, 216, 164, 206), (252, 243, 214, 206)]
+
+
+def tex_paradise_frame():
+    """Le cadre du Passage : quartz taillé, une veine dorée au centre."""
+    noise = blob_noise(16, 16, seed=8801, scale=4)
+    px = canvas(16, 16)
+    for y in range(16):
+        for x in range(16):
+            put(px, x, y, shade(P_PARADISE, noise[y][x]))
+    outline(px, 0, 0, 15, 15, PARADISE_DARK)
+    # Veine verticale dorée, dithérée : elle attrape la lumière sans clignoter.
+    for y in range(2, 14):
+        put(px, 7, y, PARADISE_SEAM if y % 3 else PARADISE_SEAM_LIT)
+        put(px, 8, y, PARADISE_SEAM_LIT if y % 3 else PARADISE_SEAM)
+    write_png(f"{ASSETS}/textures/block/ally_passage_frame.png", 16, 16, px)
+
+
+def _veil(name, palette, seed, swirl):
+    """Le voile du passage : anneaux concentriques tordus, façon portail de l'End."""
+    px = canvas(16, 16)
+    noise = blob_noise(16, 16, seed=seed, scale=5)
+    for y in range(16):
+        for x in range(16):
+            dx, dy = x - 7.5, y - 7.5
+            radius = (dx * dx + dy * dy) ** 0.5 / 10.6
+            v = (radius * swirl + noise[y][x] * (1.0 - swirl * 0.5)) % 1.0
+            put(px, x, y, shade(palette, min(0.999, max(0.0, v))))
+    write_png(f"{ASSETS}/textures/block/{name}.png", 16, 16, px)
+
+
+def tex_paradise_veils():
+    _veil("ally_veil_closed", VEIL_DORMANT, 8802, 0.35)
+    _veil("ally_veil_opening", VEIL_WAKING, 8803, 0.75)
+    _veil("ally_veil_open", VEIL_OPEN, 8804, 0.95)
+
+
+def tex_friendship_console():
+    """Face du panneau : le pavé numérique en miniature, lisible à 16 px."""
+    body = (206, 200, 186, 255)
+    bezel = (150, 144, 130, 255)
+    screen = (96, 74, 150, 255)
+    key = (58, 56, 64, 255)
+    validate = (74, 158, 82, 255)
+    px = canvas(16, 16, body)
+    outline(px, 0, 0, 15, 15, bezel)
+    # Écran violet en haut à droite, comme sur le panneau réel.
+    rect(px, 8, 2, 14, 3, screen)
+    # Trois colonnes de touches.
+    for row in range(4):
+        for col in range(3):
+            put(px, 9 + col * 2, 5 + row * 2, key)
+    # Liste des amis à gauche, et la barre verte de validation.
+    rect(px, 2, 2, 6, 12, key)
+    rect(px, 9, 13, 14, 13, validate)
+    write_png(f"{ASSETS}/textures/block/friendship_console_front.png", 16, 16, px)
+
+    side = canvas(16, 16, body)
+    outline(side, 0, 0, 15, 15, bezel)
+    for y in range(4, 13, 4):
+        for x in range(3, 13):
+            put(side, x, y, bezel)
+    write_png(f"{ASSETS}/textures/block/friendship_console_side.png", 16, 16, side)
+
+    top = canvas(16, 16)
+    noise = blob_noise(16, 16, seed=8805, scale=4)
+    for y in range(16):
+        for x in range(16):
+            top[y][x] = shade(P_PARADISE, noise[y][x])
+    outline(top, 0, 0, 15, 15, bezel)
+    rect(top, 6, 6, 9, 9, PARADISE_SEAM)
+    write_png(f"{ASSETS}/textures/block/friendship_console_top.png", 16, 16, top)
+
+
+def tex_console_gui():
+    """Fond d'interface 256x256, façon panneau vanilla : biseau clair en haut à
+    gauche, ombre en bas à droite, encarts creusés pour la liste et l'écran."""
+    W, H = 220, 176
+    px = canvas(256, 256, (0, 0, 0, 0))
+    face = (198, 198, 198, 255)
+    light = (255, 255, 255, 255)
+    shadow = (85, 85, 85, 255)
+    inset_dark = (24, 22, 30, 255)
+    inset_edge = (58, 56, 66, 255)
+    display = (86, 66, 138, 255)
+    display_edge = (44, 34, 72, 255)
+
+    rect(px, 0, 0, W - 1, H - 1, face)
+    # Biseau : deux pixels clairs en haut/gauche, deux sombres en bas/droite.
+    for i in range(2):
+        for x in range(i, W - i):
+            put(px, x, i, light)
+            put(px, x, H - 1 - i, shadow)
+        for y in range(i, H - i):
+            put(px, i, y, light)
+            put(px, W - 1 - i, y, shadow)
+
+    def inset(x0, y0, x1, y1, fill, edge):
+        rect(px, x0, y0, x1, y1, fill)
+        outline(px, x0, y0, x1, y1, edge)
+        for x in range(x0, x1 + 1):
+            put(px, x, y0, shadow)
+        for y in range(y0, y1 + 1):
+            put(px, x0, y, shadow)
+
+    inset(8, 8, 8 + 95, 8 + 159, inset_dark, inset_edge)      # le carnet
+    inset(112, 10, 112 + 95, 10 + 19, display, display_edge)  # l'écran
+    write_png(f"{ASSETS}/textures/gui/friendship_console.png", 256, 256, px)
+
+
+# ---------------------------------------------------- modèles et blockstates
+
+FRAME = "enderportals:block/ally_passage_frame"
+_VEIL_TEX = {"closed": "enderportals:block/ally_veil_closed",
+             "opening": "enderportals:block/ally_veil_opening",
+             "open": "enderportals:block/ally_veil_open"}
+
+
+def _all_faces(texture):
+    """Les six faces d'un élément. Aucun cullface : les éléments de l'arche ne
+    touchent pas tous le bord du bloc, et un cullface mal placé escamote une
+    face au lieu d'en économiser une."""
+    return {face: {"texture": texture}
+            for face in ("north", "south", "east", "west", "up", "down")}
+
+
+def passage_models():
+    """Une arche : deux montants, un voile au centre, un linteau en haut.
+
+    Les montants font 3 px, le voile 2 px d'épaisseur au milieu du bloc — c'est
+    ce plan-là qu'on traverse. Le repère local a l'axe X en travers du passage ;
+    la rotation du blockstate s'occupe de l'orientation.
+    """
+    for phase, veil in _VEIL_TEX.items():
+        for half in ("lower", "upper"):
+            elements = [
+                {"from": [0, 0, 0], "to": [3, 16, 16],
+                 "faces": _all_faces("#frame")},
+                {"from": [13, 0, 0], "to": [16, 16, 16],
+                 "faces": _all_faces("#frame")},
+            ]
+            if half == "upper":
+                elements.append({"from": [3, 13, 0], "to": [13, 16, 16],
+                                 "faces": _all_faces("#frame")})
+                veil_top = 13
+            else:
+                veil_top = 16
+            elements.append({"from": [3, 0, 7], "to": [13, veil_top, 9],
+                             "faces": _all_faces("#veil")})
+            body = {
+                "parent": "minecraft:block/block",
+                "render_type": "minecraft:translucent",
+                "textures": {"particle": FRAME, "frame": FRAME, "veil": veil},
+                "elements": elements,
+            }
+            path = f"{ASSETS}/models/block/ally_passage_{half}_{phase}.json"
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(body, f, indent=2)
+                f.write("\n")
+            print("json", path)
+
+    # Objet : l'arche basse vue en perspective d'inventaire.
+    _item_model("ally_passage", "enderportals:block/ally_passage_lower_closed")
+    _item_model("friendship_console", "enderportals:block/friendship_console")
+
+
+def passage_blockstates():
+    variants = {}
+    for facing, y in (("north", 0), ("east", 90), ("south", 180), ("west", 270)):
+        for half in ("lower", "upper"):
+            for phase in _VEIL_TEX:
+                entry = {"model": f"enderportals:block/ally_passage_{half}_{phase}"}
+                if y:
+                    entry["y"] = y
+                variants[f"facing={facing},half={half},phase={phase}"] = entry
+    _blockstate("ally_passage", {"variants": variants})
+
+    console = {}
+    for facing, y in (("north", 0), ("east", 90), ("south", 180), ("west", 270)):
+        entry = {"model": "enderportals:block/friendship_console"}
+        if y:
+            entry["y"] = y
+        console[f"facing={facing}"] = entry
+    _blockstate("friendship_console", {"variants": console})
+
+    path = f"{ASSETS}/models/block/friendship_console.json"
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump({
+            "parent": "minecraft:block/orientable",
+            "textures": {
+                "front": "enderportals:block/friendship_console_front",
+                "side": "enderportals:block/friendship_console_side",
+                "top": "enderportals:block/friendship_console_top",
+            },
+        }, f, indent=2)
+        f.write("\n")
+    print("json", path)
+
+
 def main():
     tex_ender_block()
     tex_ender_bricks()
@@ -763,6 +977,12 @@ def main():
     door_models()
     brick_family_models()
     brick_family_blockstates()
+    tex_paradise_frame()
+    tex_paradise_veils()
+    tex_friendship_console()
+    tex_console_gui()
+    passage_models()
+    passage_blockstates()
 
 
 if __name__ == "__main__":

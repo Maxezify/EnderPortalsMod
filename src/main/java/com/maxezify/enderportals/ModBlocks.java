@@ -1,7 +1,9 @@
 package com.maxezify.enderportals;
 
+import com.maxezify.enderportals.block.AllyPassageBlock;
 import com.maxezify.enderportals.block.CentralizerBlock;
 import com.maxezify.enderportals.block.EnderBlock;
+import com.maxezify.enderportals.block.FriendshipConsoleBlock;
 import com.maxezify.enderportals.block.InactiveTardisDoorBlock;
 import com.maxezify.enderportals.block.TardisDoorBlock;
 import net.minecraft.util.valueproviders.UniformInt;
@@ -125,6 +127,36 @@ public final class ModBlocks {
                     .strength(4.0f, 9.0f)
                     .requiresCorrectToolForDrops()
                     .lightLevel(state -> 8)
+                    .sound(SoundType.METAL)));
+
+    /**
+     * Passage des Alliés — l'arche claire qui relie deux bases. Indestructible
+     * par explosion mais récupérable à la pioche : on doit pouvoir déplacer son
+     * passage sans perdre la matière qu'il a coûtée.
+     */
+    public static final DeferredBlock<AllyPassageBlock> ALLY_PASSAGE = BLOCKS.register("ally_passage",
+            () -> new AllyPassageBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.QUARTZ)
+                    .strength(4.0f, 1200.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+                    .lightLevel(state -> switch (state.getValue(AllyPassageBlock.PHASE)) {
+                        case CLOSED -> 4;
+                        case OPENING -> 9;
+                        case OPEN -> 12;
+                    })
+                    .isValidSpawn((state, level, pos, type) -> false)
+                    .pushReaction(PushReaction.BLOCK)
+                    .sound(SoundType.AMETHYST)));
+
+    /** Contrôle de l'amitié — le pavé numérique qui commande le Passage. */
+    public static final DeferredBlock<FriendshipConsoleBlock> FRIENDSHIP_CONSOLE = BLOCKS.register(
+            "friendship_console",
+            () -> new FriendshipConsoleBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.QUARTZ)
+                    .strength(3.5f, 9.0f)
+                    .requiresCorrectToolForDrops()
+                    .lightLevel(state -> 7)
                     .sound(SoundType.METAL)));
 
     private ModBlocks() {

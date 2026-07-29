@@ -1,6 +1,7 @@
 package com.maxezify.enderportals.tardis;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -13,6 +14,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.random.RandomGenerator;
 
 /**
  * Registre persistant (niveau sauvegarde) de tous les TARDIS. Attribue les
@@ -33,7 +35,17 @@ public class TardisStateManager extends SavedData {
     private static final SavedData.Factory<TardisStateManager> FACTORY =
             new SavedData.Factory<>(TardisStateManager::new, TardisStateManager::load, null);
 
+    /**
+     * Bornes du code d'ami : huit chiffres, jamais de zéro en tête. La frappe
+     * au pavé fait donc toujours exactement huit touches, ce qui évite d'avoir
+     * à gérer une longueur variable — et cent millions de combinaisons rendent
+     * la découverte au hasard illusoire.
+     */
+    private static final int CODE_MIN = 10_000_000;
+    private static final int CODE_BOUND = 90_000_000;
+
     private final Map<UUID, TardisData> tardises = new HashMap<>();
+    private final AllyLinks allyLinks = new AllyLinks();
     private int nextPlot;
 
     public static TardisStateManager get(MinecraftServer server) {
@@ -47,9 +59,77 @@ public class TardisStateManager extends SavedData {
         data.ownerUuid = owner;
         data.ownerName = ownerName;
         data.interiorDoorPos = plotOrigin(plot);
+        data.friendCode = freshCode();
         tardises.put(data.id, data);
         setDirty();
         return data;
+    }
+
+    public AllyLinks allies() {
+        return allyLinks;
+    }
+
+    /**
+     * Un code libre. Le tirage est repris tant qu'il collisionne : à huit
+     * chiffres et pour un nombre de joueurs réaliste, la boucle ne tourne
+     * quasiment jamais deux fois, mais un code en double casserait
+     * l'identification.
+     */
+    private int freshCode() {
+        RandomGenerator random = RandomGenerator.getDefault();
+        while (true) {
+            int code = CODE_MIN + random.nextInt(CODE_BOUND);
+            if (findByCode(code) == null) {
+                return code;
+            }
+        }
+    }
+
+    /** La porte dont c'est le code d'ami, s'il en existe une. */
+    @Nullable
+    public TardisData findByCode(int code) {
+        if (code < CODE_MIN) {
+            return null;
+        }
+        for (TardisData data : tardises.values()) {
+            if (data.friendCode == code) {
+                return data;
+            }
+        }
+        return null;
+    }
+
+    /** Le code d'ami de ce joueur, ou 0 s'il n'a pas encore éveillé de porte. */
+    public int codeOf(UUID owner) {
+        TardisData data = findByOwner(owner);
+        return data == null ? 0 : data.friendCode;
+    }
+
+    /** Le pseudo affiché pour ce joueur, tel que retenu à l'éveil de sa porte. */
+    public String nameOf(UUID owner) {
+        TardisData data = findByOwner(owner);
+        return data == null ? "" : data.ownerName;
+    }
+
+    /** Lie le Passage des Alliés posé à la parcelle du joueur. */
+    public void setPassage(UUID owner, BlockPos pos, Direction facing) {
+        TardisData data = findByOwner(owner);
+        if (data != null) {
+            data.passagePos = pos;
+            data.passageFacing = facing;
+            setDirty();
+        }
+    }
+
+    /** La porte à qui appartient le Passage posé à cette position. */
+    @Nullable
+    public TardisData findByPassage(BlockPos pos) {
+        for (TardisData data : tardises.values()) {
+            if (pos.equals(data.passagePos)) {
+                return data;
+            }
+        }
+        return null;
     }
 
     @Nullable
@@ -135,6 +215,16 @@ public class TardisStateManager extends SavedData {
             TardisData data = TardisData.fromNbt((CompoundTag) element);
             manager.tardises.put(data.id, data);
         }
+        manager.allyLinks.load(nbt.getCompound("Allies"));
+        // Les portes éveillées avant l'arrivée du Passage des Alliés n'ont pas
+        // de code : on leur en attribue un ici, une fois toutes les autres
+        // chargées, pour que freshCode() voie bien les codes déjà pris.
+        for (TardisData data : manager.tardises.values()) {
+            if (data.friendCode == 0) {
+                data.friendCode = manager.freshCode();
+                manager.setDirty();
+            }
+        }
         return manager;
     }
 
@@ -146,6 +236,7 @@ public class TardisStateManager extends SavedData {
             list.add(data.toNbt());
         }
         nbt.put("Tardises", list);
+        nbt.put("Allies", allyLinks.toNbt());
         return nbt;
     }
 }

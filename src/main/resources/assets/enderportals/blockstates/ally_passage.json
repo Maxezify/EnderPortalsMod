@@ -1,0 +1,94 @@
+{
+  "variants": {
+    "facing=north,half=lower,phase=closed": {
+      "model": "enderportals:block/ally_passage_lower_closed"
+    },
+    "facing=north,half=lower,phase=opening": {
+      "model": "enderportals:block/ally_passage_lower_opening"
+    },
+    "facing=north,half=lower,phase=open": {
+      "model": "enderportals:block/ally_passage_lower_open"
+    },
+    "facing=north,half=upper,phase=closed": {
+      "model": "enderportals:block/ally_passage_upper_closed"
+    },
+    "facing=north,half=upper,phase=opening": {
+      "model": "enderportals:block/ally_passage_upper_opening"
+    },
+    "facing=north,half=upper,phase=open": {
+      "model": "enderportals:block/ally_passage_upper_open"
+    },
+    "facing=east,half=lower,phase=closed": {
+      "model": "enderportals:block/ally_passage_lower_closed",
+      "y": 90
+    },
+    "facing=east,half=lower,phase=opening": {
+      "model": "enderportals:block/ally_passage_lower_opening",
+      "y": 90
+    },
+    "facing=east,half=lower,phase=open": {
+      "model": "enderportals:block/ally_passage_lower_open",
+      "y": 90
+    },
+    "facing=east,half=upper,phase=closed": {
+      "model": "enderportals:block/ally_passage_upper_closed",
+      "y": 90
+    },
+    "facing=east,half=upper,phase=opening": {
+      "model": "enderportals:block/ally_passage_upper_opening",
+      "y": 90
+    },
+    "facing=east,half=upper,phase=open": {
+      "model": "enderportals:block/ally_passage_upper_open",
+      "y": 90
+    },
+    "facing=south,half=lower,phase=closed": {
+      "model": "enderportals:block/ally_passage_lower_closed",
+      "y": 180
+    },
+    "facing=south,half=lower,phase=opening": {
+      "model": "enderportals:block/ally_passage_lower_opening",
+      "y": 180
+    },
+    "facing=south,half=lower,phase=open": {
+      "model": "enderportals:block/ally_passage_lower_open",
+      "y": 180
+    },
+    "facing=south,half=upper,phase=closed": {
+      "model": "enderportals:block/ally_passage_upper_closed",
+      "y": 180
+    },
+    "facing=south,half=upper,phase=opening": {
+      "model": "enderportals:block/ally_passage_upper_opening",
+      "y": 180
+    },
+    "facing=south,half=upper,phase=open": {
+      "model": "enderportals:block/ally_passage_upper_open",
+      "y": 180
+    },
+    "facing=west,half=lower,phase=closed": {
+      "model": "enderportals:block/ally_passage_lower_closed",
+      "y": 270
+    },
+    "facing=west,half=lower,phase=opening": {
+      "model": "enderportals:block/ally_passage_lower_opening",
+      "y": 270
+    },
+    "facing=west,half=lower,phase=open": {
+      "model": "enderportals:block/ally_passage_lower_open",
+      "y": 270
+    },
+    "facing=west,half=upper,phase=closed": {
+      "model": "enderportals:block/ally_passage_upper_closed",
+      "y": 270
+    },
+    "facing=west,half=upper,phase=opening": {
+      "model": "enderportals:block/ally_passage_upper_opening",
+      "y": 270
+    },
+    "facing=west,half=upper,phase=open": {
+      "model": "enderportals:block/ally_passage_upper_open",
+      "y": 270
+    }
+  }
+}

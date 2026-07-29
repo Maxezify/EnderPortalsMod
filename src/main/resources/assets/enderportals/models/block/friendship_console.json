@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "front": "enderportals:block/friendship_console_front",
+    "side": "enderportals:block/friendship_console_side",
+    "top": "enderportals:block/friendship_console_top"
+  }
+}

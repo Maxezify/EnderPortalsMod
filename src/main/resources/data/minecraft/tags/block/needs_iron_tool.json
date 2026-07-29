@@ -3,6 +3,8 @@
   "values": [
     "enderportals:ender_ore",
     "enderportals:inactive_tardis_door",
-    "enderportals:centralizer"
+    "enderportals:centralizer",
+    "enderportals:ally_passage",
+    "enderportals:friendship_console"
   ]
 }
