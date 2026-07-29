@@ -69,8 +69,9 @@ public final class EnderWorldFog {
      * seul l'horizon s'embrase.</p>
      */
     private static final int FLASH_TICKS = 7;
-    private static final int FLASH_MIN_INTERVAL = 500;
-    private static final int FLASH_MAX_INTERVAL = 1500;
+    /** Intervalle entre deux orages, en ticks : de 6 à 18 secondes. */
+    private static final int FLASH_MIN_INTERVAL = 120;
+    private static final int FLASH_MAX_INTERVAL = 360;
     /** Part de la teinte d'éclair atteinte au sommet du flash. */
     private static final float FLASH_PEAK = 0.55f;
     private static final float FLASH_RED = 0.34f;

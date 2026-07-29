@@ -3,7 +3,7 @@
 Mod **Minecraft 1.21.1 / NeoForge** : une porte d'obsidienne plus grande à
 l'intérieur qu'à l'extérieur, qui s'ouvre sur **le monde de l'Ender** — le
 paradis des cubes, un monde-caverne où viennent se reposer les blocs
-détruits. Version courante : **0.9.3**.
+détruits. Version courante : **0.9.4**.
 
 ## La progression
 
@@ -177,10 +177,18 @@ n'est jamais visible. De loin en loin, ce lointain s'embrase une fraction de
 seconde — de **silencieuses lueurs d'orage**, souvent redoublées.
 
 Pour un **flou croissant avec la distance**, Complementary a ce qu'il faut
-nativement, désactivé par défaut : *Camera Settings → World Blur Settings →
-World Blur*, puis l'intensité `WB_DB_NETHER_I` (plus la valeur est basse, plus
-le flou est marqué). C'est une option du shader, pas quelque chose que le mod
-puisse fournir — sous Iris, les post-traitements de Minecraft sont court-circuités.
+nativement, mais **désactivé par défaut** : *Camera Settings → World Blur →
+World Blur → **Distance Blur***. C'est une option du shader, pas quelque chose
+que le mod puisse fournir — sous Iris, les post-traitements de Minecraft sont
+court-circuités.
+
+L'intensité se règle ensuite sur le curseur correspondant au monde en cours.
+Le monde de l'Ender n'ayant pas de lumière céleste, c'est **« Dis. Blur —
+Night & Interiors »** qui le gouverne ; il bascule sur **« Dis. Blur — The
+Nether »** une fois la ligne `dimension.properties` ci-dessous ajoutée. Le
+flou est proportionnel à cette valeur — `coc = clamp(distance × 0,001 ; 0 ;
+0,1) × intensité × 0,03` — donc **plus la valeur est haute, plus c'est
+flou**, et l'effet sature à 100 blocs. La valeur par défaut est 64.
 
 Une ligne reste à ajouter de votre côté, dans le fichier
 `shaderpacks/ComplementaryReimagined…/shaders/dimension.properties` — son
@@ -214,7 +222,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.9.3.jar
+# → build/libs/enderportals-0.9.4.jar
 ```
 
 Notes :
