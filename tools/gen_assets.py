@@ -5,6 +5,7 @@ Style « Obsidienne & vide » : palettes limitées, taches quantifiées façon
 stone vanilla, fondus verticaux dithérés, contours sombres.
 """
 import json
+import math
 import os
 import random
 import struct
@@ -87,6 +88,31 @@ def blob_noise(w, h, seed, scale=3):
 def shade(palette, v):
     return palette[int(v * len(palette))]
 
+
+
+# ---------------------------------------------------------------- cartes
+
+def from_map(rows, palette, alpha=255):
+    """Peint une texture depuis une carte de caractères.
+
+    Le bruit procédural convient à de la matière brute — pierre, minerai — mais
+    pas à un motif taillé : une gravure demande que chaque pixel soit voulu.
+    Écrire la texture en caractères la rend relisible et modifiable à l'œil, ce
+    qu'une pile de boucles n'est pas.
+
+    Les couleurs de la palette sont des triplets RVB ; l'alpha est commun.
+    """
+    height = len(rows)
+    width = len(rows[0])
+    for row in rows:
+        if len(row) != width:
+            raise ValueError(f"ligne de {len(row)} caractères, attendu {width} : {row!r}")
+    px = canvas(width, height)
+    for y, row in enumerate(rows):
+        for x, ch in enumerate(row):
+            rgb = palette[ch]
+            put(px, x, y, rgb if len(rgb) == 4 else rgb + (alpha,))
+    return px
 
 # ---------------------------------------------------------------- palettes
 
@@ -601,33 +627,40 @@ def door_models():
 
 
 def tex_chiseled_ender_bricks():
-    """Brique ciselée : un cadre de pierre et, gravé au centre, l'œil pâle des
-    cadres de portail de l'End — le même motif que les portes du mod. Même
-    alpha que le reste de la famille."""
-    frame_dark = (40, 42, 50, ENDER_ALPHA)
-    frame = (72, 76, 86, ENDER_ALPHA)
-    panel = [(84, 88, 98, ENDER_ALPHA), (94, 98, 108, ENDER_ALPHA),
-             (104, 108, 118, ENDER_ALPHA)]
-    noise = blob_noise(16, 16, seed=3131, scale=4)
-    px = canvas(16, 16)
-    for y in range(16):
-        for x in range(16):
-            put(px, x, y, shade(panel, noise[y][x]))
-    # Cadre : bord sombre d'1 px, liseré clair juste à l'intérieur.
-    outline(px, 0, 0, 15, 15, frame_dark)
-    outline(px, 1, 1, 14, 14, frame)
-    outline(px, 2, 2, 13, 13, frame_dark)
-    # L'œil, gravé : amande pâle sur fond creusé.
-    eye_bg = (54, 46, 74, ENDER_ALPHA)
-    pale = EYE_PALE[:3] + (ENDER_ALPHA,)
-    core = EYE_CORE[:3] + (ENDER_ALPHA,)
-    rect(px, 4, 6, 11, 9, eye_bg)
-    rect(px, 5, 7, 10, 8, pale)
-    rect(px, 7, 7, 8, 8, core)
-    put(px, 4, 7, pale)
-    put(px, 11, 7, pale)
-    put(px, 4, 8, pale)
-    put(px, 11, 8, pale)
+    """Brique ciselée : deux cadres gigognes, un logement creusé et l'œil des
+    cadres de portail gravé au centre, quatre clous d'or aux angles.
+
+    Écrite pixel par pixel plutôt que tirée d'un bruit : c'est une gravure, et
+    une gravure ne se laisse pas générer au hasard."""
+    palette = {
+        "#": (40, 42, 50),      # arête sombre
+        "=": (72, 76, 86),      # cadre
+        ",": (74, 78, 88),      # creux
+        ".": (88, 92, 102),     # fond du panneau
+        "o": (54, 46, 74),      # ombre de l'œil
+        "O": (172, 144, 214),   # amande pâle
+        "X": (208, 184, 240),   # cœur
+        "*": (206, 172, 96),    # clou d'or
+    }
+    rows = [
+        "################",
+        "#*============*#",
+        "#=.,,,,,,,,,,.=#",
+        "#=,..........,=#",
+        "#=,.,======,.,=#",
+        "#=,.=......=.,=#",
+        "#=,.=.oOOo.=.,=#",
+        "#=,.=.OXXO.=.,=#",
+        "#=,.=.OXXO.=.,=#",
+        "#=,.=.oOOo.=.,=#",
+        "#=,.=......=.,=#",
+        "#=,.,======,.,=#",
+        "#=,..........,=#",
+        "#=.,,,,,,,,,,.=#",
+        "#*============*#",
+        "################",
+    ]
+    px = from_map(rows, palette, ENDER_ALPHA)
     write_png(f"{ASSETS}/textures/block/chiseled_ender_bricks.png", 16, 16, px)
 
 
@@ -754,116 +787,336 @@ PARADISE_DARK = (138, 132, 118, 255)
 PARADISE_SEAM = (206, 172, 96, 255)
 PARADISE_SEAM_LIT = (240, 214, 138, 255)
 
-# Voile du passage : or pâle lumineux, presque blanc au cœur.
-VEIL_DORMANT = [(46, 44, 52, 255), (56, 53, 62, 255), (66, 62, 72, 255)]
-VEIL_WAKING = [(120, 104, 74, 214), (162, 140, 96, 214), (204, 178, 122, 214)]
-VEIL_OPEN = [(214, 190, 130, 206), (236, 216, 164, 206), (252, 243, 214, 206)]
+# Voile du passage : or pâle lumineux, presque blanc au cœur. Six valeurs et
+# non trois — trois marches donnaient des anneaux en escalier.
+VEIL_DORMANT = [(38, 36, 44, 255), (46, 44, 52, 255), (54, 51, 60, 255),
+                (62, 58, 68, 255), (70, 66, 76, 255), (80, 75, 88, 255)]
+VEIL_WAKING = [(92, 78, 56, 214), (120, 104, 74, 214), (148, 128, 90, 214),
+               (176, 152, 106, 214), (204, 178, 122, 214), (230, 206, 152, 214)]
+VEIL_OPEN = [(176, 152, 100, 206), (206, 180, 122, 206), (226, 202, 148, 206),
+             (240, 220, 172, 206), (250, 236, 200, 206), (255, 250, 232, 206)]
 
 
 def tex_paradise_frame():
-    """Le cadre du Passage : quartz taillé, une veine dorée au centre."""
-    noise = blob_noise(16, 16, seed=8801, scale=4)
-    px = canvas(16, 16)
-    for y in range(16):
-        for x in range(16):
-            put(px, x, y, shade(P_PARADISE, noise[y][x]))
-    outline(px, 0, 0, 15, 15, PARADISE_DARK)
-    # Veine verticale dorée, dithérée : elle attrape la lumière sans clignoter.
-    for y in range(2, 14):
-        put(px, 7, y, PARADISE_SEAM if y % 3 else PARADISE_SEAM_LIT)
-        put(px, 8, y, PARADISE_SEAM_LIT if y % 3 else PARADISE_SEAM)
-    write_png(f"{ASSETS}/textures/block/ally_passage_frame.png", 16, 16, px)
+    """Cadre du Passage : quartz chanfreiné, quatre logements creusés et une
+    incrustation d'or en croix — la croix se raccorde d'un bloc à l'autre, si
+    bien qu'une arche montée sur plusieurs blocs dessine un réseau continu."""
+    palette = {
+        "#": (110, 104, 92),    # arête
+        "+": (231, 226, 213),   # rehaut
+        ".": (214, 208, 194),   # quartz
+        "=": (196, 190, 176),   # quartz moyen
+        ",": (170, 164, 150),   # creux
+        "g": (206, 172, 96),    # or
+        "G": (240, 214, 138),   # or éclairé
+    }
+    rows = [
+        "################",
+        "#++++++++++++++#",
+        "#+.....gG.....+#",
+        "#+.,,,.gG.,,,.+#",
+        "#+.,=,.GG.,=,.+#",
+        "#+.,,,.gG.,,,.+#",
+        "#+.....gG.....+#",
+        "#ggggggGGgggggg#",
+        "#GGGGGGGGGGGGGG#",
+        "#+.....Gg.....+#",
+        "#+.,,,.Gg.,,,.+#",
+        "#+.,=,.GG.,=,.+#",
+        "#+.,,,.Gg.,,,.+#",
+        "#+.....Gg.....+#",
+        "#++++++++++++++#",
+        "################",
+    ]
+    write_png(f"{ASSETS}/textures/block/ally_passage_frame.png", 16, 16,
+              from_map(rows, palette))
 
 
-def _veil(name, palette, seed, swirl):
-    """Le voile du passage : anneaux concentriques tordus, façon portail de l'End."""
+def _veil(name, palette, rings, sparks=0, core_radius=0.0):
+    """Le voile du passage : des anneaux concentriques, comme le portail de l'End.
+
+    Le bruit ne pèse ici que {@code 0,08} : à la moitié du poids qu'il avait, il
+    ondulait les anneaux au point de les dissoudre, et la texture se lisait comme
+    du sable. Une ondulation sinusoïdale franche déforme les cercles sans les
+    effacer — c'est elle qui les empêche de ressembler à une cible.
+    """
     px = canvas(16, 16)
-    noise = blob_noise(16, 16, seed=seed, scale=5)
+    noise = blob_noise(16, 16, seed=seed_of(name), scale=6)
     for y in range(16):
         for x in range(16):
             dx, dy = x - 7.5, y - 7.5
-            radius = (dx * dx + dy * dy) ** 0.5 / 10.6
-            v = (radius * swirl + noise[y][x] * (1.0 - swirl * 0.5)) % 1.0
+            distance = (dx * dx + dy * dy) ** 0.5 / 10.6
+            if distance <= core_radius:
+                put(px, x, y, palette[-1])
+                continue
+            angle = math.atan2(dy, dx)
+            # L'ondulation dépend de l'angle : les anneaux se tordent au lieu de
+            # rester des cercles parfaits.
+            ripple = 0.07 * math.sin(angle * 3.0) + 0.05 * math.sin(distance * 12.0)
+            v = (distance * rings + ripple + noise[y][x] * 0.08) % 1.0
             put(px, x, y, shade(palette, min(0.999, max(0.0, v))))
+    if sparks:
+        spark = random.Random(seed_of(name) ^ 0x5EED)
+        for _ in range(sparks):
+            put(px, spark.randrange(1, 15), spark.randrange(1, 15), palette[-1])
     write_png(f"{ASSETS}/textures/block/{name}.png", 16, 16, px)
 
 
+def seed_of(name):
+    """Graine stable déduite du nom : la texture est la même à chaque exécution."""
+    return sum((i + 1) * ord(c) for i, c in enumerate(name))
+
+
 def tex_paradise_veils():
-    _veil("ally_veil_closed", VEIL_DORMANT, 8802, 0.35)
-    _veil("ally_veil_opening", VEIL_WAKING, 8803, 0.75)
-    _veil("ally_veil_open", VEIL_OPEN, 8804, 0.95)
+    _veil("ally_veil_closed", VEIL_DORMANT, rings=2.5)
+    _veil("ally_veil_opening", VEIL_WAKING, rings=3.0, sparks=4, core_radius=0.12)
+    _veil("ally_veil_open", VEIL_OPEN, rings=3.5, sparks=9, core_radius=0.20)
 
 
 def tex_friendship_console():
-    """Face du panneau : le pavé numérique en miniature, lisible à 16 px."""
-    body = (206, 200, 186, 255)
-    bezel = (150, 144, 130, 255)
-    screen = (96, 74, 150, 255)
-    key = (58, 56, 64, 255)
-    validate = (74, 158, 82, 255)
-    px = canvas(16, 16, body)
-    outline(px, 0, 0, 15, 15, bezel)
-    # Écran violet en haut à droite, comme sur le panneau réel.
-    rect(px, 8, 2, 14, 3, screen)
-    # Trois colonnes de touches.
-    for row in range(4):
-        for col in range(3):
-            put(px, 9 + col * 2, 5 + row * 2, key)
-    # Liste des amis à gauche, et la barre verte de validation.
-    rect(px, 2, 2, 6, 12, key)
-    rect(px, 9, 13, 14, 13, validate)
+    """Les trois faces du panneau, dessinées comme un appareil et non comme un
+    aplat : biseau clair en haut à gauche, ombre en bas à droite, vis d'or aux
+    angles, et sur la face avant un carnet creusé, un écran violet et un pavé de
+    neuf touches à liseré."""
+    edge = (52, 50, 58, 255)
+    body = (196, 190, 176, 255)
+    body_light = (231, 226, 213, 255)
+    body_shade = (162, 156, 142, 255)
+    gold = (206, 172, 96, 255)
+    gold_lit = (240, 214, 138, 255)
+    inset = (28, 24, 42, 255)
+    inset_edge = (58, 52, 78, 255)
+    line = (150, 140, 180, 255)
+    screen = (58, 44, 104, 255)
+    screen_lit = (138, 112, 208, 255)
+    key = (56, 54, 62, 255)
+    key_edge = (108, 104, 116, 255)
+    green = (74, 158, 82, 255)
+    green_lit = (128, 214, 132, 255)
+
+    def shell():
+        px = canvas(16, 16, body)
+        outline(px, 0, 0, 15, 15, edge)
+        for i in range(1, 15):
+            put(px, i, 1, body_light)
+            put(px, 1, i, body_light)
+            put(px, i, 14, body_shade)
+            put(px, 14, i, body_shade)
+        return px
+
+    # ------------------------------------------------------------ avant
+    px = shell()
+    for (sx, sy) in ((2, 2), (13, 2), (2, 13), (13, 13)):
+        put(px, sx, sy, gold)
+    # Le carnet, creusé, avec ses lignes de pseudos.
+    rect(px, 3, 4, 6, 12, inset)
+    outline(px, 3, 4, 6, 12, inset_edge)
+    for y in (5, 8, 11):
+        rect(px, 4, y, 6, y, line)
+    # L'écran, avec sa ligne éclairée en haut.
+    rect(px, 8, 4, 12, 5, screen)
+    rect(px, 8, 4, 12, 4, screen_lit)
+    # Trois colonnes de touches, chacune avec son liseré à droite.
+    for kx in (8, 10, 12):
+        for ky in (7, 9, 11):
+            put(px, kx, ky, key)
+            put(px, kx + 1, ky, key_edge)
+    # La barre de validation.
+    rect(px, 8, 13, 12, 13, green)
+    put(px, 8, 13, green_lit)
     write_png(f"{ASSETS}/textures/block/friendship_console_front.png", 16, 16, px)
 
-    side = canvas(16, 16, body)
-    outline(side, 0, 0, 15, 15, bezel)
-    for y in range(4, 13, 4):
-        for x in range(3, 13):
-            put(side, x, y, bezel)
+    # ------------------------------------------------------------ flancs
+    side = shell()
+    # Coutures d'or en haut et en bas, grille d'aération au centre.
+    rect(side, 3, 3, 12, 3, gold)
+    rect(side, 3, 12, 12, 12, gold)
+    for y in (6, 8, 10):
+        for x in range(4, 12):
+            put(side, x, y, inset if x % 2 == 0 else inset_edge)
+    for (sx, sy) in ((2, 2), (13, 2), (2, 13), (13, 13)):
+        put(side, sx, sy, body_shade)
     write_png(f"{ASSETS}/textures/block/friendship_console_side.png", 16, 16, side)
 
-    top = canvas(16, 16)
-    noise = blob_noise(16, 16, seed=8805, scale=4)
-    for y in range(16):
-        for x in range(16):
-            top[y][x] = shade(P_PARADISE, noise[y][x])
-    outline(top, 0, 0, 15, 15, bezel)
-    rect(top, 6, 6, 9, 9, PARADISE_SEAM)
+    # ------------------------------------------------------------ dessus
+    top = shell()
+    outline(top, 4, 4, 11, 11, gold)
+    put(top, 4, 4, gold_lit)
+    put(top, 11, 11, gold_lit)
+    rect(top, 6, 6, 9, 9, screen)
+    rect(top, 6, 6, 7, 7, screen_lit)
     write_png(f"{ASSETS}/textures/block/friendship_console_top.png", 16, 16, top)
 
 
+# Géométrie de l'interface. Doit rester d'accord avec FriendshipConsoleScreen :
+# c'est ici que sont creusés les logements des touches, et une touche posée
+# ailleurs que son logement se verrait immédiatement.
+GUI_W, GUI_H = 220, 192
+GUI_PAD_X, GUI_KEYS_Y = 112, 36
+GUI_KEY_W, GUI_KEY_H, GUI_KEY_GAP = 30, 24, 3
+GUI_ACTION_W, GUI_ACTION_H = 46, 20
+# Les dix touches : 1 à 9 en trois rangées, puis le zéro centré.
+GUI_KEY_CELLS = [(i % 3, i // 3) for i in range(9)] + [(1, 3)]
+
+
 def tex_console_gui():
-    """Fond d'interface 256x256, façon panneau vanilla : biseau clair en haut à
-    gauche, ombre en bas à droite, encarts creusés pour la liste et l'écran."""
-    W, H = 220, 192
+    """Fond d'interface et planche de sprites du Contrôle de l'amitié.
+
+    Le panneau n'emprunte pas le gris de vanilla : il reprend la palette du
+    bloc — quartz laiteux, or, violet sombre — pour qu'on reconnaisse l'appareil
+    qu'on vient d'ouvrir. Les touches et les boutons sont dessinés ici plutôt que
+    laissés aux widgets vanilla, dont le gris passe-partout est précisément ce
+    qui faisait générique.
+
+    La planche occupe la bande libre sous le panneau : touches au repos et
+    survolées, boutons de validation et d'effacement dans leurs deux états, et le
+    sablier des amitiés en attente.
+    """
+    edge = (44, 42, 52, 255)
+    body = (178, 176, 186, 255)          # quartz froid, pour que l'or tranche
+    body_light = (226, 226, 236, 255)
+    body_shade = (126, 124, 136, 255)
+    gold = (212, 172, 84, 255)
+    gold_lit = (250, 224, 146, 255)
+    inset = (18, 15, 28, 255)
+    inset_title = (46, 38, 70, 255)
+    inset_line = (30, 26, 44, 255)
+    inset_edge = (74, 64, 104, 255)
+    screen_edge = (30, 22, 56, 255)
+    well = (96, 94, 104, 255)
+    well_edge = (66, 64, 74, 255)
+
     px = canvas(256, 256, (0, 0, 0, 0))
-    face = (198, 198, 198, 255)
-    light = (255, 255, 255, 255)
-    shadow = (85, 85, 85, 255)
-    inset_dark = (24, 22, 30, 255)
-    inset_edge = (58, 56, 66, 255)
-    display = (86, 66, 138, 255)
-    display_edge = (44, 34, 72, 255)
 
-    rect(px, 0, 0, W - 1, H - 1, face)
-    # Biseau : deux pixels clairs en haut/gauche, deux sombres en bas/droite.
-    for i in range(2):
-        for x in range(i, W - i):
-            put(px, x, i, light)
-            put(px, x, H - 1 - i, shadow)
-        for y in range(i, H - i):
-            put(px, i, y, light)
-            put(px, W - 1 - i, y, shadow)
+    # ---- coque : corps, biseau, arête
+    rect(px, 0, 0, GUI_W - 1, GUI_H - 1, body)
+    outline(px, 0, 0, GUI_W - 1, GUI_H - 1, edge)
+    for i in (1, 2):
+        for x in range(i, GUI_W - i):
+            put(px, x, i, body_light)
+            put(px, x, GUI_H - 1 - i, body_shade)
+        for y in range(i, GUI_H - i):
+            put(px, i, y, body_light)
+            put(px, GUI_W - 1 - i, y, body_shade)
 
-    def inset(x0, y0, x1, y1, fill, edge):
+    # ---- liseré d'or sur deux pixels, équerres franches aux quatre angles
+    outline(px, 4, 4, GUI_W - 5, GUI_H - 5, gold)
+    outline(px, 5, 5, GUI_W - 6, GUI_H - 6, gold_lit)
+    for (cx, cy, dx, dy) in ((4, 4, 1, 1), (GUI_W - 5, 4, -1, 1),
+                             (4, GUI_H - 5, 1, -1), (GUI_W - 5, GUI_H - 5, -1, -1)):
+        for k in range(9):
+            for t in range(3):
+                put(px, cx + dx * k, cy + dy * t, gold_lit)
+                put(px, cx + dx * t, cy + dy * k, gold_lit)
+
+    def sunken(x0, y0, x1, y1, fill, border):
         rect(px, x0, y0, x1, y1, fill)
-        outline(px, x0, y0, x1, y1, edge)
+        outline(px, x0, y0, x1, y1, border)
         for x in range(x0, x1 + 1):
-            put(px, x, y0, shadow)
+            put(px, x, y0, edge)
         for y in range(y0, y1 + 1):
-            put(px, x0, y, shadow)
+            put(px, x0, y, edge)
+        put(px, x1, y1, body_light)
 
-    inset(8, 8, 8 + 95, 8 + 159, inset_dark, inset_edge)      # le carnet
-    inset(112, 10, 112 + 95, 10 + 19, display, display_edge)  # l'écran
+    # ---- le carnet : encart sombre, bandeau de titre souligné d'or, rayures
+    sunken(8, 8, 103, 167, inset, inset_edge)
+    rect(px, 9, 9, 102, 21, inset_title)
+    rect(px, 9, 22, 102, 22, gold)
+    rect(px, 9, 23, 102, 23, inset_edge)
+    for y in range(28, 166, 6):
+        for x in range(11, 101, 3):
+            put(px, x, y, inset_line)
+
+    # ---- l'écran : bezel épais, dégradé vertical, grille fine
+    sunken(110, 8, 209, 31, screen_edge, screen_edge)
+    for y in range(10, 30):
+        # Dégradé sur toute la hauteur : une bande nette en haut se lisait comme
+        # un défaut plutôt que comme une lueur.
+        t = (y - 10) / 19.0
+        shade_row = (int(112 - 60 * t), int(88 - 46 * t), int(190 - 92 * t), 255)
+        for x in range(112, 208):
+            put(px, x, y, shade_row)
+    for x in range(112, 208, 8):
+        for y in range(11, 29):
+            r, g, b, _ = px[y][x]
+            put(px, x, y, (max(0, r - 14), max(0, g - 12), max(0, b - 18), 255))
+    rect(px, 112, 10, 207, 10, (168, 146, 236, 255))
+
+    # ---- logements des touches et des boutons
+    for (col, row) in GUI_KEY_CELLS:
+        x = GUI_PAD_X + col * (GUI_KEY_W + GUI_KEY_GAP)
+        y = GUI_KEYS_Y + row * (GUI_KEY_H + GUI_KEY_GAP)
+        sunken(x - 1, y - 1, x + GUI_KEY_W, y + GUI_KEY_H, well, well_edge)
+    actions_y = GUI_KEYS_Y + 4 * (GUI_KEY_H + GUI_KEY_GAP) + 2
+    for offset in (0, 50):
+        sunken(GUI_PAD_X + offset - 1, actions_y - 1,
+               GUI_PAD_X + offset + GUI_ACTION_W, actions_y + GUI_ACTION_H, well, well_edge)
+
+    # ---- bande d'état : filet d'or et rivets
+    rect(px, 8, 168, GUI_W - 9, 168, gold)
+    for x in range(14, GUI_W - 12, 26):
+        rect(px, x, 185, x + 1, 186, body_shade)
+        put(px, x, 185, body_light)
+
+    # ---------------------------------------------------------- sprites
+    def cap(x0, y0, w, h, face, light, shade, border):
+        rect(px, x0, y0, x0 + w - 1, y0 + h - 1, face)
+        outline(px, x0, y0, x0 + w - 1, y0 + h - 1, border)
+        for x in range(x0 + 1, x0 + w - 1):
+            put(px, x, y0 + 1, light)
+            put(px, x, y0 + h - 2, shade)
+        for y in range(y0 + 1, y0 + h - 1):
+            put(px, x0 + 1, y, light)
+            put(px, x0 + w - 2, y, shade)
+
+    # Touches accordées au corps : un beige chaud sur un gris froid se voyait.
+    key_face = (196, 196, 208, 255)
+    key_hover = (232, 232, 244, 255)
+    cap(0, 192, GUI_KEY_W, GUI_KEY_H, key_face, body_light, body_shade, edge)
+    cap(30, 192, GUI_KEY_W, GUI_KEY_H, key_hover, (255, 255, 255, 255), gold, gold)
+
+    green = (66, 142, 76, 255)
+    green_hi = (108, 196, 116, 255)
+    green_lo = (38, 96, 46, 255)
+    amber = (150, 96, 52, 255)
+    amber_hi = (206, 148, 88, 255)
+    amber_lo = (96, 58, 30, 255)
+    cap(0, 216, GUI_ACTION_W, GUI_ACTION_H, green, green_hi, green_lo, edge)
+    cap(46, 216, GUI_ACTION_W, GUI_ACTION_H, green_hi, (168, 236, 172, 255), green, gold_lit)
+    cap(92, 216, GUI_ACTION_W, GUI_ACTION_H, amber, amber_hi, amber_lo, edge)
+    cap(138, 216, GUI_ACTION_W, GUI_ACTION_H, amber_hi, (232, 190, 140, 255), amber, gold_lit)
+
+    # Le sablier : deux cônes, un col, du sable qui a déjà coulé.
+    hg = {
+        " ": (0, 0, 0, 0),
+        "#": (72, 62, 44, 255),
+        "g": (198, 164, 92, 255),
+        "s": (232, 206, 148, 255),
+        ".": (150, 200, 214, 120),
+    }
+    hourglass = [
+        "                ",
+        "   gggggggggg   ",
+        "   g########g   ",
+        "    #ssssss#    ",
+        "    #.ssss.#    ",
+        "     #.ss.#     ",
+        "      #ss#      ",
+        "       ##       ",
+        "       ##       ",
+        "      #..#      ",
+        "     #.ss.#     ",
+        "    #.ssss.#    ",
+        "    #ssssss#    ",
+        "   g########g   ",
+        "   gggggggggg   ",
+        "                ",
+    ]
+    for y, row in enumerate(hourglass):
+        for x, ch in enumerate(row):
+            if ch != " ":
+                put(px, 184 + x, 192 + y, hg[ch])
+
     write_png(f"{ASSETS}/textures/gui/friendship_console.png", 256, 256, px)
 
 

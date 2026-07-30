@@ -4,18 +4,19 @@ import com.maxezify.enderportals.EnderPortalsMod;
 import com.maxezify.enderportals.network.ConsoleActionPayload;
 import com.maxezify.enderportals.network.ConsoleStatePayload;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.components.PlayerFaceRenderer;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.network.PacketDistributor;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
 import java.util.UUID;
@@ -66,6 +67,21 @@ public class FriendshipConsoleScreen extends Screen {
     private static final int COLOR_ON_PANEL = 0xFF3F3B46;
     private static final int COLOR_WARN = 0xFFA02020;
 
+    // Planche de sprites, sous le panneau dans la même texture. Doit rester
+    // d'accord avec tex_console_gui() de tools/gen_assets.py.
+    private static final int KEY_U = 0, KEY_V = 192;
+    private static final int KEY_HOVER_U = 30, KEY_HOVER_V = 192;
+    private static final int VALIDATE_U = 0, VALIDATE_V = 216;
+    private static final int VALIDATE_HOVER_U = 46, VALIDATE_HOVER_V = 216;
+    private static final int CLEAR_U = 92, CLEAR_V = 216;
+    private static final int CLEAR_HOVER_U = 138, CLEAR_HOVER_V = 216;
+    private static final int HOURGLASS_U = 184, HOURGLASS_V = 192;
+    private static final int HOURGLASS_SIZE = 16;
+    private static final int ACTION_W = 46, ACTION_H = 20;
+
+    private static final int COLOR_KEY_LABEL = 0xFF2A2733;
+    private static final int COLOR_ACTION_LABEL = 0xFFF4F0E4;
+
     private static final int COLOR_TEXT = 0xFFE8E4F0;
     private static final int COLOR_DIM = 0xFF9A93AD;
     private static final int COLOR_LINKED = 0xFF48D65E;
@@ -111,39 +127,40 @@ public class FriendshipConsoleScreen extends Screen {
         leftPos = (width - WIDTH) / 2;
         topPos = (height - HEIGHT) / 2;
 
-        // Trois colonnes, quatre rangées : 1-9, puis * 0 #, comme un clavier
-        // de téléphone. « * » efface le dernier chiffre, « # » valide.
-        String[] keys = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"};
-        for (int i = 0; i < keys.length; i++) {
-            String label = keys[i];
-            int x = leftPos + PAD_X + (i % 3) * (KEY_W + KEY_GAP);
-            int y = topPos + KEYS_Y + (i / 3) * (KEY_H + KEY_GAP);
-            addRenderableWidget(Button.builder(Component.literal(label), button -> press(label))
-                    .bounds(x, y, KEY_W, KEY_H).build());
+        // Un code n'est fait que de chiffres : le pavé n'en porte pas d'autres.
+        // Neuf touches en trois rangées, puis le zéro centré sous elles.
+        for (int i = 0; i < 9; i++) {
+            addKey(String.valueOf(i + 1), i % 3, i / 3);
         }
+        addKey("0", 1, 3);
 
         int actionsY = topPos + KEYS_Y + 4 * (KEY_H + KEY_GAP) + 2;
-        addRenderableWidget(Button.builder(
-                        Component.translatable("enderportals.console.validate"), button -> validate())
-                .bounds(leftPos + PAD_X, actionsY, 46, 20).build());
-        addRenderableWidget(Button.builder(
-                        Component.translatable("enderportals.console.clear"), button -> typed.setLength(0))
-                .bounds(leftPos + PAD_X + 50, actionsY, 46, 20).build());
+        addRenderableWidget(new SpriteButton(leftPos + PAD_X, actionsY, ACTION_W, ACTION_H,
+                Component.translatable("enderportals.console.validate"),
+                VALIDATE_U, VALIDATE_V, VALIDATE_HOVER_U, VALIDATE_HOVER_V,
+                COLOR_ACTION_LABEL, this::validate));
+        addRenderableWidget(new SpriteButton(leftPos + PAD_X + 50, actionsY, ACTION_W, ACTION_H,
+                Component.translatable("enderportals.console.clear"),
+                CLEAR_U, CLEAR_V, CLEAR_HOVER_U, CLEAR_HOVER_V,
+                COLOR_ACTION_LABEL, () -> typed.setLength(0)));
     }
 
-    private void press(String label) {
-        switch (label) {
-            case "*" -> {
-                if (typed.length() > 0) {
-                    typed.setLength(typed.length() - 1);
-                }
-            }
-            case "#" -> validate();
-            default -> {
-                if (typed.length() < CODE_LENGTH) {
-                    typed.append(label);
-                }
-            }
+    private void addKey(String label, int col, int row) {
+        int x = leftPos + PAD_X + col * (KEY_W + KEY_GAP);
+        int y = topPos + KEYS_Y + row * (KEY_H + KEY_GAP);
+        addRenderableWidget(new SpriteButton(x, y, KEY_W, KEY_H, Component.literal(label),
+                KEY_U, KEY_V, KEY_HOVER_U, KEY_HOVER_V, COLOR_KEY_LABEL, () -> type(label)));
+    }
+
+    private void type(String digit) {
+        if (typed.length() < CODE_LENGTH) {
+            typed.append(digit);
+        }
+    }
+
+    private void backspace() {
+        if (typed.length() > 0) {
+            typed.setLength(typed.length() - 1);
         }
     }
 
@@ -242,9 +259,9 @@ public class FriendshipConsoleScreen extends Screen {
             guiGraphics.renderOutline(x, y, LIST_W, ROW_H - 2, border);
         }
         if (ally.state() == ConsoleStatePayload.PENDING) {
-            // Sablier : un seul des deux codes a été tapé. La montre vanilla en
-            // tient le rôle — pas de sprite maison pour un état transitoire.
-            guiGraphics.renderFakeItem(new ItemStack(Items.CLOCK), x + 2, y + 2);
+            // Sablier : un seul des deux codes a été tapé.
+            guiGraphics.blit(TEXTURE, x + 2, y + 2, HOURGLASS_U, HOURGLASS_V,
+                    HOURGLASS_SIZE, HOURGLASS_SIZE);
         } else {
             PlayerFaceRenderer.draw(guiGraphics, skinOf(ally.uuid()), x + 2, y + 2, 16);
         }
@@ -327,11 +344,29 @@ public class FriendshipConsoleScreen extends Screen {
     /** Les chiffres se frappent aussi au clavier — le pavé reste cliquable. */
     @Override
     public boolean charTyped(char codePoint, int modifiers) {
-        if (codePoint >= '0' && codePoint <= '9' && typed.length() < CODE_LENGTH) {
-            typed.append(codePoint);
+        if (codePoint >= '0' && codePoint <= '9') {
+            type(String.valueOf(codePoint));
             return true;
         }
         return super.charTyped(codePoint, modifiers);
+    }
+
+    /**
+     * Retour arrière et entrée : ce que le pavé ne montre plus depuis qu'il n'a
+     * que des chiffres, le clavier le fait. Rien n'est perdu, et le panneau reste
+     * lisible.
+     */
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == GLFW.GLFW_KEY_BACKSPACE) {
+            backspace();
+            return true;
+        }
+        if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
+            validate();
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
@@ -343,5 +378,54 @@ public class FriendshipConsoleScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    /**
+     * Une touche ou un bouton du panneau, dessiné depuis la planche de sprites.
+     *
+     * <p>Les widgets de vanilla auraient fait l'affaire fonctionnellement, mais
+     * leur gris passe-partout est justement ce qui faisait ressembler le panneau
+     * à n'importe quelle interface. Le reste — le clic, son bruit, le focus, la
+     * narration — est hérité tel quel : seul le dessin est reprisé.</p>
+     */
+    private static final class SpriteButton extends AbstractButton {
+
+        private final int u;
+        private final int v;
+        private final int hoverU;
+        private final int hoverV;
+        private final int labelColor;
+        private final Runnable action;
+
+        private SpriteButton(int x, int y, int width, int height, Component label,
+                             int u, int v, int hoverU, int hoverV, int labelColor, Runnable action) {
+            super(x, y, width, height, label);
+            this.u = u;
+            this.v = v;
+            this.hoverU = hoverU;
+            this.hoverV = hoverV;
+            this.labelColor = labelColor;
+            this.action = action;
+        }
+
+        @Override
+        protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+            boolean lit = isHoveredOrFocused();
+            guiGraphics.blit(TEXTURE, getX(), getY(), lit ? hoverU : u, lit ? hoverV : v,
+                    this.width, this.height);
+            Font font = Minecraft.getInstance().font;
+            guiGraphics.drawCenteredString(font, getMessage(), getX() + this.width / 2,
+                    getY() + (this.height - font.lineHeight) / 2 + 1, labelColor);
+        }
+
+        @Override
+        public void onPress() {
+            action.run();
+        }
+
+        @Override
+        protected void updateWidgetNarration(NarrationElementOutput output) {
+            defaultButtonNarrationText(output);
+        }
     }
 }

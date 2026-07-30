@@ -3,7 +3,7 @@
 Mod **Minecraft 1.21.1 / NeoForge** : une porte d'obsidienne plus grande à
 l'intérieur qu'à l'extérieur, qui s'ouvre sur **le monde de l'Ender** — le
 paradis des cubes, un monde-caverne où viennent se reposer les blocs
-détruits. Version courante : **0.11.1**.
+détruits. Version courante : **0.12.0**.
 
 ## La progression
 
@@ -93,7 +93,8 @@ Chaque porte éveillée reçoit un **code de huit chiffres**, inscrit sur sa cl�
 ### Devenir amis de passage
 
 Tapez le code de l'autre au pavé, chiffre par chiffre, puis **VALIDER**
-(`EFFACER` remet à zéro, `*` corrige le dernier chiffre, `#` valide). Le nom
+(`EFFACER` remet à zéro). Le pavé ne porte que des chiffres — au clavier,
+**Retour arrière** corrige et **Entrée** valide. Le nom
 apparaît dans le carnet, à gauche, avec un **sablier** : un seul des deux codes
 a été tapé. L'autre reçoit un message et doit taper le vôtre de son côté.
 
@@ -327,7 +328,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.11.1.jar
+# → build/libs/enderportals-0.12.0.jar
 ```
 
 Notes :
