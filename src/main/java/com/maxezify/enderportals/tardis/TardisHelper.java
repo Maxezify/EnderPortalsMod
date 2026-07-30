@@ -148,6 +148,146 @@ public final class TardisHelper {
         return true;
     }
 
+    // ------------------------------------------------------------------
+    // Rappel depuis l'intérieur
+    // ------------------------------------------------------------------
+
+    /** Rayon de recherche autour de l'emplacement mémorisé, en blocs. */
+    private static final int RECALL_RADIUS = 8;
+    /** Débattement vertical de cette recherche. */
+    private static final int RECALL_HEIGHT = 4;
+
+    /**
+     * Rappelle la porte extérieure depuis l'intérieur, sans jamais laisser le
+     * joueur enfermé.
+     *
+     * <p>C'est la distinction qui gouverne cette méthode : un placement
+     * <b>choisi</b> — clic droit au sol — peut échouer et le dire, puisque le
+     * joueur a désigné l'endroit. Un <b>rappel</b>, lui, est la seule issue d'une
+     * parcelle cloisonnée de bedrock sur 8192 blocs : le refuser enferme. Il
+     * suffisait qu'un joueur bâtisse sur les deux blocs mémorisés — ou qu'un
+     * arbre y pousse — pour que la base devienne une prison dont on ne sortait
+     * qu'en mourant, et même pas si l'on avait un lit à l'intérieur.</p>
+     *
+     * <p>Trois tentatives, de la plus fidèle à la plus sûre : l'emplacement exact,
+     * puis un logement libre au voisinage, puis le point de réapparition du
+     * joueur. La dernière ne peut échouer que si ce point est lui aussi muré sur
+     * huit blocs, et le joueur en est alors averti.</p>
+     */
+    public static void recallExterior(MinecraftServer server, TardisData data, Player player) {
+        ServerLevel level = server.getLevel(data.exteriorWorld);
+        if (level != null) {
+            // L'emplacement mémorisé n'est testé que sur l'encombrement, sans
+            // exiger de sol : la porte y était, elle y retourne à l'identique.
+            if (isClear(level, data.exteriorPos)) {
+                deploySilently(server, data, level, data.exteriorPos);
+                // Rappel à l'identique : le message n'a pas de coordonnées à
+                // donner, le joueur sait où il avait laissé sa porte.
+                player.displayClientMessage(
+                        Component.translatable("enderportals.message.tardis_recalled"), true);
+                return;
+            }
+            BlockPos nearby = findFreeSpot(level, data.exteriorPos);
+            if (nearby != null) {
+                deploySilently(server, data, level, nearby);
+                announce(player, "enderportals.message.tardis_recalled_nearby", nearby);
+                return;
+            }
+        }
+        if (recallToRespawn(server, data, player)) {
+            return;
+        }
+        player.displayClientMessage(
+                Component.translatable("enderportals.message.tardis_recall_failed"), true);
+    }
+
+    /**
+     * Dernier recours : la porte réapparaît au point de réapparition du joueur.
+     *
+     * <p>Un lit posé <i>dans</i> le monde de l'Ender est écarté — y renvoyer la
+     * porte ne sortirait personne. On retombe alors sur le spawn du monde.</p>
+     */
+    private static boolean recallToRespawn(MinecraftServer server, TardisData data, Player player) {
+        ServerLevel level = server.overworld();
+        BlockPos origin = level.getSharedSpawnPos();
+        if (player instanceof ServerPlayer serverPlayer) {
+            BlockPos bed = serverPlayer.getRespawnPosition();
+            ServerLevel bedLevel = server.getLevel(serverPlayer.getRespawnDimension());
+            if (bed != null && bedLevel != null
+                    && !bedLevel.dimension().equals(ModDimensions.ENDER_WORLD)) {
+                level = bedLevel;
+                origin = bed;
+            }
+        }
+        BlockPos spot = isClear(level, origin) ? origin : findFreeSpot(level, origin);
+        if (spot == null) {
+            return false;
+        }
+        deploySilently(server, data, level, spot);
+        announce(player, "enderportals.message.tardis_recalled_spawn", spot);
+        return true;
+    }
+
+    /**
+     * Le premier logement libre autour de ce point, par anneaux croissants pour
+     * que la porte se pose au plus près de là où on l'avait laissée. Contrairement
+     * à l'emplacement mémorisé, un logement de remplacement doit reposer sur du
+     * solide : la porte ne doit pas se retrouver suspendue en l'air.
+     */
+    @Nullable
+    private static BlockPos findFreeSpot(ServerLevel level, BlockPos origin) {
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        for (int ring = 1; ring <= RECALL_RADIUS; ring++) {
+            for (int dx = -ring; dx <= ring; dx++) {
+                for (int dz = -ring; dz <= ring; dz++) {
+                    // Seul le bord de l'anneau : l'intérieur a déjà été vu.
+                    if (Math.abs(dx) != ring && Math.abs(dz) != ring) {
+                        continue;
+                    }
+                    for (int dy = 0; dy <= RECALL_HEIGHT; dy++) {
+                        for (int sign = dy == 0 ? 0 : -1; sign <= 1; sign += 2) {
+                            cursor.set(origin.getX() + dx, origin.getY() + dy * sign,
+                                    origin.getZ() + dz);
+                            if (isClear(level, cursor) && isGrounded(level, cursor)) {
+                                return cursor.immutable();
+                            }
+                            if (dy == 0) {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /** Les deux blocs de la porte sont-ils libres, et dans le monde ? */
+    private static boolean isClear(ServerLevel level, BlockPos base) {
+        if (base.getY() < level.getMinBuildHeight()
+                || base.getY() + 1 >= level.getMaxBuildHeight()) {
+            return false;
+        }
+        return level.getBlockState(base).canBeReplaced()
+                && level.getBlockState(base.above()).canBeReplaced();
+    }
+
+    private static boolean isGrounded(ServerLevel level, BlockPos base) {
+        BlockPos below = base.below();
+        return level.getBlockState(below).isFaceSturdy(level, below, Direction.UP);
+    }
+
+    private static void deploySilently(MinecraftServer server, TardisData data, ServerLevel level,
+                                      BlockPos base) {
+        // feedback null : c'est recallExterior qui parle, avec le bon message.
+        deployExterior(server, data, level, base, data.exteriorFacing, true, null);
+    }
+
+    private static void announce(Player player, String key, BlockPos where) {
+        player.displayClientMessage(Component.translatable(key,
+                where.getX(), where.getY(), where.getZ()), true);
+    }
+
     /**
      * Referme les portes et dématérialise la porte extérieure (fondu de
      * disparition, puis les blocs s'effacent).

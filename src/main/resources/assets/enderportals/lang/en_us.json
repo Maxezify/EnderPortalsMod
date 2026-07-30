@@ -106,5 +106,8 @@
   "enderportals.tooltip.friendship_console_2": "They must do the same on their side, within two minutes",
   "enderportals.message.not_your_door": "This door is not yours.",
   "enderportals.message.key_no_door": "You have no awakened door.",
-  "enderportals.message.key_rebound": "Key bound to your door."
+  "enderportals.message.key_rebound": "Key bound to your door.",
+  "enderportals.message.tardis_recalled_nearby": "Spot taken — the door materialised nearby: %s %s %s",
+  "enderportals.message.tardis_recalled_spawn": "Spot walled in — the door awaits you at your respawn point: %s %s %s",
+  "enderportals.message.tardis_recall_failed": "Cannot recall the door: clear a 2-block space."
 }

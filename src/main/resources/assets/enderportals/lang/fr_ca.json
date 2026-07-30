@@ -106,5 +106,8 @@
   "enderportals.tooltip.friendship_console_2": "Il doit en faire autant de son côté, dans les deux minutes",
   "enderportals.message.not_your_door": "Cette porte n'est pas la vôtre.",
   "enderportals.message.key_no_door": "Vous n'avez pas de porte éveillée.",
-  "enderportals.message.key_rebound": "Clé liée à votre porte."
+  "enderportals.message.key_rebound": "Clé liée à votre porte.",
+  "enderportals.message.tardis_recalled_nearby": "Emplacement occupé — la porte s'est matérialisée à côté : %s %s %s",
+  "enderportals.message.tardis_recalled_spawn": "Emplacement muré — la porte vous attend à votre point de réapparition : %s %s %s",
+  "enderportals.message.tardis_recall_failed": "Impossible de rappeler la porte : dégagez un espace de 2 blocs."
 }

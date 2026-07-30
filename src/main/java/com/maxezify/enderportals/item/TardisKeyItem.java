@@ -119,14 +119,9 @@ public class TardisKeyItem extends Item {
                 TardisHelper.dismissExterior(server, data);
                 player.displayClientMessage(Component.translatable("enderportals.message.tardis_dismissed"), true);
             } else {
-                ServerLevel exteriorWorld = server.getLevel(data.exteriorWorld);
-                if (exteriorWorld == null
-                        || !TardisHelper.deployExterior(server, data, exteriorWorld,
-                                data.exteriorPos, data.exteriorFacing, true, player)) {
-                    player.displayClientMessage(Component.translatable("enderportals.message.no_space"), true);
-                } else {
-                    player.displayClientMessage(Component.translatable("enderportals.message.tardis_recalled"), true);
-                }
+                // Le rappel ne peut pas se contenter d'échouer : voir
+                // TardisHelper.recallExterior.
+                TardisHelper.recallExterior(server, data, player);
             }
         } else {
             if (!data.open) {

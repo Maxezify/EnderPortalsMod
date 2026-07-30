@@ -3,7 +3,7 @@
 Mod **Minecraft 1.21.1 / NeoForge** : une porte d'obsidienne plus grande à
 l'intérieur qu'à l'extérieur, qui s'ouvre sur **le monde de l'Ender** — le
 paradis des cubes, un monde-caverne où viennent se reposer les blocs
-détruits. Version courante : **0.14.0**.
+détruits. Version courante : **0.14.1**.
 
 ## La progression
 
@@ -47,6 +47,24 @@ Et **perdre sa clé ne coûte pas sa base** : forgez-en une neuve (1 cristal,
 1 perle d'Ender, 1 lingot d'or) et clic droit dans le vide. Une porte
 dématérialisée n'offrait sinon plus rien à cliquer, et le rituel refuse
 d'éveiller une seconde porte — la base était perdue pour de bon.
+
+### Le rappel ne peut pas échouer
+
+Un placement **choisi** — clic droit au sol — peut refuser : vous avez désigné
+l'endroit, « pas assez de place » est la bonne réponse. Un **rappel depuis
+l'intérieur**, lui, est la seule issue d'une parcelle cloisonnée de bedrock sur
+8192 blocs. Il essaie donc trois emplacements, du plus fidèle au plus sûr :
+
+1. l'emplacement exact où vous l'avez laissée ;
+2. sinon un logement libre au voisinage — 8 blocs à l'horizontale, ±4 en
+   vertical, par anneaux croissants, sur du sol solide ;
+3. sinon votre **point de réapparition** (un lit posé dans le monde de l'Ender
+   est écarté : y renvoyer la porte ne sortirait personne).
+
+Les coordonnées vous sont données dans les deux derniers cas. Sans cela, il
+suffisait qu'un joueur bâtisse sur vos deux blocs — ou qu'un arbre y pousse —
+pour que la base devienne une prison dont on ne sortait qu'en mourant, et même
+pas si l'on avait un lit à l'intérieur.
 
 ## Le monde de l'Ender
 
@@ -350,7 +368,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.14.0.jar
+# → build/libs/enderportals-0.14.1.jar
 ```
 
 Notes :
