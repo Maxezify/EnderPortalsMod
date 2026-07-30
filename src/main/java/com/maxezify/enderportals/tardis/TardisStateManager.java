@@ -7,6 +7,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
 import org.jetbrains.annotations.Nullable;
@@ -14,7 +15,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.random.RandomGenerator;
 
 /**
  * Registre persistant (niveau sauvegarde) de tous les TARDIS. Attribue les
@@ -44,6 +44,9 @@ public class TardisStateManager extends SavedData {
     private static final int CODE_MIN = 10_000_000;
     private static final int CODE_BOUND = 90_000_000;
 
+    /** Tirage des codes d'ami. Voir {@link #freshCode()} pour le choix de l'API. */
+    private static final RandomSource RANDOM = RandomSource.create();
+
     private final Map<UUID, TardisData> tardises = new HashMap<>();
     private final AllyLinks allyLinks = new AllyLinks();
     private int nextPlot;
@@ -54,12 +57,15 @@ public class TardisStateManager extends SavedData {
     }
 
     public TardisData createTardis(UUID owner, String ownerName) {
+        // Le code est tiré avant de consommer un numéro de parcelle : rien de ce
+        // qui suit ne peut échouer, donc aucun index ne peut être perdu en route.
+        int code = freshCode();
         int plot = nextPlot++;
         TardisData data = new TardisData(UUID.randomUUID(), plot);
         data.ownerUuid = owner;
         data.ownerName = ownerName;
         data.interiorDoorPos = plotOrigin(plot);
-        data.friendCode = freshCode();
+        data.friendCode = code;
         tardises.put(data.id, data);
         setDirty();
         return data;
@@ -74,11 +80,19 @@ public class TardisStateManager extends SavedData {
      * chiffres et pour un nombre de joueurs réaliste, la boucle ne tourne
      * quasiment jamais deux fois, mais un code en double casserait
      * l'identification.
+     *
+     * <p>Le tirage passe par {@link RandomSource} et non par
+     * {@code RandomGenerator.getDefault()} : celui-ci résout son algorithme par
+     * {@code ServiceLoader}, et le module {@code jdk.random} n'est pas exposé
+     * dans la couche de modules de Minecraft. L'appel y lève
+     * {@code IllegalArgumentException} — « No implementation of the random number
+     * generator algorithm "L32X64MixRandom" is available » — au lieu de rendre un
+     * générateur. Aucune API du JDK reposant sur la découverte de services n'est
+     * utilisable ici.</p>
      */
     private int freshCode() {
-        RandomGenerator random = RandomGenerator.getDefault();
         while (true) {
-            int code = CODE_MIN + random.nextInt(CODE_BOUND);
+            int code = CODE_MIN + RANDOM.nextInt(CODE_BOUND);
             if (findByCode(code) == null) {
                 return code;
             }
