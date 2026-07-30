@@ -3,7 +3,7 @@
 Mod **Minecraft 1.21.1 / NeoForge** : une porte d'obsidienne plus grande à
 l'intérieur qu'à l'extérieur, qui s'ouvre sur **le monde de l'Ender** — le
 paradis des cubes, un monde-caverne où viennent se reposer les blocs
-détruits. Version courante : **0.14.2**.
+détruits. Version courante : **0.14.3**.
 
 ## La progression
 
@@ -85,7 +85,10 @@ galerie — et le brouillard ne se dissipe jamais dans un vide.
 
 Chaque porte éveillée reçoit sa parcelle — une case de 8192 blocs de côté,
 attribuée en spirale autour de l'origine : construisez-y base, fermes et
-stockage, les lits et ancres de réapparition y fonctionnent. Les cases sont **cloisonnées par un quadrillage
+stockage, et **les lits y fonctionnent** : on y dort et on y fixe son point de
+réapparition. Les ancres de réapparition, non — vanilla ne les autorise que là
+où les lits ne marchent pas (`!bed_works && respawn_anchor_works`), et elles
+explosent ici comme dans l'Overworld. Les cases sont **cloisonnées par un quadrillage
 de murs de bedrock de 2 blocs d'épaisseur**, montant d'une calotte de bedrock
 à l'autre : on ne peut pas marcher jusque chez le voisin, ni passer
 par-dessus ou par-dessous. Le monde s'étend de **-64 à 320**, comme
@@ -368,7 +371,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.14.2.jar
+# → build/libs/enderportals-0.14.3.jar
 ```
 
 Notes :
