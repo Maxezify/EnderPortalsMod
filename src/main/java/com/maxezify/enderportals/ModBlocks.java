@@ -143,7 +143,7 @@ public final class ModBlocks {
                     .lightLevel(state -> switch (state.getValue(AllyPassageBlock.PHASE)) {
                         case CLOSED -> 4;
                         case OPENING -> 9;
-                        case OPEN -> 12;
+                        case OPEN, THROUGH -> 12;
                     })
                     .isValidSpawn((state, level, pos, type) -> false)
                     .pushReaction(PushReaction.BLOCK)

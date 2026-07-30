@@ -59,6 +59,14 @@ public class TardisData {
     public Direction passageFacing = Direction.NORTH;
 
     /**
+     * Portails Immersive Portals du Passage des Alliés. Les deux mêmes
+     * identifiants sont inscrits chez les deux alliés : le lien est symétrique,
+     * et chacun doit pouvoir nettoyer la paire depuis son côté.
+     */
+    public final List<UUID> passagePortalIds = new ArrayList<>();
+    public boolean passagePortalsActive;
+
+    /**
      * Code d'ami : huit chiffres, tapés au pavé numérique du Contrôle de
      * l'amitié. Zéro tant qu'il n'a pas été attribué — les portes créées avant
      * l'arrivée du Passage des Alliés en reçoivent un au chargement.
@@ -101,6 +109,14 @@ public class TardisData {
             nbt.putString("PassageFacing", passageFacing.getName());
         }
         nbt.putInt("FriendCode", friendCode);
+        ListTag passagePortals = new ListTag();
+        for (UUID portal : passagePortalIds) {
+            CompoundTag tag = new CompoundTag();
+            tag.putUUID("Id", portal);
+            passagePortals.add(tag);
+        }
+        nbt.put("PassagePortals", passagePortals);
+        nbt.putBoolean("PassagePortalsActive", passagePortalsActive);
         return nbt;
     }
 
@@ -130,6 +146,10 @@ public class TardisData {
                 ? getPos(nbt, "Passage") : null;
         data.passageFacing = directionOrDefault(nbt.getString("PassageFacing"), Direction.NORTH);
         data.friendCode = nbt.getInt("FriendCode");
+        for (Tag element : nbt.getList("PassagePortals", Tag.TAG_COMPOUND)) {
+            data.passagePortalIds.add(((CompoundTag) element).getUUID("Id"));
+        }
+        data.passagePortalsActive = nbt.getBoolean("PassagePortalsActive");
         return data;
     }
 

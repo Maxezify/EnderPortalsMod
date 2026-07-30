@@ -3,7 +3,7 @@
 Mod **Minecraft 1.21.1 / NeoForge** : une porte d'obsidienne plus grande à
 l'intérieur qu'à l'extérieur, qui s'ouvre sur **le monde de l'Ender** — le
 paradis des cubes, un monde-caverne où viennent se reposer les blocs
-détruits. Version courante : **0.14.3**.
+détruits. Version courante : **0.15.0**.
 
 ## La progression
 
@@ -162,6 +162,22 @@ Maj + clic sur un nom le retire du carnet.
 
 Le quadrillage de bedrock reste intact : on ne se rencontre que par un passage
 mutuellement consenti.
+
+### Voir chez son allié
+
+Avec **Immersive Portals**, l'arche ouverte n'est plus un mur : elle montre la
+base de l'allié, et on la franchit du regard avant d'y entrer. Les deux arches
+sont dans le même monde, à des milliers de blocs l'une de l'autre — une paire
+intra-dimension, que le mod accepte sans réserve.
+
+Le voile de l'arche disparaît alors : c'est une face pleine au milieu du bloc,
+là même où se pose le plan du portail, et il l'occulterait — la leçon du fond
+du caisson de la Porte de l'Ender, en 0.6.1. L'arche garde son cadre et se
+creuse. La traversée par contact s'efface aussi dans cet état, le portail s'en
+chargeant : deux mécanismes ensemble se marcheraient dessus.
+
+Sans Immersive Portals, rien ne change : l'arche garde son voile et se franchit
+par contact.
 
 ## Le stockage : Transmetteur d'objet & Sac de l'Ender
 
@@ -371,7 +387,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.14.3.jar
+# → build/libs/enderportals-0.15.0.jar
 ```
 
 Notes :

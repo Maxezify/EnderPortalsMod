@@ -1125,9 +1125,12 @@ def tex_console_gui():
 # ---------------------------------------------------- modèles et blockstates
 
 FRAME = "enderportals:block/ally_passage_frame"
+# La phase « through » n'a pas de voile : le plan du portail Immersive Portals
+# se pose exactement là où il serait, et le voile l'occulterait.
 _VEIL_TEX = {"closed": "enderportals:block/ally_veil_closed",
              "opening": "enderportals:block/ally_veil_opening",
-             "open": "enderportals:block/ally_veil_open"}
+             "open": "enderportals:block/ally_veil_open",
+             "through": None}
 
 
 def _all_faces(texture):
@@ -1159,12 +1162,17 @@ def passage_models():
                 veil_top = 13
             else:
                 veil_top = 16
-            elements.append({"from": [3, 0, 7], "to": [13, veil_top, 9],
-                             "faces": _all_faces("#veil")})
+            textures = {"particle": FRAME, "frame": FRAME}
+            # La phase « through » se passe de voile : le plan du portail
+            # Immersive Portals se pose exactement là, et le voile l'occulterait.
+            if veil is not None:
+                elements.append({"from": [3, 0, 7], "to": [13, veil_top, 9],
+                                 "faces": _all_faces("#veil")})
+                textures["veil"] = veil
             body = {
                 "parent": "minecraft:block/block",
                 "render_type": "minecraft:translucent",
-                "textures": {"particle": FRAME, "frame": FRAME, "veil": veil},
+                "textures": textures,
                 "elements": elements,
             }
             path = f"{ASSETS}/models/block/ally_passage_{half}_{phase}.json"

@@ -4,6 +4,7 @@ import com.maxezify.enderportals.ModBlocks;
 import com.maxezify.enderportals.ModDimensions;
 import com.maxezify.enderportals.block.AllyPassageBlock;
 import com.maxezify.enderportals.block.PassagePhase;
+import com.maxezify.enderportals.compat.ImmPtlCompat;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -42,12 +43,76 @@ public final class AllyPassageHelper {
         setPhase(server, b, PassagePhase.OPENING);
     }
 
-    /** Referme les deux passages d'une paire. */
+    /**
+     * Referme les deux passages d'une paire, et démonte les portails Immersive
+     * Portals qui les doublaient. Les laisser derrière ouvrirait une vue — et un
+     * chemin — vers une base dont le lien vient d'être coupé.
+     */
     public static void closeBoth(MinecraftServer server, UUID a, @Nullable UUID b) {
+        TardisStateManager manager = TardisStateManager.get(server);
+        dropPortals(server, manager.findByOwner(a));
         setPhase(server, a, PassagePhase.CLOSED);
         if (b != null) {
+            dropPortals(server, manager.findByOwner(b));
             setPhase(server, b, PassagePhase.CLOSED);
         }
+        manager.setDirty();
+    }
+
+    /**
+     * Ferme le passage d'un seul joueur, portails compris.
+     *
+     * <p>Pour un pair délogé : ouvrir un lien ferme celui que l'un des deux
+     * avait déjà, et le joueur ainsi libéré n'a plus de partenaire. Son arche
+     * doit se refermer et ses portails disparaître — sans quoi il resterait une
+     * vue, et un chemin, vers une base dont le lien vient d'être coupé.</p>
+     */
+    public static void closeOne(MinecraftServer server, UUID player) {
+        TardisStateManager manager = TardisStateManager.get(server);
+        dropPortals(server, manager.findByOwner(player));
+        setPhase(server, player, PassagePhase.CLOSED);
+        manager.setDirty();
+    }
+
+    private static void dropPortals(MinecraftServer server, @Nullable TardisData data) {
+        if (data != null) {
+            ImmPtlCompat.removePassagePortals(server, data);
+        }
+    }
+
+    /**
+     * Fin de l'animation : le passage devient franchissable.
+     *
+     * <p>Appelée par le tick programmé de <b>chacune</b> des deux arches, donc
+     * deux fois par ouverture. Elle est écrite pour être idempotente : la paire
+     * de portails n'est créée qu'une fois — {@code tryCreatePassagePortals} rend
+     * {@code true} sans rien refaire si elle est déjà vivante — et les phases
+     * sont posées des deux côtés dès le premier appel, si bien que le second
+     * n'écrit rien.</p>
+     *
+     * <p>La phase retenue dépend du résultat : {@link PassagePhase#THROUGH} si
+     * Immersive Portals a pris la main, {@link PassagePhase#OPEN} sinon. C'est
+     * ce qui fait que l'arche montre le portail au lieu de son voile, et que la
+     * traversée par contact se retire au profit de celle du portail.</p>
+     */
+    public static void finishOpening(MinecraftServer server, BlockPos base) {
+        TardisStateManager manager = TardisStateManager.get(server);
+        TardisData mine = manager.findByPassage(base);
+        if (mine == null || mine.ownerUuid == null) {
+            return;
+        }
+        UUID allyId = manager.allies().linkOf(mine.ownerUuid);
+        if (allyId == null) {
+            // Le lien a été coupé pendant les trois secondes d'animation.
+            setPhase(server, mine.ownerUuid, PassagePhase.CLOSED);
+            return;
+        }
+        TardisData ally = manager.findByOwner(allyId);
+        boolean through = ally != null && ImmPtlCompat.tryCreatePassagePortals(server, mine, ally);
+        PassagePhase phase = through ? PassagePhase.THROUGH : PassagePhase.OPEN;
+        setPhase(server, mine.ownerUuid, phase);
+        setPhase(server, allyId, phase);
+        manager.setDirty();
     }
 
     /**

@@ -122,11 +122,12 @@ public final class ImmPtlCompat {
             // Les enregistrer tous les deux à la fin laissait le premier
             // orphelin dans le monde, sans personne pour le nettoyer.
             Entity outer = spawnPortal(exteriorWorld, exteriorCenter, data.exteriorFacing,
-                    ModDimensions.ENDER_WORLD, interiorCenter, rotation);
+                    ModDimensions.ENDER_WORLD, interiorCenter, rotation, DOOR_WIDTH, DOOR_HEIGHT);
             data.portalIds.add(outer.getUUID());
 
             Entity inner = spawnPortal(enderWorld, interiorCenter, data.interiorFacing,
-                    data.exteriorWorld, exteriorCenter, Mth.wrapDegrees(-rotation));
+                    data.exteriorWorld, exteriorCenter, Mth.wrapDegrees(-rotation),
+                    DOOR_WIDTH, DOOR_HEIGHT);
             data.portalIds.add(inner.getUUID());
 
             // La paire est bi-way et s'arrête là — pas de faces opposées.
@@ -154,6 +155,119 @@ public final class ImmPtlCompat {
             EnderPortalsMod.LOGGER.warn(
                     "Intégration Immersive Portals indisponible (API changée ?) — retour à la téléportation classique.", t);
         }
+    }
+
+    /** Embrasure du caisson de la Porte de l'Ender. */
+    private static final double DOOR_WIDTH = 0.8;
+    private static final double DOOR_HEIGHT = 1.9;
+
+    /**
+     * Ouverture de l'arche du Passage des Alliés, telle que la dessine son
+     * modèle : montants de 3 pixels de chaque côté, linteau de 3 pixels en haut
+     * de la moitié supérieure. Il reste donc 10 pixels de large sur 29 de haut,
+     * soit 0,625 × 1,8125 bloc — le plan se tient juste en deçà.
+     */
+    private static final double PASSAGE_WIDTH = 0.60;
+    private static final double PASSAGE_HEIGHT = 1.78;
+    /**
+     * Hauteur du centre de cette ouverture au-dessus du centre du bloc du bas :
+     * 1,8125 / 2 − 0,5. Les deux arches étant identiques, n'importe quel
+     * décalage cohérent préserverait la continuité — celui-ci a en plus le
+     * mérite de tomber au milieu de ce qu'on voit.
+     */
+    private static final double PASSAGE_CENTER_OFFSET = 0.40625;
+
+    /**
+     * Tente de doubler d'un portail « voir au travers » le Passage des Alliés
+     * de deux joueurs venant de se lier.
+     *
+     * <p>Les deux arches sont dans le même monde, à des milliers de blocs l'une
+     * de l'autre : Immersive Portals accepte parfaitement une paire
+     * intra-dimension, et c'est la seule différence de fond avec la paire de la
+     * Porte de l'Ender. Le reste — plans au centre exact de chaque ouverture,
+     * destination de chacun égale à la position de l'autre, rotation opposée —
+     * suit les mêmes règles, pour les mêmes raisons (voir
+     * {@link #doorwayCenter}).</p>
+     *
+     * @return {@code true} si la paire existe désormais, {@code false} s'il faut
+     *         s'en tenir à la traversée par contact
+     */
+    public static boolean tryCreatePassagePortals(MinecraftServer server, TardisData a, TardisData b) {
+        if (!isLoaded() || a.passagePos == null || b.passagePos == null) {
+            return false;
+        }
+        if (a.passagePortalsActive && passagePortalsAlive(server, a)) {
+            return true;
+        }
+        removePassagePortals(server, a);
+        removePassagePortals(server, b);
+        ServerLevel level = server.getLevel(ModDimensions.ENDER_WORLD);
+        if (level == null) {
+            return false;
+        }
+        try {
+            Vec3 centerA = passageCenter(a.passagePos);
+            Vec3 centerB = passageCenter(b.passagePos);
+            double rotation = Mth.wrapDegrees(
+                    a.passageFacing.toYRot() - b.passageFacing.toYRot() + 180.0);
+
+            Entity first = spawnPortal(level, centerA, a.passageFacing,
+                    ModDimensions.ENDER_WORLD, centerB, rotation, PASSAGE_WIDTH, PASSAGE_HEIGHT);
+            a.passagePortalIds.add(first.getUUID());
+            b.passagePortalIds.add(first.getUUID());
+
+            Entity second = spawnPortal(level, centerB, b.passageFacing,
+                    ModDimensions.ENDER_WORLD, centerA, Mth.wrapDegrees(-rotation),
+                    PASSAGE_WIDTH, PASSAGE_HEIGHT);
+            a.passagePortalIds.add(second.getUUID());
+            b.passagePortalIds.add(second.getUUID());
+
+            a.passagePortalsActive = true;
+            b.passagePortalsActive = true;
+            EnderPortalsMod.LOGGER.info("Portails Immersive Portals créés pour le Passage {} <-> {}",
+                    a.ownerName, b.ownerName);
+            return true;
+        } catch (Throwable t) {
+            broken = true;
+            removePassagePortals(server, a);
+            removePassagePortals(server, b);
+            EnderPortalsMod.LOGGER.warn(
+                    "Portails du Passage des Alliés indisponibles — traversée par contact.", t);
+            return false;
+        }
+    }
+
+    /** Supprime les portails du Passage de ce joueur, s'ils existent. */
+    public static void removePassagePortals(MinecraftServer server, TardisData data) {
+        if (!data.passagePortalIds.isEmpty()) {
+            ServerLevel level = server.getLevel(ModDimensions.ENDER_WORLD);
+            for (UUID id : data.passagePortalIds) {
+                discardEntity(level, id);
+            }
+            data.passagePortalIds.clear();
+        }
+        data.passagePortalsActive = false;
+    }
+
+    private static boolean passagePortalsAlive(MinecraftServer server, TardisData data) {
+        if (data.passagePortalIds.isEmpty()) {
+            return false;
+        }
+        ServerLevel level = server.getLevel(ModDimensions.ENDER_WORLD);
+        if (level == null) {
+            return false;
+        }
+        for (UUID id : data.passagePortalIds) {
+            if (level.getEntity(id) == null) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** Centre de l'ouverture de l'arche, à partir de son bloc du bas. */
+    private static Vec3 passageCenter(BlockPos base) {
+        return Vec3.atCenterOf(base).add(0.0, PASSAGE_CENTER_OFFSET, 0.0);
     }
 
     /** Les entités de portail enregistrées existent-elles toujours ? */
@@ -240,7 +354,7 @@ public final class ImmPtlCompat {
      */
     private static Entity spawnPortal(ServerLevel level, Vec3 origin, Direction facing,
                                     ResourceKey<Level> destinationWorld, Vec3 destination,
-                                    double rotationDegrees) throws Exception {
+                                    double rotationDegrees, double width, double height) throws Exception {
         Api portalApi = api();
         Entity portal = portalApi.entityType.create(level);
         if (portal == null) {
@@ -254,9 +368,9 @@ public final class ImmPtlCompat {
         // axisW × axisH doit pointer vers l'extérieur de la porte (= facing).
         Vec3 axisW = vector(facing.getCounterClockWise());
         Vec3 axisH = new Vec3(0.0, 1.0, 0.0);
-        // 0,8 × 1,9 : le plan du portail doit tenir dans l'embrasure du caisson
-        // (parois à ±0,44, plancher/plafond à 0,03/1,97) sans les traverser.
-        portalApi.setOrientationAndSize.invoke(portal, axisW, axisH, 0.8, 1.9);
+        // Le plan doit tenir dans l'ouverture qu'il double, sans la traverser :
+        // ±0,44 pour l'embrasure du caisson, ±0,3125 pour l'arche du Passage.
+        portalApi.setOrientationAndSize.invoke(portal, axisW, axisH, width, height);
 
         applyRotation(portal, rotationDegrees);
 

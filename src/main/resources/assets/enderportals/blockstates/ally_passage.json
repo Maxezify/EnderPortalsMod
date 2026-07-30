@@ -9,6 +9,9 @@
     "facing=north,half=lower,phase=open": {
       "model": "enderportals:block/ally_passage_lower_open"
     },
+    "facing=north,half=lower,phase=through": {
+      "model": "enderportals:block/ally_passage_lower_through"
+    },
     "facing=north,half=upper,phase=closed": {
       "model": "enderportals:block/ally_passage_upper_closed"
     },
@@ -17,6 +20,9 @@
     },
     "facing=north,half=upper,phase=open": {
       "model": "enderportals:block/ally_passage_upper_open"
+    },
+    "facing=north,half=upper,phase=through": {
+      "model": "enderportals:block/ally_passage_upper_through"
     },
     "facing=east,half=lower,phase=closed": {
       "model": "enderportals:block/ally_passage_lower_closed",
@@ -28,6 +34,10 @@
     },
     "facing=east,half=lower,phase=open": {
       "model": "enderportals:block/ally_passage_lower_open",
+      "y": 90
+    },
+    "facing=east,half=lower,phase=through": {
+      "model": "enderportals:block/ally_passage_lower_through",
       "y": 90
     },
     "facing=east,half=upper,phase=closed": {
@@ -42,6 +52,10 @@
       "model": "enderportals:block/ally_passage_upper_open",
       "y": 90
     },
+    "facing=east,half=upper,phase=through": {
+      "model": "enderportals:block/ally_passage_upper_through",
+      "y": 90
+    },
     "facing=south,half=lower,phase=closed": {
       "model": "enderportals:block/ally_passage_lower_closed",
       "y": 180
@@ -52,6 +66,10 @@
     },
     "facing=south,half=lower,phase=open": {
       "model": "enderportals:block/ally_passage_lower_open",
+      "y": 180
+    },
+    "facing=south,half=lower,phase=through": {
+      "model": "enderportals:block/ally_passage_lower_through",
       "y": 180
     },
     "facing=south,half=upper,phase=closed": {
@@ -66,6 +84,10 @@
       "model": "enderportals:block/ally_passage_upper_open",
       "y": 180
     },
+    "facing=south,half=upper,phase=through": {
+      "model": "enderportals:block/ally_passage_upper_through",
+      "y": 180
+    },
     "facing=west,half=lower,phase=closed": {
       "model": "enderportals:block/ally_passage_lower_closed",
       "y": 270
@@ -78,6 +100,10 @@
       "model": "enderportals:block/ally_passage_lower_open",
       "y": 270
     },
+    "facing=west,half=lower,phase=through": {
+      "model": "enderportals:block/ally_passage_lower_through",
+      "y": 270
+    },
     "facing=west,half=upper,phase=closed": {
       "model": "enderportals:block/ally_passage_upper_closed",
       "y": 270
@@ -88,6 +114,10 @@
     },
     "facing=west,half=upper,phase=open": {
       "model": "enderportals:block/ally_passage_upper_open",
+      "y": 270
+    },
+    "facing=west,half=upper,phase=through": {
+      "model": "enderportals:block/ally_passage_upper_through",
       "y": 270
     }
   }

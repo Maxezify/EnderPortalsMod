@@ -3,7 +3,6 @@ package com.maxezify.enderportals.network;
 import com.maxezify.enderportals.ModAdvancements;
 import com.maxezify.enderportals.ModBlocks;
 import com.maxezify.enderportals.block.AllyPassageBlock;
-import com.maxezify.enderportals.block.PassagePhase;
 import com.maxezify.enderportals.tardis.AllyLinks;
 import com.maxezify.enderportals.tardis.AllyPassageHelper;
 import com.maxezify.enderportals.tardis.TardisData;
@@ -240,7 +239,7 @@ public final class ConsoleServerLogic {
                 // Ouvrir peut avoir délogé un lien antérieur, d'un côté ou de
                 // l'autre : on referme les arches ainsi laissées sans pair.
                 for (UUID displaced : links.takeDisplaced()) {
-                    AllyPassageHelper.setPhase(server, displaced, PassagePhase.CLOSED);
+                    AllyPassageHelper.closeOne(server, displaced);
                     refresh(server, displaced);
                 }
                 AllyPassageHelper.openBoth(server, me, other);

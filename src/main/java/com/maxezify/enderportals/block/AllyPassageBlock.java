@@ -176,7 +176,7 @@ public class AllyPassageBlock extends Block {
     @Override
     protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos,
                                            CollisionContext context) {
-        if (state.getValue(PHASE) != PassagePhase.OPEN) {
+        if (!isCrossable(state)) {
             return Shapes.block();
         }
         return OPEN_SHAPES.getOrDefault(state.getValue(FACING), Shapes.block());
@@ -206,7 +206,7 @@ public class AllyPassageBlock extends Block {
                                                BlockHitResult hit) {
         if (!level.isClientSide) {
             PassagePhase phase = state.getValue(PHASE);
-            player.displayClientMessage(Component.translatable(phase == PassagePhase.OPEN
+            player.displayClientMessage(Component.translatable(isCrossable(state)
                     ? "enderportals.message.passage_open_hint"
                     : "enderportals.message.passage_closed_hint"), true);
         }
@@ -215,6 +215,8 @@ public class AllyPassageBlock extends Block {
 
     @Override
     protected void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
+        // THROUGH est exclu volontairement : Immersive Portals y assure la
+        // traversée, et les deux mécanismes ensemble se marcheraient dessus.
         if (level.isClientSide || state.getValue(PHASE) != PassagePhase.OPEN) {
             return;
         }
@@ -264,14 +266,17 @@ public class AllyPassageBlock extends Block {
             return;
         }
         BlockPos base = baseOf(state, pos);
-        for (BlockPos target : new BlockPos[]{base, base.above()}) {
-            BlockState half = level.getBlockState(target);
-            if (half.is(this) && half.getValue(PHASE) == PassagePhase.OPENING) {
-                level.setBlock(target, half.setValue(PHASE, PassagePhase.OPEN),
-                        Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
-            }
-        }
+        // C'est le serveur qui décide de la phase d'arrivée — OPEN ou THROUGH
+        // selon qu'Immersive Portals ait pris la main — et il la pose des deux
+        // côtés à la fois. Voir AllyPassageHelper.finishOpening.
+        AllyPassageHelper.finishOpening(level.getServer(), base);
         level.playSound(null, base, SoundEvents.END_PORTAL_SPAWN, SoundSource.BLOCKS, 0.5f, 1.8f);
+    }
+
+    /** Le passage est-il franchissable ? Les deux phases ouvertes le sont. */
+    public static boolean isCrossable(BlockState state) {
+        PassagePhase phase = state.getValue(PHASE);
+        return phase == PassagePhase.OPEN || phase == PassagePhase.THROUGH;
     }
 
     /** Le bloc de base d'un passage, quelle que soit la moitié désignée. */
