@@ -179,8 +179,8 @@ public final class TardisHelper {
         if (level != null) {
             // L'emplacement mémorisé n'est testé que sur l'encombrement, sans
             // exiger de sol : la porte y était, elle y retourne à l'identique.
-            if (isClear(level, data.exteriorPos)) {
-                deploySilently(server, data, level, data.exteriorPos);
+            if (isClear(level, data.exteriorPos)
+                    && deploySilently(server, data, level, data.exteriorPos)) {
                 // Rappel à l'identique : le message n'a pas de coordonnées à
                 // donner, le joueur sait où il avait laissé sa porte.
                 player.displayClientMessage(
@@ -188,8 +188,7 @@ public final class TardisHelper {
                 return;
             }
             BlockPos nearby = findFreeSpot(level, data.exteriorPos);
-            if (nearby != null) {
-                deploySilently(server, data, level, nearby);
+            if (nearby != null && deploySilently(server, data, level, nearby)) {
                 announce(player, "enderportals.message.tardis_recalled_nearby", nearby);
                 return;
             }
@@ -220,10 +219,9 @@ public final class TardisHelper {
             }
         }
         BlockPos spot = isClear(level, origin) ? origin : findFreeSpot(level, origin);
-        if (spot == null) {
+        if (spot == null || !deploySilently(server, data, level, spot)) {
             return false;
         }
-        deploySilently(server, data, level, spot);
         announce(player, "enderportals.message.tardis_recalled_spawn", spot);
         return true;
     }
@@ -277,10 +275,19 @@ public final class TardisHelper {
         return level.getBlockState(below).isFaceSturdy(level, below, Direction.UP);
     }
 
-    private static void deploySilently(MinecraftServer server, TardisData data, ServerLevel level,
-                                      BlockPos base) {
-        // feedback null : c'est recallExterior qui parle, avec le bon message.
-        deployExterior(server, data, level, base, data.exteriorFacing, true, null);
+    /**
+     * Pose la porte sans parler : c'est {@link #recallExterior} qui annonce, avec
+     * le message qui convient à la tentative retenue.
+     *
+     * <p>Le booléen est rendu plutôt qu'ignoré. {@code isClear} vérifie déjà tout
+     * ce que {@code deployExterior} vérifie, et un peu plus, donc l'échec est
+     * aujourd'hui impossible — mais s'en remettre à cet invariant ferait annoncer
+     * une réussite qui n'a pas eu lieu le jour où l'une des deux méthodes
+     * changerait.</p>
+     */
+    private static boolean deploySilently(MinecraftServer server, TardisData data, ServerLevel level,
+                                          BlockPos base) {
+        return deployExterior(server, data, level, base, data.exteriorFacing, true, null);
     }
 
     private static void announce(Player player, String key, BlockPos where) {

@@ -234,7 +234,14 @@ public class AllyLinks {
     /** Pairs délogés par la dernière ouverture — vidé à chaque appel. */
     private final List<UUID> lastDisplaced = new ArrayList<>();
 
-    /** Les pairs que la dernière connexion ouverte a délogés. */
+    /**
+     * Les pairs que la dernière connexion ouverte a délogés.
+     *
+     * <p>À n'appeler qu'immédiatement après un {@link ConnectResult#OPENED},
+     * dans le même tick : la liste n'est renseignée que sur ce chemin, et rien
+     * ne la vide ailleurs. Appelée dans un autre contexte, elle rendrait le
+     * résultat d'une ouverture antérieure.</p>
+     */
     public List<UUID> takeDisplaced() {
         List<UUID> copy = List.copyOf(lastDisplaced);
         lastDisplaced.clear();
