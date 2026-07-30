@@ -3,7 +3,7 @@
 Mod **Minecraft 1.21.1 / NeoForge** : une porte d'obsidienne plus grande à
 l'intérieur qu'à l'extérieur, qui s'ouvre sur **le monde de l'Ender** — le
 paradis des cubes, un monde-caverne où viennent se reposer les blocs
-détruits. Version courante : **0.13.0**.
+détruits. Version courante : **0.14.0**.
 
 ## La progression
 
@@ -20,7 +20,8 @@ détruits. Version courante : **0.13.0**.
    chute, la foudre tombe : la porte s'éveille et sa salle intérieure est
    taillée dans le monde de l'Ender.
 4. **La Clé de l'Ender** se crafte avec 1 cristal, 1 perle d'Ender et
-   1 lingot d'or. Clic droit sur la porte éveillée pour **lier** la clé.
+   1 lingot d'or. Clic droit dans le vide pour la **lier à votre porte** — elle
+   n'obéira qu'à vous.
 5. **La Pioche de l'Ender** (3 cristaux, 2 bâtons) récolte les Blocs de l'Ender
    — et les casse presque instantanément. À défaut, l'enchantement rare
    **« Brisure d'Espace-Temps »** (trésor, comme Raccommodage : troc, butin,
@@ -35,6 +36,17 @@ détruits. Version courante : **0.13.0**.
 | Clic droit sur la **porte fermée** | La porte **s'ouvre**. Traversez l'embrasure : vous voilà dans votre base de poche. |
 | Clic droit sur la **porte ouverte** | Elle se referme et **disparaît en fondu** — votre base est en sécurité dans votre poche. |
 | Clic droit sur la **porte intérieure** | Rappelle la porte dans le monde extérieur (ou la dématérialise si elle y est encore). |
+| Clic droit **dans le vide** | Lie la clé à **votre** porte. C'est aussi le moyen d'en reforger une si vous perdez la première. |
+
+La clé **n'obéit qu'à son propriétaire** : ramassée par quelqu'un d'autre, elle
+est inerte — elle ne matérialise rien, n'ouvre rien et ne se relie pas à votre
+porte. Le partage se fait par le [Passage des Alliés](#le-passage-des-alliés),
+qui demande le consentement des deux côtés.
+
+Et **perdre sa clé ne coûte pas sa base** : forgez-en une neuve (1 cristal,
+1 perle d'Ender, 1 lingot d'or) et clic droit dans le vide. Une porte
+dématérialisée n'offrait sinon plus rien à cliquer, et le rituel refuse
+d'éveiller une seconde porte — la base était perdue pour de bon.
 
 ## Le monde de l'Ender
 
@@ -338,7 +350,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.13.0.jar
+# → build/libs/enderportals-0.14.0.jar
 ```
 
 Notes :

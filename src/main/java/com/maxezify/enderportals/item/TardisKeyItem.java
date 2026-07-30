@@ -16,7 +16,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -82,10 +84,23 @@ public class TardisKeyItem extends Item {
                 || door.isDematerializing() || door.getTardisId() == null) {
             return;
         }
+        TardisData data = TardisStateManager.get(server).getTardis(door.getTardisId());
+        if (data == null) {
+            return;
+        }
+        // Le contrôle de propriété passe avant tout le reste, liaison comprise :
+        // sans lui, une clé vierge posée sur la porte matérialisée d'autrui
+        // suffirait à s'en emparer, et une clé volée ouvrirait la base de son
+        // propriétaire. Le partage consenti, c'est le Passage des Alliés.
+        if (!isOwner(player, data)) {
+            player.displayClientMessage(Component.translatable("enderportals.message.not_your_door"), true);
+            level.playSound(null, base, SoundEvents.CHAIN_HIT, SoundSource.PLAYERS, 0.8f, 0.6f);
+            return;
+        }
         String bound = stack.get(ModComponents.TARDIS_ID.get());
         if (bound == null) {
             stack.set(ModComponents.TARDIS_ID.get(), door.getTardisId().toString());
-            stampCode(stack, TardisStateManager.get(server).getTardis(door.getTardisId()));
+            stampCode(stack, data);
             level.playSound(null, base, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 1.0f, 1.2f);
             player.displayClientMessage(Component.translatable("enderportals.message.key_bound"), false);
             return;
@@ -93,10 +108,6 @@ public class TardisKeyItem extends Item {
         if (!bound.equals(door.getTardisId().toString())) {
             player.displayClientMessage(Component.translatable("enderportals.message.wrong_key"), true);
             level.playSound(null, base, SoundEvents.CHAIN_HIT, SoundSource.PLAYERS, 0.8f, 0.6f);
-            return;
-        }
-        TardisData data = TardisStateManager.get(server).getTardis(door.getTardisId());
-        if (data == null) {
             return;
         }
         // Les clés liées avant l'arrivée du Passage des Alliés n'ont pas encore
@@ -147,6 +158,10 @@ public class TardisKeyItem extends Item {
             player.displayClientMessage(Component.translatable("enderportals.message.key_unbound"), true);
             return;
         }
+        if (!isOwner(player, data)) {
+            player.displayClientMessage(Component.translatable("enderportals.message.not_your_door"), true);
+            return;
+        }
         BlockPos clicked = context.getClickedPos();
         BlockPos base = level.getBlockState(clicked).canBeReplaced() ? clicked : clicked.relative(context.getClickedFace());
         // Respecte la spawn protection, le mode aventure et les mods de claim.
@@ -156,6 +171,51 @@ public class TardisKeyItem extends Item {
         }
         Direction facing = player.getDirection().getOpposite();
         TardisHelper.deployExterior(server, data, level, base, facing, false, player);
+    }
+
+    /**
+     * Clic droit dans le vide : la clé se lie à la porte dont on est
+     * propriétaire.
+     *
+     * <p>C'est la seule issue à une clé perdue. La liaison classique exige de
+     * cliquer une porte <b>matérialisée</b> ; si la clé disparaît alors que la
+     * porte est rangée, il n'y a plus rien à cliquer, la porte intérieure est
+     * hors d'atteinte, et le rituel refuse d'éveiller une seconde porte. La base
+     * était perdue pour de bon. Reforger une clé et la relier ici répare cela,
+     * et reste sûr par construction : on ne peut se lier qu'à sa propre porte.</p>
+     */
+    @Override
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        ItemStack stack = player.getItemInHand(hand);
+        if (level.isClientSide) {
+            return InteractionResultHolder.success(stack);
+        }
+        MinecraftServer server = player.getServer();
+        if (server == null) {
+            return InteractionResultHolder.pass(stack);
+        }
+        TardisData mine = TardisStateManager.get(server).findByOwner(player.getUUID());
+        if (mine == null) {
+            player.displayClientMessage(Component.translatable("enderportals.message.key_no_door"), true);
+            return InteractionResultHolder.pass(stack);
+        }
+        String wanted = mine.id.toString();
+        if (wanted.equals(stack.get(ModComponents.TARDIS_ID.get()))) {
+            // Déjà la bonne : ne rien réécrire, pour ne pas faire clignoter
+            // l'objet dans l'inventaire à chaque clic.
+            return InteractionResultHolder.pass(stack);
+        }
+        stack.set(ModComponents.TARDIS_ID.get(), wanted);
+        stampCode(stack, mine);
+        level.playSound(null, player.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME,
+                SoundSource.PLAYERS, 1.0f, 1.4f);
+        player.displayClientMessage(Component.translatable("enderportals.message.key_rebound"), false);
+        return InteractionResultHolder.success(stack);
+    }
+
+    /** Ce joueur est-il le propriétaire de cette porte ? */
+    private static boolean isOwner(Player player, TardisData data) {
+        return data.ownerUuid != null && data.ownerUuid.equals(player.getUUID());
     }
 
     /** Recopie le code d'ami de la porte sur la clé, s'il n'y est pas déjà. */

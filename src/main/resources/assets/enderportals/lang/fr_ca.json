@@ -12,7 +12,7 @@
   "item.enderportals.ender_crystal": "Cristal de l'Ender",
   "item.enderportals.tardis_key": "Clé de l'Ender",
   "item.enderportals.ender_pickaxe": "Pioche de l'Ender",
-  "enderportals.tooltip.key_unbound": "Clic droit sur une porte éveillée pour lier la clé",
+  "enderportals.tooltip.key_unbound": "Clic droit dans le vide pour la lier à votre porte, ou sur une porte éveillée",
   "enderportals.tooltip.key_bound": "Liée à la porte %s",
   "enderportals.message.not_falling": "L'impact est trop faible : frappez la porte en chutant d'au moins %s blocs (chute actuelle : %s).",
   "enderportals.message.activated": "§bLa porte s'éveille… Le vortex la traverse. Liez maintenant une clé (clic droit).",
@@ -33,7 +33,7 @@
   "enderportals.book.page2": "§5Le Minerai§0\n\nDans la pierre de l'End affleure un minerai ancien. Ses §bcristaux§0 vibrent au rythme du vortex.\n\nUne pioche de fer suffit à les récolter. La Fortune en tire davantage.",
   "enderportals.book.page3": "§5La Porte dormante§0\n\nCraft (établi) :\n§5O O O§0\n§5O §bC §6★§0\n§5O O O§0\n\n§5O§0 = Obsidienne pleureuse\n§bC§0 = Cristal de l'Ender\n§6★§0 = Étoile du Nether\n\nPosez-la où bon vous semble. Elle dort.",
   "enderportals.book.page4": "§5Le Rituel§0\n\nSeul un impact colossal peut l'éveiller.\n\nMunissez-vous d'une §cMasse§0 (Mace), élevez-vous d'au moins §c20 blocs§0, sautez — et frappez la porte en plein vol.\n\nL'impact absorbera votre chute. La foudre fera le reste.",
-  "enderportals.book.page5": "§5La Clé§0\n\nCraft (vertical) :\n§bCristal§0\n§3Perle de l'Ender§0\n§6Lingot d'or§0\n\nClic droit sur la porte éveillée : la clé s'y lie.\nClic droit au sol : la porte se matérialise.\nSur la porte : ouvrir, puis dématérialiser.",
+  "enderportals.book.page5": "§5La Clé§0\n\nCraft (vertical) :\n§bCristal§0\n§3Perle de l'Ender§0\n§6Lingot d'or§0\n\nClic droit dans le vide : la clé se lie à §5votre§0 porte.\nClic droit au sol : la porte se matérialise.\nSur la porte : ouvrir, puis dématérialiser.\n\nElle n'obéit qu'à vous. Perdue, reforgez-en une : rien n'est perdu.",
   "enderportals.book.page6": "§5La Pioche de l'Ender§0\n\nCraft : 3 cristaux en ligne, 2 bâtons.\n\nElle seule entame les §7Blocs de l'Ender§0, et les brise comme du verre.\n\n4 cristaux = 1 Bloc de l'Ender\n4 Blocs = 4 Briques de l'Ender.",
   "enderportals.book.page7": "§5Votre base de poche§0\n\nDerrière la porte : votre salle, taillée dans la caverne infinie. Lits et ancres y fonctionnent.\n\nUne seule porte par personne — et le vortex refuse qu'on éveille une porte dans la porte.\n\nBon voyage.",
   "block.enderportals.centralizer": "Transmetteur d'objet",
@@ -103,5 +103,8 @@
   "enderportals.tooltip.ally_passage_1": "Arche vers la base d'un allié — accolez-lui un Contrôle de l'amitié",
   "enderportals.tooltip.ally_passage_2": "Ne se pose que dans le monde de l'Ender",
   "enderportals.tooltip.friendship_console_1": "Tapez le code d'un allié pour l'ajouter, puis cliquez son nom pour ouvrir",
-  "enderportals.tooltip.friendship_console_2": "Il doit en faire autant de son côté, dans les deux minutes"
+  "enderportals.tooltip.friendship_console_2": "Il doit en faire autant de son côté, dans les deux minutes",
+  "enderportals.message.not_your_door": "Cette porte n'est pas la vôtre.",
+  "enderportals.message.key_no_door": "Vous n'avez pas de porte éveillée.",
+  "enderportals.message.key_rebound": "Clé liée à votre porte."
 }
