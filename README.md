@@ -3,7 +3,7 @@
 Mod **Minecraft 1.21.1 / NeoForge** : une porte d'obsidienne plus grande à
 l'intérieur qu'à l'extérieur, qui s'ouvre sur **le monde de l'Ender** — le
 paradis des cubes, un monde-caverne où viennent se reposer les blocs
-détruits. Version courante : **0.12.0**.
+détruits. Version courante : **0.13.0**.
 
 ## La progression
 
@@ -87,14 +87,24 @@ lui **accoler un Contrôle de l'amitié**, le pavé numérique qui commande tout
 
 ### Le code d'ami
 
-Chaque porte éveillée reçoit un **code de huit chiffres**, inscrit sur sa clé
-(infobulle) et rappelé en bas du panneau. C'est ce code qu'on se dicte.
+Chaque porte éveillée reçoit un **code de huit chiffres pris dans 1 à 9**,
+inscrit sur sa clé (infobulle) et rappelé sous les boutons du panneau. C'est ce
+code qu'on se dicte.
+
+Aucun zéro, nulle part : c'est une contrainte d'interface remontée dans les
+données, pour que le pavé tienne en trois rangées pleines sans dixième touche
+orpheline. Le prix est mince — 9⁸, plus de quarante-trois millions de
+combinaisons.
+
+> Les codes tirés avant la 0.13.0 pouvaient contenir des zéros, et seraient
+> aujourd'hui intapables. Ils sont retirés au chargement du monde : le code
+> concerné change une fois, puis reste stable.
 
 ### Devenir amis de passage
 
 Tapez le code de l'autre au pavé, chiffre par chiffre, puis **VALIDER**
-(`EFFACER` remet à zéro). Le pavé ne porte que des chiffres — au clavier,
-**Retour arrière** corrige et **Entrée** valide. Le nom
+(`EFFACER` remet à zéro). Au clavier, **Retour arrière** corrige et **Entrée**
+valide. Le nom
 apparaît dans le carnet, à gauche, avec un **sablier** : un seul des deux codes
 a été tapé. L'autre reçoit un message et doit taper le vôtre de son côté.
 
@@ -328,7 +338,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.12.0.jar
+# → build/libs/enderportals-0.13.0.jar
 ```
 
 Notes :

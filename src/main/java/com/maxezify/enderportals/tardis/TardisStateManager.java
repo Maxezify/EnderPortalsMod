@@ -36,13 +36,21 @@ public class TardisStateManager extends SavedData {
             new SavedData.Factory<>(TardisStateManager::new, TardisStateManager::load, null);
 
     /**
-     * Bornes du code d'ami : huit chiffres, jamais de zéro en tête. La frappe
-     * au pavé fait donc toujours exactement huit touches, ce qui évite d'avoir
-     * à gérer une longueur variable — et cent millions de combinaisons rendent
-     * la découverte au hasard illusoire.
+     * Longueur du code d'ami. Fixe, donc la frappe au pavé fait toujours
+     * exactement huit touches et il n'y a aucune longueur variable à gérer.
      */
-    private static final int CODE_MIN = 10_000_000;
-    private static final int CODE_BOUND = 90_000_000;
+    public static final int CODE_DIGITS = 8;
+
+    /**
+     * Les codes ne sont tirés que dans <b>1 à 9</b> : aucun zéro, nulle part.
+     *
+     * <p>C'est une contrainte d'interface remontée dans les données. Le pavé du
+     * Contrôle de l'amitié n'a ainsi que neuf touches, en trois rangées pleines,
+     * sans dixième touche orpheline sous elles. Le prix est mince : 9⁸, soit
+     * plus de quarante-trois millions de combinaisons, largement de quoi rendre
+     * la découverte au hasard illusoire.</p>
+     */
+    private static final int CODE_ALPHABET = 9;
 
     /** Tirage des codes d'ami. Voir {@link #freshCode()} pour le choix de l'API. */
     private static final RandomSource RANDOM = RandomSource.create();
@@ -92,17 +100,39 @@ public class TardisStateManager extends SavedData {
      */
     private int freshCode() {
         while (true) {
-            int code = CODE_MIN + RANDOM.nextInt(CODE_BOUND);
+            int code = 0;
+            for (int digit = 0; digit < CODE_DIGITS; digit++) {
+                code = code * 10 + 1 + RANDOM.nextInt(CODE_ALPHABET);
+            }
             if (findByCode(code) == null) {
                 return code;
             }
         }
     }
 
+    /**
+     * Ce code a-t-il la forme attendue : huit chiffres, aucun zéro ?
+     *
+     * <p>Sert à repérer les codes tirés par une version antérieure, qui
+     * pouvaient contenir des zéros. Un tel code serait aujourd'hui intapable —
+     * le pavé n'a plus de touche zéro — donc il est retiré.</p>
+     */
+    private static boolean isWellFormed(int code) {
+        if (code < 11_111_111 || code > 99_999_999) {
+            return false;
+        }
+        for (int rest = code; rest > 0; rest /= 10) {
+            if (rest % 10 == 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /** La porte dont c'est le code d'ami, s'il en existe une. */
     @Nullable
     public TardisData findByCode(int code) {
-        if (code < CODE_MIN) {
+        if (!isWellFormed(code)) {
             return null;
         }
         for (TardisData data : tardises.values()) {
@@ -230,11 +260,12 @@ public class TardisStateManager extends SavedData {
             manager.tardises.put(data.id, data);
         }
         manager.allyLinks.load(nbt.getCompound("Allies"));
-        // Les portes éveillées avant l'arrivée du Passage des Alliés n'ont pas
-        // de code : on leur en attribue un ici, une fois toutes les autres
-        // chargées, pour que freshCode() voie bien les codes déjà pris.
+        // Deux cas à rattraper ici, une fois toutes les portes chargées pour que
+        // freshCode() voie bien les codes déjà pris : celles éveillées avant
+        // l'arrivée du Passage des Alliés n'ont pas de code du tout, et celles
+        // d'avant l'abandon du zéro en portent un devenu intapable.
         for (TardisData data : manager.tardises.values()) {
-            if (data.friendCode == 0) {
+            if (!isWellFormed(data.friendCode)) {
                 data.friendCode = manager.freshCode();
                 manager.setDirty();
             }

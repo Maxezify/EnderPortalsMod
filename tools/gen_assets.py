@@ -951,12 +951,14 @@ def tex_friendship_console():
 # Géométrie de l'interface. Doit rester d'accord avec FriendshipConsoleScreen :
 # c'est ici que sont creusés les logements des touches, et une touche posée
 # ailleurs que son logement se verrait immédiatement.
-GUI_W, GUI_H = 220, 192
+GUI_W, GUI_H = 220, 166
 GUI_PAD_X, GUI_KEYS_Y = 112, 36
 GUI_KEY_W, GUI_KEY_H, GUI_KEY_GAP = 30, 24, 3
 GUI_ACTION_W, GUI_ACTION_H = 46, 20
-# Les dix touches : 1 à 9 en trois rangées, puis le zéro centré.
-GUI_KEY_CELLS = [(i % 3, i // 3) for i in range(9)] + [(1, 3)]
+# Neuf touches, trois rangées pleines : les codes ne contiennent aucun zéro,
+# donc le pavé n'a pas de dixième touche.
+GUI_KEY_CELLS = [(i % 3, i // 3) for i in range(9)]
+GUI_ACTIONS_Y = GUI_KEYS_Y + 3 * (GUI_KEY_H + GUI_KEY_GAP) + 1
 
 
 def tex_console_gui():
@@ -1019,11 +1021,11 @@ def tex_console_gui():
         put(px, x1, y1, body_light)
 
     # ---- le carnet : encart sombre, bandeau de titre souligné d'or, rayures
-    sunken(8, 8, 103, 167, inset, inset_edge)
+    sunken(8, 8, 103, 157, inset, inset_edge)
     rect(px, 9, 9, 102, 21, inset_title)
     rect(px, 9, 22, 102, 22, gold)
     rect(px, 9, 23, 102, 23, inset_edge)
-    for y in range(28, 166, 6):
+    for y in range(28, 156, 6):
         for x in range(11, 101, 3):
             put(px, x, y, inset_line)
 
@@ -1047,16 +1049,16 @@ def tex_console_gui():
         x = GUI_PAD_X + col * (GUI_KEY_W + GUI_KEY_GAP)
         y = GUI_KEYS_Y + row * (GUI_KEY_H + GUI_KEY_GAP)
         sunken(x - 1, y - 1, x + GUI_KEY_W, y + GUI_KEY_H, well, well_edge)
-    actions_y = GUI_KEYS_Y + 4 * (GUI_KEY_H + GUI_KEY_GAP) + 2
     for offset in (0, 50):
-        sunken(GUI_PAD_X + offset - 1, actions_y - 1,
-               GUI_PAD_X + offset + GUI_ACTION_W, actions_y + GUI_ACTION_H, well, well_edge)
+        sunken(GUI_PAD_X + offset - 1, GUI_ACTIONS_Y - 1,
+               GUI_PAD_X + offset + GUI_ACTION_W, GUI_ACTIONS_Y + GUI_ACTION_H, well, well_edge)
 
-    # ---- bande d'état : filet d'or et rivets
-    rect(px, 8, 168, GUI_W - 9, 168, gold)
-    for x in range(14, GUI_W - 12, 26):
-        rect(px, x, 185, x + 1, 186, body_shade)
-        put(px, x, 185, body_light)
+    # ---- filet d'or au-dessus du code du joueur, et rivets de part et d'autre
+    hairline = GUI_ACTIONS_Y + GUI_ACTION_H + 2
+    rect(px, GUI_PAD_X, hairline, GUI_PAD_X + 95, hairline, gold)
+    for x in (GUI_PAD_X, GUI_PAD_X + 95):
+        put(px, x, hairline - 1, body_shade)
+        put(px, x, hairline + 1, body_light)
 
     # ---------------------------------------------------------- sprites
     def cap(x0, y0, w, h, face, light, shade, border):

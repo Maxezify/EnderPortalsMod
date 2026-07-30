@@ -69,13 +69,15 @@ public final class ModItems {
     public static final DeferredItem<EnderWorldBlockItem> ALLY_PASSAGE = ITEMS.register("ally_passage",
             () -> new EnderWorldBlockItem(ModBlocks.ALLY_PASSAGE.get(),
                     new Item.Properties().rarity(Rarity.RARE),
-                    "enderportals.message.passage_here"));
+                    "enderportals.message.passage_here",
+                    "enderportals.tooltip.ally_passage"));
 
     public static final DeferredItem<EnderWorldBlockItem> FRIENDSHIP_CONSOLE = ITEMS.register(
             "friendship_console",
             () -> new EnderWorldBlockItem(ModBlocks.FRIENDSHIP_CONSOLE.get(),
                     new Item.Properties().rarity(Rarity.RARE),
-                    "enderportals.message.console_here"));
+                    "enderportals.message.console_here",
+                    "enderportals.tooltip.friendship_console"));
 
     /** Le Sac de l'Ender — en seconde main, range la ligne du haut dans la base. */
     public static final DeferredItem<EnderBagItem> ENDER_BAG = ITEMS.register("ender_bag",

@@ -72,7 +72,7 @@
   "enderportals.console.empty": "No allies.",
   "enderportals.console.validate": "CONFIRM",
   "enderportals.console.clear": "CLEAR",
-  "enderportals.console.my_code": "Your code: %s",
+  "enderportals.console.my_code": "Code: %s",
   "enderportals.console.no_passage": "No passage attached",
   "enderportals.tooltip.friend_code": "Friend code: %s",
   "enderportals.message.passage_here": "The Allies' Passage can only be placed in the Ender world.",
@@ -97,5 +97,11 @@
   "enderportals.message.connect_opened": "Passage open with %s.",
   "enderportals.message.connect_closed": "Passage closed with %s.",
   "advancements.enderportals.allies.title": "Passage Friend",
-  "advancements.enderportals.allies.description": "Open an Allies' Passage: two pocket bases, one threshold."
+  "advancements.enderportals.allies.description": "Open an Allies' Passage: two pocket bases, one threshold.",
+  "enderportals.tooltip.centralizer_1": "Place it in your base, against your chests or an inventory connector",
+  "enderportals.tooltip.centralizer_2": "The Ender Bag empties into it; it then pushes on into the attached network",
+  "enderportals.tooltip.ally_passage_1": "An arch to an ally's base — attach a Friendship Control to it",
+  "enderportals.tooltip.ally_passage_2": "Can only be placed in the Ender world",
+  "enderportals.tooltip.friendship_console_1": "Type an ally's code to add them, then click their name to open",
+  "enderportals.tooltip.friendship_console_2": "They must do the same on their side, within two minutes"
 }

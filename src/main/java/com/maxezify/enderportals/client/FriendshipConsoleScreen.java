@@ -37,7 +37,7 @@ public class FriendshipConsoleScreen extends Screen {
             EnderPortalsMod.id("textures/gui/friendship_console.png");
 
     private static final int WIDTH = 220;
-    private static final int HEIGHT = 192;
+    private static final int HEIGHT = 166;
 
     /** Longueur d'un code d'ami. Voir {@code TardisStateManager}. */
     private static final int CODE_LENGTH = 8;
@@ -48,7 +48,7 @@ public class FriendshipConsoleScreen extends Screen {
     private static final int LIST_W = 96;
     private static final int ROW_H = 20;
     private static final int FIRST_ROW_Y = 26;
-    private static final int MAX_ROWS = 7;
+    private static final int MAX_ROWS = 6;
 
     // Pavé, à droite.
     private static final int PAD_X = 112;
@@ -60,12 +60,18 @@ public class FriendshipConsoleScreen extends Screen {
     private static final int KEYS_Y = 36;
 
     /**
-     * Bande d'état en pied de panneau : elle est dessinée sur la face claire, pas
-     * dans l'encart sombre du carnet, donc son texte doit être foncé.
+     * Le code du joueur se loge sous les deux boutons, dans la colonne du pavé :
+     * il tient dans les 96 px disponibles, et la place ainsi récupérée raccourcit
+     * le panneau de 26 px. Le texte est posé sur la face claire, donc foncé.
      */
-    private static final int STATUS_Y = 172;
+    private static final int CODE_Y = 144;
     private static final int COLOR_ON_PANEL = 0xFF3F3B46;
-    private static final int COLOR_WARN = 0xFFA02020;
+    /**
+     * L'avertissement de passage non accolé reste dans l'encart sombre du carnet,
+     * sous la dernière ligne : c'est là qu'un rouge clair se lit.
+     */
+    private static final int WARN_Y = 148;
+    private static final int COLOR_WARN = 0xFFE05555;
 
     // Planche de sprites, sous le panneau dans la même texture. Doit rester
     // d'accord avec tex_console_gui() de tools/gen_assets.py.
@@ -127,29 +133,30 @@ public class FriendshipConsoleScreen extends Screen {
         leftPos = (width - WIDTH) / 2;
         topPos = (height - HEIGHT) / 2;
 
-        // Un code n'est fait que de chiffres : le pavé n'en porte pas d'autres.
-        // Neuf touches en trois rangées, puis le zéro centré sous elles.
+        // Neuf touches, trois rangées pleines, pas de zéro : les codes sont
+        // tirés dans 1 à 9 justement pour que le pavé n'ait pas de dixième
+        // touche orpheline. Voir TardisStateManager.CODE_ALPHABET.
         for (int i = 0; i < 9; i++) {
             addKey(String.valueOf(i + 1), i % 3, i / 3);
         }
-        addKey("0", 1, 3);
 
-        int actionsY = topPos + KEYS_Y + 4 * (KEY_H + KEY_GAP) + 2;
+        int actionsY = topPos + KEYS_Y + 3 * (KEY_H + KEY_GAP) + 1;
         addRenderableWidget(new SpriteButton(leftPos + PAD_X, actionsY, ACTION_W, ACTION_H,
                 Component.translatable("enderportals.console.validate"),
                 VALIDATE_U, VALIDATE_V, VALIDATE_HOVER_U, VALIDATE_HOVER_V,
-                COLOR_ACTION_LABEL, this::validate));
+                COLOR_ACTION_LABEL, true, this::validate));
         addRenderableWidget(new SpriteButton(leftPos + PAD_X + 50, actionsY, ACTION_W, ACTION_H,
                 Component.translatable("enderportals.console.clear"),
                 CLEAR_U, CLEAR_V, CLEAR_HOVER_U, CLEAR_HOVER_V,
-                COLOR_ACTION_LABEL, () -> typed.setLength(0)));
+                COLOR_ACTION_LABEL, true, () -> typed.setLength(0)));
     }
 
     private void addKey(String label, int col, int row) {
         int x = leftPos + PAD_X + col * (KEY_W + KEY_GAP);
         int y = topPos + KEYS_Y + row * (KEY_H + KEY_GAP);
         addRenderableWidget(new SpriteButton(x, y, KEY_W, KEY_H, Component.literal(label),
-                KEY_U, KEY_V, KEY_HOVER_U, KEY_HOVER_V, COLOR_KEY_LABEL, () -> type(label)));
+                KEY_U, KEY_V, KEY_HOVER_U, KEY_HOVER_V, COLOR_KEY_LABEL, false,
+                () -> type(label)));
     }
 
     private void type(String digit) {
@@ -209,17 +216,17 @@ public class FriendshipConsoleScreen extends Screen {
     }
 
     /**
-     * Le pied du panneau : mon code à gauche — celui qu'on dicte à l'autre — et
-     * l'avertissement d'un passage non accolé à droite, quand il y a lieu.
+     * Sous les deux boutons : le code du joueur, celui qu'il dicte à l'autre.
+     * Et sous la dernière ligne du carnet, l'avertissement d'un passage non
+     * accolé, quand il y a lieu.
      */
     private void renderStatus(GuiGraphics guiGraphics) {
         guiGraphics.drawString(font, Component.translatable("enderportals.console.my_code",
                         formatCode(state.myCode())),
-                leftPos + LIST_X, topPos + STATUS_Y, COLOR_ON_PANEL, false);
+                leftPos + PAD_X, topPos + CODE_Y, COLOR_ON_PANEL, false);
         if (!state.passageReady()) {
-            Component warning = Component.translatable("enderportals.console.no_passage");
-            guiGraphics.drawString(font, warning,
-                    leftPos + WIDTH - 8 - font.width(warning), topPos + STATUS_Y, COLOR_WARN, false);
+            guiGraphics.drawString(font, Component.translatable("enderportals.console.no_passage"),
+                    leftPos + LIST_X + 4, topPos + WARN_Y, COLOR_WARN, false);
         }
     }
 
@@ -395,27 +402,38 @@ public class FriendshipConsoleScreen extends Screen {
         private final int hoverU;
         private final int hoverV;
         private final int labelColor;
+        private final boolean shadow;
         private final Runnable action;
 
         private SpriteButton(int x, int y, int width, int height, Component label,
-                             int u, int v, int hoverU, int hoverV, int labelColor, Runnable action) {
+                             int u, int v, int hoverU, int hoverV, int labelColor, boolean shadow,
+                             Runnable action) {
             super(x, y, width, height, label);
             this.u = u;
             this.v = v;
             this.hoverU = hoverU;
             this.hoverV = hoverV;
             this.labelColor = labelColor;
+            this.shadow = shadow;
             this.action = action;
         }
 
+        /**
+         * {@code drawCenteredString} porte toujours son ombre portée. Sur la face
+         * claire d'une touche, un chiffre foncé doublé de son ombre se lit mal —
+         * c'est flou, pas contrasté. On centre donc à la main pour pouvoir la
+         * couper. Les boutons d'action, eux, portent un libellé clair sur une
+         * couleur franche : là l'ombre aide, et elle est conservée.
+         */
         @Override
         protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
             boolean lit = isHoveredOrFocused();
             guiGraphics.blit(TEXTURE, getX(), getY(), lit ? hoverU : u, lit ? hoverV : v,
                     this.width, this.height);
             Font font = Minecraft.getInstance().font;
-            guiGraphics.drawCenteredString(font, getMessage(), getX() + this.width / 2,
-                    getY() + (this.height - font.lineHeight) / 2 + 1, labelColor);
+            int textX = getX() + (this.width - font.width(getMessage())) / 2;
+            int textY = getY() + (this.height - font.lineHeight) / 2 + 1;
+            guiGraphics.drawString(font, getMessage(), textX, textY, labelColor, shadow);
         }
 
         @Override

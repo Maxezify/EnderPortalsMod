@@ -1,12 +1,18 @@
 package com.maxezify.enderportals.item;
 
 import com.maxezify.enderportals.ModDimensions;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.block.Block;
+
+import java.util.List;
 
 /**
  * BlockItem du Centraliseur : la pose n'est autorisée que dans le monde de
@@ -16,6 +22,16 @@ public class CentralizerBlockItem extends BlockItem {
 
     public CentralizerBlockItem(Block block, Properties properties) {
         super(block, properties);
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
+                                TooltipFlag flag) {
+        tooltip.add(Component.translatable("enderportals.tooltip.centralizer_1")
+                .withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable("enderportals.tooltip.centralizer_2")
+                .withStyle(ChatFormatting.DARK_GRAY));
+        super.appendHoverText(stack, context, tooltip, flag);
     }
 
     @Override

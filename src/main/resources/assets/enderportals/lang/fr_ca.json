@@ -72,7 +72,7 @@
   "enderportals.console.empty": "Aucun allié.",
   "enderportals.console.validate": "VALIDER",
   "enderportals.console.clear": "EFFACER",
-  "enderportals.console.my_code": "Votre code : %s",
+  "enderportals.console.my_code": "Code : %s",
   "enderportals.console.no_passage": "Passage non accolé",
   "enderportals.tooltip.friend_code": "Code d'ami : %s",
   "enderportals.message.passage_here": "Le Passage des Alliés ne se pose que dans le monde de l'Ender.",
@@ -97,5 +97,11 @@
   "enderportals.message.connect_opened": "Passage ouvert avec %s.",
   "enderportals.message.connect_closed": "Passage refermé avec %s.",
   "advancements.enderportals.allies.title": "Ami de passage",
-  "advancements.enderportals.allies.description": "Ouvrir un Passage des Alliés : deux bases de poche, un seul seuil."
+  "advancements.enderportals.allies.description": "Ouvrir un Passage des Alliés : deux bases de poche, un seul seuil.",
+  "enderportals.tooltip.centralizer_1": "Posez-le dans votre base, accolé à vos coffres ou à un connecteur d'inventaire",
+  "enderportals.tooltip.centralizer_2": "Le Sac de l'Ender y déverse ; il pousse ensuite dans le réseau accolé",
+  "enderportals.tooltip.ally_passage_1": "Arche vers la base d'un allié — accolez-lui un Contrôle de l'amitié",
+  "enderportals.tooltip.ally_passage_2": "Ne se pose que dans le monde de l'Ender",
+  "enderportals.tooltip.friendship_console_1": "Tapez le code d'un allié pour l'ajouter, puis cliquez son nom pour ouvrir",
+  "enderportals.tooltip.friendship_console_2": "Il doit en faire autant de son côté, dans les deux minutes"
 }
