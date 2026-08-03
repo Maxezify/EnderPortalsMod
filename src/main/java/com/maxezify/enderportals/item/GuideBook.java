@@ -15,24 +15,27 @@ import java.util.List;
  * Construit le livre écrit « World of Ender ».
  *
  * <p>Le contenu est bâti ici, avec l'API typée, et non déclaré dans le JSON de
- * la recette. Ce n'est pas un détail de style : le composant
- * {@code written_book_content} a un format que l'on se trompe à écrire à la
- * main, et ce mod s'y est trompé <b>quatre fois</b> entre juillet et la
- * 0.16.3. Le piège tient à ceci — deux composants de texte voisins veulent des
- * formes contraires :</p>
- * <ul>
- *   <li>{@code pages} passe par {@code ComponentSerialization.flatCodec} : le
- *       codec lit d'abord une <b>chaîne</b>, puis analyse le contenu de cette
- *       chaîne comme un composant de texte ;</li>
- *   <li>{@code custom_name} passe par {@code ComponentSerialization.CODEC} et
- *       veut un <b>objet</b>.</li>
- * </ul>
+ * la recette. Ce n'est pas un détail de style : les composants de texte d'un
+ * objet ne s'écrivent pas comme le reste du JSON, et ce mod s'y est trompé
+ * <b>quatre fois</b> entre juillet et la 0.16.3.</p>
+ *
+ * <p>La règle, telle que le jeu l'a finalement dite dans ses journaux : un
+ * composant de texte se persiste en <b>chaîne contenant du JSON</b>, jamais en
+ * objet. C'est la forme que l'on retrouve dans la syntaxe des commandes, où les
+ * apostrophes délimitent bien une chaîne :</p>
+ *
+ * <pre>/give @s written_book[custom_name='{"text":"Guide"}']</pre>
+ *
+ * <p>Cela vaut aussi bien pour {@code custom_name} que pour les {@code pages}
+ * de {@code written_book_content} — et c'est contre-intuitif, parce que tout le
+ * JSON qui les entoure, lui, est bien structuré. La 0.16.3 avait corrigé les
+ * pages et laissé {@code custom_name} en objet : la recette restait rejetée,
+ * pour la moitié du défaut qui subsistait.</p>
  *
  * <p>Se tromper de forme ne produit aucun message en jeu : la recette entière
  * est rejetée au chargement du datapack, et le joueur voit simplement une case
- * de résultat vide devant une grille correcte. Impossible à diagnostiquer sans
- * lire les journaux, et facile à réintroduire — c'est exactement ce qui s'est
- * produit à chaque réécriture.</p>
+ * de résultat vide devant une grille correcte. Il faut ouvrir les journaux pour
+ * l'apprendre — c'est ce qui a permis au défaut de survivre douze versions.</p>
  *
  * <p>Passer par le code supprime la question. Le compilateur vérifie les types,
  * il n'y a plus de forme à deviner, et les pages restent des textes

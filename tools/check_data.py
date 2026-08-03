@@ -34,42 +34,55 @@ def check_json_parses():
             fail(path, f"JSON invalide — {e}")
 
 
-def check_written_books():
-    """Les pages d'un livre écrit sont des CHAÎNES contenant du JSON.
+def check_text_components():
+    """Un composant de texte se persiste en CHAÎNE contenant du JSON.
 
-    {@code WrittenBookContent} décode ses pages avec
-    {@code ComponentSerialization.flatCodec(1024)} : le codec lit d'abord une
-    chaîne, puis analyse le contenu de cette chaîne comme un composant de texte.
-    Écrire une page en objet JSON — ce qui semble pourtant naturel — fait échouer
-    le décodage, et la recette entière est rejetée : la grille reste vide sans
-    aucun message en jeu.
+    C'est la forme qu'on lit dans la syntaxe des commandes, où les apostrophes
+    délimitent bien une chaîne :
 
-    Le piège est d'autant plus vicieux que {@code custom_name}, juste à côté dans
-    le même bloc, utilise {@code ComponentSerialization.CODEC} et veut un objet.
-    Deux composants de texte voisins, deux formes contraires. Ce défaut a été
-    introduit trois fois entre juillet et la 0.16.2.
+        /give @s written_book[custom_name='{"text":"Guide"}']
+
+    Écrire un composant de texte en objet JSON — ce qui semble pourtant naturel,
+    puisque tout le JSON alentour est structuré — fait échouer le décodage avec
+    « Not a string », et c'est la recette ENTIÈRE qui est rejetée. Sans aucun
+    message en jeu : le joueur voit une case de résultat vide devant une grille
+    correcte, et il faut ouvrir les journaux pour le comprendre.
+
+    Ce défaut a été introduit quatre fois entre juillet et la 0.16.3, et a
+    survécu douze versions. La correction de la 0.16.3 n'en avait redressé que
+    la moitié — les pages du livre — en laissant custom_name en objet.
     """
+    # Composants dont la valeur est un texte, ou une liste de textes.
+    TEXT = {"minecraft:custom_name", "minecraft:item_name"}
+    TEXT_LIST = {"minecraft:lore"}
+
+    def check_text(path, label, value, limit=None):
+        if not isinstance(value, str):
+            fail(path, f"{label} écrit en {type(value).__name__} ; un composant de "
+                       "texte attend une CHAÎNE contenant du JSON")
+            return
+        try:
+            json.loads(value)
+        except json.JSONDecodeError:
+            fail(path, f"{label} : la chaîne ne contient pas de JSON valide")
+        if limit is not None and len(value) > limit:
+            fail(path, f"{label} : {len(value)} caractères, limite {limit}")
+
     for path in sorted(DATA.rglob("recipe/*.json")):
-        recipe = json.loads(path.read_text(encoding="utf-8"))
-        components = recipe.get("result", {}).get("components", {})
-        content = components.get("minecraft:written_book_content")
-        if content is None:
-            continue
-        for index, page in enumerate(content.get("pages", []), 1):
-            if not isinstance(page, str):
-                fail(path, f"page {index} écrite en {type(page).__name__} ; "
-                           "written_book_content.pages attend des chaînes "
-                           "contenant du JSON (flatCodec)")
-            else:
-                try:
-                    json.loads(page)
-                except json.JSONDecodeError:
-                    fail(path, f"page {index} : la chaîne ne contient pas de JSON valide")
-                if len(page) > 1024:
-                    fail(path, f"page {index} : {len(page)} caractères, limite 1024")
-        title = content.get("title", "")
-        if len(title) > 32:
-            fail(path, f"titre de {len(title)} caractères, limite 32")
+        components = json.loads(path.read_text(encoding="utf-8")) \
+            .get("result", {}).get("components", {})
+        for name, value in components.items():
+            if name in TEXT:
+                check_text(path, name, value)
+            elif name in TEXT_LIST:
+                for index, line in enumerate(value, 1):
+                    check_text(path, f"{name}[{index}]", line)
+            elif name == "minecraft:written_book_content":
+                for index, page in enumerate(value.get("pages", []), 1):
+                    check_text(path, f"page {index}", page, limit=1024)
+                title = value.get("title", "")
+                if len(title) > 32:
+                    fail(path, f"titre de {len(title)} caractères, limite 32")
 
 
 def check_translations_exist():
@@ -133,7 +146,7 @@ def main():
         # Inutile d'aller plus loin : les contrôles suivants relisent ces mêmes
         # fichiers et ne feraient que répéter la même panne.
         report()
-    check_written_books()
+    check_text_components()
     check_guide_book_pages()
     check_translations_exist()
     report()
