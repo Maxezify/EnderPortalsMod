@@ -67,6 +67,18 @@ public class TardisData {
     public boolean passagePortalsActive;
 
     /**
+     * Tick de jeu où l'arche finit de s'ouvrir ; zéro tant qu'elle est close.
+     *
+     * <p>La même valeur est écrite dans les <b>deux</b> fiches d'une paire. Une
+     * échéance partagée plutôt qu'un compte à rebours par arche : les deux
+     * percent alors au même tick, y compris quand une seule des deux parcelles
+     * tourne — et c'est très exactement ce qui manquait à la 0.15.0, où chaque
+     * arche attendait son propre tick programmé et où celle du chunk endormi
+     * n'en recevait jamais.</p>
+     */
+    public long passageOpenAt;
+
+    /**
      * Code d'ami : huit chiffres, tapés au pavé numérique du Contrôle de
      * l'amitié. Zéro tant qu'il n'a pas été attribué — les portes créées avant
      * l'arrivée du Passage des Alliés en reçoivent un au chargement.
@@ -117,6 +129,7 @@ public class TardisData {
         }
         nbt.put("PassagePortals", passagePortals);
         nbt.putBoolean("PassagePortalsActive", passagePortalsActive);
+        nbt.putLong("PassageOpenAt", passageOpenAt);
         return nbt;
     }
 
@@ -150,6 +163,7 @@ public class TardisData {
             data.passagePortalIds.add(((CompoundTag) element).getUUID("Id"));
         }
         data.passagePortalsActive = nbt.getBoolean("PassagePortalsActive");
+        data.passageOpenAt = nbt.getLong("PassageOpenAt");
         return data;
     }
 

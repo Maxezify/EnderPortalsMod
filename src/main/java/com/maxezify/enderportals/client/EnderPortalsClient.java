@@ -10,7 +10,9 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 /**
  * Enregistrements côté client. Les couches de rendu (translucide / cutout) des
  * blocs sont déclarées via {@code "render_type"} dans leurs modèles JSON ; il
- * ne reste ici que le renderer du block entity de la porte.
+ * ne reste ici que les renderers des deux caissons — la Porte de l'Ender et le
+ * Passage des Alliés — que leur embrasure creuse interdit de dessiner par un
+ * modèle de bloc.
  *
  * <p>Le monde de l'Ender n'enregistre plus d'effets de dimension sur mesure :
  * son {@code dimension_type} déclare {@code effects: minecraft:the_nether}.
@@ -25,6 +27,7 @@ public final class EnderPortalsClient {
     @SubscribeEvent
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerBlockEntityRenderer(ModBlockEntities.TARDIS_DOOR.get(), TardisDoorRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.ALLY_PASSAGE.get(), AllyPassageRenderer::new);
     }
 
     private EnderPortalsClient() {

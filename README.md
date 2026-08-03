@@ -113,10 +113,16 @@ synchronisées).
 
 ## Le Passage des Alliés
 
-Deux bases de poche, un seul seuil. Le **Passage des Alliés** est une arche
-claire — quartz et veines dorées, à l'opposé de l'obsidienne de la Porte de
-l'Ender — posable dans le monde de l'Ender. Seule, elle reste scellée : il faut
-lui **accoler un Contrôle de l'amitié**, le pavé numérique qui commande tout.
+Deux bases de poche, un seul seuil. Le **Passage des Alliés** est un caisson
+clair — quartz et veines dorées, à l'opposé de l'obsidienne de la Porte de
+l'Ender — posable dans le monde de l'Ender. Seul, il reste scellé : il faut lui
+**accoler un Contrôle de l'amitié**, le pavé numérique qui commande tout.
+
+C'est très exactement la structure de la Porte de l'Ender, et pas par goût de
+la symétrie : les deux machines sont des portails « voir au travers », et un
+portail exige une embrasure **vide**. D'où un caisson creux dessiné par un
+renderer plutôt qu'un modèle de bloc, une seule face franchissable — l'avant —
+et le même plan de 0,8 × 1,9 au centre du bloc du haut.
 
 ### Le code d'ami
 
@@ -153,10 +159,18 @@ Il reçoit un message et a **deux minutes** pour cliquer le vôtre — sa bordur
 clignote alors en **orange** chez lui, le seul état qui réclame un geste. Passé
 ce délai, la demande est abandonnée.
 
-Dès que les deux ont cliqué, l'arche s'anime **trois secondes** puis s'ouvre,
-bordure **verte** de chaque côté. Le lien reste ouvert aussi longtemps que vous
-le voulez ; traversez dans un sens ou dans l'autre. Pour le refermer, cliquez le
-nom entouré de vert — il faudra refaire la poignée de main pour rouvrir.
+Dès que les deux ont cliqué, les deux caissons s'animent **trois secondes** —
+la même échéance est notée dans les deux fiches, si bien qu'ils percent au même
+tick même si une seule des deux parcelles tourne — puis s'ouvrent, bordure
+**verte** de chaque côté. Avec Immersive Portals, on voit la base de l'autre
+par l'embrasure et on y entre à pied ; sans lui, le contact suffit. Dans les
+deux cas la traversée marche **dans les deux sens**. Le lien reste ouvert aussi
+longtemps que vous le voulez. Pour le refermer, cliquez le nom entouré de vert
+— il faudra refaire la poignée de main pour rouvrir.
+
+Chaque caisson chargé réaligne son état sur le lien **une fois par seconde** :
+une phase ratée, un chunk qui dormait, un redémarrage, une purge d'entités — le
+passage se rattrape tout seul. Il n'y a aucun état d'où il ne puisse revenir.
 
 Maj + clic sur un nom le retire du carnet.
 

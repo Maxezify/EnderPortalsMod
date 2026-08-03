@@ -3,19 +3,20 @@
   "render_type": "minecraft:translucent",
   "textures": {
     "particle": "enderportals:block/ally_passage_frame",
-    "frame": "enderportals:block/ally_passage_frame"
+    "frame": "enderportals:block/ally_passage_frame",
+    "veil": "enderportals:block/ally_veil_closed"
   },
   "elements": [
     {
       "from": [
         0,
         0,
-        0
+        4
       ],
       "to": [
         3,
         16,
-        16
+        12
       ],
       "faces": {
         "north": {
@@ -42,12 +43,12 @@
       "from": [
         13,
         0,
-        0
+        4
       ],
       "to": [
         16,
         16,
-        16
+        12
       ],
       "faces": {
         "north": {
@@ -74,12 +75,12 @@
       "from": [
         3,
         13,
-        0
+        4
       ],
       "to": [
         13,
         16,
-        16
+        12
       ],
       "faces": {
         "north": {
@@ -99,6 +100,38 @@
         },
         "down": {
           "texture": "#frame"
+        }
+      }
+    },
+    {
+      "from": [
+        3,
+        0,
+        7
+      ],
+      "to": [
+        13,
+        13,
+        9
+      ],
+      "faces": {
+        "north": {
+          "texture": "#veil"
+        },
+        "south": {
+          "texture": "#veil"
+        },
+        "east": {
+          "texture": "#veil"
+        },
+        "west": {
+          "texture": "#veil"
+        },
+        "up": {
+          "texture": "#veil"
+        },
+        "down": {
+          "texture": "#veil"
         }
       }
     }

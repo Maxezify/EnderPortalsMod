@@ -157,25 +157,14 @@ public final class ImmPtlCompat {
         }
     }
 
-    /** Embrasure du caisson de la Porte de l'Ender. */
+    /**
+     * Embrasure du caisson — commune à la Porte de l'Ender et au Passage des
+     * Alliés depuis la 0.16.0. Les deux machines ont désormais la même coque
+     * creuse, donc la même ouverture, donc le même plan de portail : ce sont
+     * les cotes validées en jeu sur la Porte.
+     */
     private static final double DOOR_WIDTH = 0.8;
     private static final double DOOR_HEIGHT = 1.9;
-
-    /**
-     * Ouverture de l'arche du Passage des Alliés, telle que la dessine son
-     * modèle : montants de 3 pixels de chaque côté, linteau de 3 pixels en haut
-     * de la moitié supérieure. Il reste donc 10 pixels de large sur 29 de haut,
-     * soit 0,625 × 1,8125 bloc — le plan se tient juste en deçà.
-     */
-    private static final double PASSAGE_WIDTH = 0.60;
-    private static final double PASSAGE_HEIGHT = 1.78;
-    /**
-     * Hauteur du centre de cette ouverture au-dessus du centre du bloc du bas :
-     * 1,8125 / 2 − 0,5. Les deux arches étant identiques, n'importe quel
-     * décalage cohérent préserverait la continuité — celui-ci a en plus le
-     * mérite de tomber au milieu de ce qu'on voit.
-     */
-    private static final double PASSAGE_CENTER_OFFSET = 0.40625;
 
     /**
      * Tente de doubler d'un portail « voir au travers » le Passage des Alliés
@@ -184,7 +173,7 @@ public final class ImmPtlCompat {
      * <p>Les deux arches sont dans le même monde, à des milliers de blocs l'une
      * de l'autre : Immersive Portals accepte parfaitement une paire
      * intra-dimension, et c'est la seule différence de fond avec la paire de la
-     * Porte de l'Ender. Le reste — plans au centre exact de chaque ouverture,
+     * Porte de l'Ender. Le reste — plans au centre exact de chaque embrasure,
      * destination de chacun égale à la position de l'autre, rotation opposée —
      * suit les mêmes règles, pour les mêmes raisons (voir
      * {@link #doorwayCenter}).</p>
@@ -196,7 +185,12 @@ public final class ImmPtlCompat {
         if (!isLoaded() || a.passagePos == null || b.passagePos == null) {
             return false;
         }
-        if (a.passagePortalsActive && passagePortalsAlive(server, a)) {
+        // Les deux fiches portent la même paire d'identifiants : il suffit que
+        // l'une des deux la voie vivante pour qu'il n'y ait rien à refaire.
+        // N'interroger que « a » laissait passer le cas où c'est l'arche de
+        // l'allié qui réconcilie en premier.
+        if ((a.passagePortalsActive && passagePortalsAlive(server, a))
+                || (b.passagePortalsActive && passagePortalsAlive(server, b))) {
             return true;
         }
         removePassagePortals(server, a);
@@ -206,26 +200,30 @@ public final class ImmPtlCompat {
             return false;
         }
         try {
-            Vec3 centerA = passageCenter(a.passagePos);
-            Vec3 centerB = passageCenter(b.passagePos);
+            Vec3 centerA = doorwayCenter(a.passagePos);
+            Vec3 centerB = doorwayCenter(b.passagePos);
             double rotation = Mth.wrapDegrees(
                     a.passageFacing.toYRot() - b.passageFacing.toYRot() + 180.0);
 
             Entity first = spawnPortal(level, centerA, a.passageFacing,
-                    ModDimensions.ENDER_WORLD, centerB, rotation, PASSAGE_WIDTH, PASSAGE_HEIGHT);
+                    ModDimensions.ENDER_WORLD, centerB, rotation, DOOR_WIDTH, DOOR_HEIGHT);
             a.passagePortalIds.add(first.getUUID());
             b.passagePortalIds.add(first.getUUID());
 
             Entity second = spawnPortal(level, centerB, b.passageFacing,
                     ModDimensions.ENDER_WORLD, centerA, Mth.wrapDegrees(-rotation),
-                    PASSAGE_WIDTH, PASSAGE_HEIGHT);
+                    DOOR_WIDTH, DOOR_HEIGHT);
             a.passagePortalIds.add(second.getUUID());
             b.passagePortalIds.add(second.getUUID());
 
             a.passagePortalsActive = true;
             b.passagePortalsActive = true;
-            EnderPortalsMod.LOGGER.info("Portails Immersive Portals créés pour le Passage {} <-> {}",
-                    a.ownerName, b.ownerName);
+            // Les cotes des deux plans sont journalisées : c'est le seul moyen
+            // de départager, sur un rapport de jeu, une géométrie fausse d'un
+            // bloc resté plein sous un portail correct.
+            EnderPortalsMod.LOGGER.info(
+                    "Portails du Passage créés : {} {} face {} <-> {} {} face {} (rotation {}°)",
+                    a.ownerName, centerA, a.passageFacing, b.ownerName, centerB, b.passageFacing, rotation);
             return true;
         } catch (Throwable t) {
             broken = true;
@@ -263,11 +261,6 @@ public final class ImmPtlCompat {
             }
         }
         return true;
-    }
-
-    /** Centre de l'ouverture de l'arche, à partir de son bloc du bas. */
-    private static Vec3 passageCenter(BlockPos base) {
-        return Vec3.atCenterOf(base).add(0.0, PASSAGE_CENTER_OFFSET, 0.0);
     }
 
     /** Les entités de portail enregistrées existent-elles toujours ? */
@@ -313,7 +306,8 @@ public final class ImmPtlCompat {
     }
 
     /**
-     * Centre exact de l'embrasure (1 × 2 blocs) d'une porte. Le plan du portail
+     * Centre exact de l'embrasure (1 × 2 blocs) d'un caisson — Porte de l'Ender
+     * comme Passage des Alliés. Le plan du portail
      * y est posé sans aucun décalage le long de la façade, et pour deux raisons
      * qu'il faut satisfaire ensemble.
      *

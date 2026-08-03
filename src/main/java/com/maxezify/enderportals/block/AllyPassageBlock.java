@@ -1,6 +1,8 @@
 package com.maxezify.enderportals.block;
 
+import com.maxezify.enderportals.ModBlockEntities;
 import com.maxezify.enderportals.ModBlocks;
+import com.maxezify.enderportals.block.entity.AllyPassageBlockEntity;
 import com.maxezify.enderportals.tardis.AllyPassageHelper;
 import com.maxezify.enderportals.tardis.TardisData;
 import com.maxezify.enderportals.tardis.TardisStateManager;
@@ -9,10 +11,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
@@ -26,6 +25,11 @@ import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -46,28 +50,46 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Le Passage des Alliés : une arche claire, de deux blocs de haut, qui relie la
+ * Le Passage des Alliés : un caisson clair, de deux blocs de haut, qui relie la
  * parcelle de son propriétaire à celle d'un allié.
  *
- * <p>Il ne s'ouvre jamais de lui-même. Toute la décision est prise au
+ * <p><b>Même structure que la Porte de l'Ender</b>, et pas par goût de la
+ * symétrie : c'est la seule qui fonctionne avec Immersive Portals. Trois traits
+ * y sont indissociables.</p>
+ * <ol>
+ *   <li><b>{@link RenderShape#INVISIBLE} + un renderer dédié.</b> L'arche de la
+ *       0.15.0 était un modèle de bloc ordinaire dont le voile — un pavé de
+ *       2 px — occupait très exactement le plan du portail, et dont les
+ *       montants traversaient ce plan de part en part. Un portail découpé par
+ *       la géométrie qu'il double se voit déformé. Le caisson, lui, est creux :
+ *       son embrasure ne contient rien.</li>
+ *   <li><b>Une seule face franchissable.</b> L'arche laissait passer par
+ *       l'avant <i>et</i> par l'arrière. Un portail d'Immersive Portals ne
+ *       téléporte qu'au franchissement par sa normale : entré par le dos, on
+ *       traversait l'arche de part en part sans rien déclencher.</li>
+ *   <li><b>Le plan du portail au centre du bloc du haut, 0,8 × 1,9.</b> Les
+ *       cotes de l'embrasure de la Porte, validées en jeu.</li>
+ * </ol>
+ *
+ * <p>Le passage ne s'ouvre jamais de lui-même. Toute la décision est prise au
  * {@link FriendshipConsoleBlock Contrôle de l'amitié} accolé, et ce bloc-ci
  * n'est que la conséquence visible d'un lien noté côté serveur — c'est pour ça
  * qu'il ne porte aucune identité : cassé et reposé, il retrouve son état depuis
  * le registre.</p>
  */
-public class AllyPassageBlock extends Block {
+public class AllyPassageBlock extends Block implements EntityBlock {
 
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
     public static final EnumProperty<PassagePhase> PHASE = EnumProperty.create("phase", PassagePhase.class);
 
-    /** Épaisseur des montants de l'arche, pour la collision. */
-    private static final double JAMB = 0.1875;
+    /** Épaisseur des parois du caisson pour la collision (2 pixels). */
+    private static final double WALL = 0.125;
 
     /**
-     * Coque franchissable, par orientation : seuls les deux montants latéraux
-     * restent solides. On entre par l'avant et on sort par l'arrière — un
-     * passage, pas un caisson.
+     * Coque franchissable pré-calculée par orientation : seule la face avant
+     * (le côté {@code FACING}) laisse passer. Les deux flancs et le dos restent
+     * pleins.
      */
     private static final Map<Direction, VoxelShape> OPEN_SHAPES =
             Arrays.stream(Direction.values())
@@ -165,14 +187,28 @@ public class AllyPassageBlock extends Block {
     }
 
     // ------------------------------------------------------------------
-    // Formes
+    // Formes et rendu
     // ------------------------------------------------------------------
 
     @Override
+    protected RenderShape getRenderShape(BlockState state) {
+        // Dessiné par AllyPassageRenderer : le caisson doit être creux, et un
+        // modèle de bloc ne sait pas laisser son embrasure vide sans laisser
+        // aussi passer la collision.
+        return RenderShape.INVISIBLE;
+    }
+
+    @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        // Le caisson occupe un bloc entier : c'est lui qu'on vise à la pioche.
         return Shapes.block();
     }
 
+    /**
+     * Passage franchissable : on ne traverse que par l'avant. Passage clos ou
+     * en cours d'ouverture : bloc plein — et c'est essentiel, car aucun portail
+     * ne double l'arche tant qu'elle n'a pas fini de s'ouvrir.
+     */
     @Override
     protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos,
                                            CollisionContext context) {
@@ -183,16 +219,22 @@ public class AllyPassageBlock extends Block {
     }
 
     private static VoxelShape buildOpenShape(Direction facing) {
-        Direction left = facing.getCounterClockWise();
-        return Shapes.or(jamb(left), jamb(left.getOpposite()));
+        VoxelShape shape = Shapes.empty();
+        for (Direction side : Direction.Plane.HORIZONTAL) {
+            if (side != facing) {
+                shape = Shapes.or(shape, wall(side));
+            }
+        }
+        return shape;
     }
 
-    private static VoxelShape jamb(Direction side) {
+    /** Paroi verticale plaquée contre la face donnée du bloc. */
+    private static VoxelShape wall(Direction side) {
         return switch (side) {
-            case NORTH -> Shapes.box(0.0, 0.0, 0.0, 1.0, 1.0, JAMB);
-            case SOUTH -> Shapes.box(0.0, 0.0, 1.0 - JAMB, 1.0, 1.0, 1.0);
-            case WEST -> Shapes.box(0.0, 0.0, 0.0, JAMB, 1.0, 1.0);
-            case EAST -> Shapes.box(1.0 - JAMB, 0.0, 0.0, 1.0, 1.0, 1.0);
+            case NORTH -> Shapes.box(0.0, 0.0, 0.0, 1.0, 1.0, WALL);
+            case SOUTH -> Shapes.box(0.0, 0.0, 1.0 - WALL, 1.0, 1.0, 1.0);
+            case WEST -> Shapes.box(0.0, 0.0, 0.0, WALL, 1.0, 1.0);
+            case EAST -> Shapes.box(1.0 - WALL, 0.0, 0.0, 1.0, 1.0, 1.0);
             default -> Shapes.empty();
         };
     }
@@ -205,7 +247,6 @@ public class AllyPassageBlock extends Block {
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
                                                BlockHitResult hit) {
         if (!level.isClientSide) {
-            PassagePhase phase = state.getValue(PHASE);
             player.displayClientMessage(Component.translatable(isCrossable(state)
                     ? "enderportals.message.passage_open_hint"
                     : "enderportals.message.passage_closed_hint"), true);
@@ -227,7 +268,7 @@ public class AllyPassageBlock extends Block {
     }
 
     /**
-     * L'animation d'ouverture et le voile du passage ouvert. Purement client :
+     * L'animation d'ouverture et le halo du passage ouvert. Purement client :
      * la phase est déjà synchronisée, chacun l'anime chez lui.
      */
     @Override
@@ -236,12 +277,16 @@ public class AllyPassageBlock extends Block {
         if (phase == PassagePhase.CLOSED) {
             return;
         }
-        int count = phase == PassagePhase.OPENING ? 6 : 2;
         Direction facing = state.getValue(FACING);
+        // Les particules naissent devant l'embrasure, pas dans les parois : le
+        // caisson est creux, et ses flancs sont opaques.
+        double front = 0.30;
+        int count = phase == PassagePhase.OPENING ? 6 : 2;
         for (int i = 0; i < count; i++) {
-            double x = pos.getX() + 0.5 + (random.nextDouble() - 0.5) * 0.8;
+            double across = (random.nextDouble() - 0.5) * 0.7;
+            double x = pos.getX() + 0.5 + facing.getStepX() * front - facing.getStepZ() * across;
             double y = pos.getY() + random.nextDouble();
-            double z = pos.getZ() + 0.5 + (random.nextDouble() - 0.5) * 0.8;
+            double z = pos.getZ() + 0.5 + facing.getStepZ() * front + facing.getStepX() * across;
             if (phase == PassagePhase.OPENING) {
                 // Les étincelles convergent vers l'axe du passage : on voit le
                 // portail se nouer avant de s'ouvrir.
@@ -253,24 +298,24 @@ public class AllyPassageBlock extends Block {
         }
     }
 
-    /**
-     * Fin de l'animation : le passage devient franchissable.
-     *
-     * <p>Un tick programmé plutôt qu'un block entity — l'attente est unique,
-     * connue d'avance et sans état à conserver. Un block entity ne servirait
-     * qu'à compter, et il faudrait le synchroniser.</p>
-     */
+    // ------------------------------------------------------------------
+    // Block entity
+    // ------------------------------------------------------------------
+
     @Override
-    protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        if (state.getValue(PHASE) != PassagePhase.OPENING) {
-            return;
-        }
-        BlockPos base = baseOf(state, pos);
-        // C'est le serveur qui décide de la phase d'arrivée — OPEN ou THROUGH
-        // selon qu'Immersive Portals ait pris la main — et il la pose des deux
-        // côtés à la fois. Voir AllyPassageHelper.finishOpening.
-        AllyPassageHelper.finishOpening(level.getServer(), base);
-        level.playSound(null, base, SoundEvents.END_PORTAL_SPAWN, SoundSource.BLOCKS, 0.5f, 1.8f);
+    @Nullable
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return state.getValue(HALF) == DoubleBlockHalf.LOWER ? new AllyPassageBlockEntity(pos, state) : null;
+    }
+
+    @Override
+    @Nullable
+    @SuppressWarnings("unchecked")
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state,
+                                                                 BlockEntityType<T> type) {
+        return type == ModBlockEntities.ALLY_PASSAGE.get()
+                ? (BlockEntityTicker<T>) (BlockEntityTicker<AllyPassageBlockEntity>) AllyPassageBlockEntity::tick
+                : null;
     }
 
     /** Le passage est-il franchissable ? Les deux phases ouvertes le sont. */

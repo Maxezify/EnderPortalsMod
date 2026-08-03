@@ -832,13 +832,17 @@ def tex_paradise_frame():
               from_map(rows, palette))
 
 
-def _veil(name, palette, rings, sparks=0, core_radius=0.0):
+def _veil_tile(name, palette, rings, sparks=0, core_radius=0.0):
     """Le voile du passage : des anneaux concentriques, comme le portail de l'End.
 
-    Le bruit ne pèse ici que {@code 0,08} : à la moitié du poids qu'il avait, il
+    Le bruit ne pèse ici que 0,08 : à la moitié du poids qu'il avait, il
     ondulait les anneaux au point de les dissoudre, et la texture se lisait comme
     du sable. Une ondulation sinusoïdale franche déforme les cercles sans les
     effacer — c'est elle qui les empêche de ressembler à une cible.
+
+    Rend la tuile 16×16 sans l'écrire : elle sert deux fois, une fois comme
+    texture de bloc (modèle d'inventaire) et une fois recopiée dans la planche
+    d'entité du caisson.
     """
     px = canvas(16, 16)
     noise = blob_noise(16, 16, seed=seed_of(name), scale=6)
@@ -859,7 +863,12 @@ def _veil(name, palette, rings, sparks=0, core_radius=0.0):
         spark = random.Random(seed_of(name) ^ 0x5EED)
         for _ in range(sparks):
             put(px, spark.randrange(1, 15), spark.randrange(1, 15), palette[-1])
-    write_png(f"{ASSETS}/textures/block/{name}.png", 16, 16, px)
+    return px
+
+
+def _veil(name, palette, rings, sparks=0, core_radius=0.0):
+    write_png(f"{ASSETS}/textures/block/{name}.png", 16, 16,
+              _veil_tile(name, palette, rings, sparks, core_radius))
 
 
 def seed_of(name):
@@ -868,9 +877,132 @@ def seed_of(name):
 
 
 def tex_paradise_veils():
+    """Seul le voile dormant est écrit en texture de bloc : c'est le seul qu'un
+    modèle référence encore, celui de l'arche miniature d'inventaire. Les deux
+    autres ne vivent que dans la planche du caisson, où ils sont recopiés depuis
+    la même définition (voir tex_passage_entity_sheet)."""
     _veil("ally_veil_closed", VEIL_DORMANT, rings=2.5)
-    _veil("ally_veil_opening", VEIL_WAKING, rings=3.0, sparks=4, core_radius=0.12)
-    _veil("ally_veil_open", VEIL_OPEN, rings=3.5, sparks=9, core_radius=0.20)
+
+
+# ------------------------------------------------ planche du caisson du Passage
+
+# Le caisson du Passage est dessiné par un BlockEntityRenderer, comme celui de
+# la Porte de l'Ender : une seule planche 64×64 porte toutes ses faces.
+#
+#   (0,0)-(16,32)   façade close : moitié haute puis moitié basse
+#   (16,0)-(32,32)  dos et flancs : panneau de quartz veiné d'or
+#   (32,0)-(36,32)  chants : bande étroite
+#   (36,0)-(52,16)  voile d'ouverture
+#   (36,16)-(52,32) voile ouvert
+#   (48,48)-(64,64) plaque sombre du panneau de pseudo
+
+PASSAGE_NOISE = blob_noise(16, 32, seed=7331, scale=3)
+
+P_QUARTZ = [(148, 142, 128, 255), (178, 172, 158, 255),
+            (206, 200, 186, 255), (231, 226, 213, 255)]
+PANEL_TOP = (250, 246, 236)
+PANEL_BOTTOM = (206, 198, 180)
+GOLD = (206, 172, 96, 255)
+GOLD_LIT = (240, 214, 138, 255)
+GOLD_CORE = (255, 250, 232, 255)
+PLATE_DARK = (46, 42, 52, 255)
+
+
+def passage_panel_color(g, x):
+    """Couleur du panneau de la façade à la ligne globale g (0 = haut, 31 = bas).
+
+    Un dégradé du haut vers le bas plutôt qu'un aplat : c'est ce qui donne au
+    quartz sa profondeur, et c'est le pendant clair du dégradé de vide de la
+    Porte de l'Ender."""
+    t = 1.0 - g / 31.0
+    base = tuple(int(PANEL_BOTTOM[i] + (PANEL_TOP[i] - PANEL_BOTTOM[i]) * t) for i in range(3))
+    d = PASSAGE_NOISE[g][x]
+    base = tuple(max(0, min(255, c + int((d - 0.5) * 12))) for c in base)
+    return base + (255,)
+
+
+def paint_passage_half(px, ox, oy, top_half):
+    """Une moitié de façade 16×16 : cadre de quartz, liseré d'or, panneau clair.
+
+    La façade ne se voit que passage clos — ouvert, l'embrasure est vide. Elle
+    porte donc ce qui identifie l'arche au repos : la clé de voûte en haut, les
+    deux anneaux d'alliance en bas."""
+    row0 = 0 if top_half else 16
+    for ly in range(16):
+        g = row0 + ly
+        for x in range(16):
+            frame = x < 2 or x > 13 or g < 2 or g > 29
+            if frame:
+                put(px, ox + x, oy + ly, shade(P_QUARTZ, 0.22 + PASSAGE_NOISE[g][x] * 0.77))
+            else:
+                put(px, ox + x, oy + ly, passage_panel_color(g, x))
+    # Liseré d'or intérieur : il court sur les deux moitiés sans rupture.
+    for ly in range(16):
+        g = row0 + ly
+        if 2 <= g <= 29:
+            put(px, ox + 2, oy + ly, GOLD)
+            put(px, ox + 13, oy + ly, GOLD)
+    if top_half:
+        for x in range(2, 14):
+            put(px, ox + x, oy + 2, GOLD)
+        # Clé de voûte : un soleil d'or au sommet de l'arche.
+        for x in (7, 8):
+            put(px, ox + x, oy + 4, GOLD_LIT)
+            put(px, ox + x, oy + 5, GOLD_CORE)
+            put(px, ox + x, oy + 6, GOLD_LIT)
+        for x, y in ((6, 5), (9, 5), (6, 4), (9, 6), (7, 3), (8, 7)):
+            put(px, ox + x, oy + y, GOLD)
+        # Rayons courts, en diagonale.
+        for x, y in ((5, 3), (10, 3), (5, 7), (10, 7)):
+            put(px, ox + x, oy + y, PARADISE_SEAM)
+    else:
+        for x in range(2, 14):
+            put(px, ox + x, oy + 13, GOLD)
+        # Deux anneaux entrelacés : l'alliance, au bas de la façade.
+        for x, y in ((4, 5), (5, 5), (3, 6), (6, 6), (3, 7), (6, 7), (4, 8), (5, 8)):
+            put(px, ox + x, oy + y, GOLD_LIT)
+        for x, y in ((9, 5), (10, 5), (8, 6), (11, 6), (8, 7), (11, 7), (9, 8), (10, 8)):
+            put(px, ox + x, oy + y, GOLD)
+
+
+def tex_passage_entity_sheet():
+    px = canvas(64, 64)
+    # Façade : haut (0..15, 0..15) puis bas (0..15, 16..31).
+    paint_passage_half(px, 0, 0, True)
+    paint_passage_half(px, 0, 16, False)
+
+    # Dos et flancs : quartz plein, un peu plus sourd que la façade, deux
+    # coutures d'or horizontales pour que le mur ne soit pas un aplat.
+    back_noise = blob_noise(16, 32, seed=1717, scale=3)
+    for y in range(32):
+        for x in range(16):
+            put(px, 16 + x, y, shade(P_QUARTZ, 0.30 + back_noise[y][x] * 0.65))
+    for y in (7, 23):
+        for x in range(16):
+            put(px, 16 + x, y, GOLD if x % 4 else GOLD_LIT)
+    outline(px, 16, 0, 31, 31, (110, 104, 92, 255))
+
+    # Chants : bande étroite, filet d'or au milieu.
+    for y in range(32):
+        for x in range(32, 36):
+            put(px, x, y, shade(P_QUARTZ[:3], back_noise[y][x - 32]))
+        put(px, 33, y, GOLD if y % 3 else GOLD_LIT)
+
+    # Les deux voiles, recopiés depuis les tuiles de bloc : une seule définition
+    # du motif, deux emplois.
+    for uy, tile in ((0, _veil_tile("ally_veil_opening", VEIL_WAKING, 3.0, 4, 0.12)),
+                     (16, _veil_tile("ally_veil_open", VEIL_OPEN, 3.5, 9, 0.20))):
+        for y in range(16):
+            for x in range(16):
+                put(px, 36 + x, uy + y, tile[y][x])
+
+    # Plaque sombre du panneau de pseudo, avec son liseré d'or.
+    for y in range(16):
+        for x in range(16):
+            put(px, 48 + x, 48 + y, PLATE_DARK)
+    outline(px, 48, 48, 63, 63, GOLD)
+
+    write_png(f"{ASSETS}/textures/entity/ally_passage.png", 64, 64, px)
 
 
 def tex_friendship_console():
@@ -1125,12 +1257,6 @@ def tex_console_gui():
 # ---------------------------------------------------- modèles et blockstates
 
 FRAME = "enderportals:block/ally_passage_frame"
-# La phase « through » n'a pas de voile : le plan du portail Immersive Portals
-# se pose exactement là où il serait, et le voile l'occulterait.
-_VEIL_TEX = {"closed": "enderportals:block/ally_veil_closed",
-             "opening": "enderportals:block/ally_veil_opening",
-             "open": "enderportals:block/ally_veil_open",
-             "through": None}
 
 
 def _all_faces(texture):
@@ -1142,61 +1268,53 @@ def _all_faces(texture):
 
 
 def passage_models():
-    """Une arche : deux montants, un voile au centre, un linteau en haut.
+    """Le Passage n'a plus de modèle de bloc : son caisson est dessiné par
+    {@code AllyPassageRenderer}, comme celui de la Porte de l'Ender.
 
-    Les montants font 3 px, le voile 2 px d'épaisseur au milieu du bloc — c'est
-    ce plan-là qu'on traverse. Le repère local a l'axe X en travers du passage ;
-    la rotation du blockstate s'occupe de l'orientation.
+    Un modèle de bloc ne sait pas laisser une embrasure vide sans laisser aussi
+    passer la collision — et un portail d'Immersive Portals exige exactement
+    ça : rien dans le plan qu'il occupe. L'arche de la 0.15.0, dessinée en
+    modèle, y plaçait un voile de 2 px et faisait courir ses montants de part en
+    part ; le portail se voyait découpé par la géométrie censée le doubler.
+
+    Il reste donc deux modèles seulement : un modèle vide, pour la texture de
+    particule que le blockstate doit bien nommer, et une arche miniature pour
+    l'inventaire — celle-là ne subit aucune contrainte de portail.
     """
-    for phase, veil in _VEIL_TEX.items():
-        for half in ("lower", "upper"):
-            elements = [
-                {"from": [0, 0, 0], "to": [3, 16, 16],
-                 "faces": _all_faces("#frame")},
-                {"from": [13, 0, 0], "to": [16, 16, 16],
-                 "faces": _all_faces("#frame")},
-            ]
-            if half == "upper":
-                elements.append({"from": [3, 13, 0], "to": [13, 16, 16],
-                                 "faces": _all_faces("#frame")})
-                veil_top = 13
-            else:
-                veil_top = 16
-            textures = {"particle": FRAME, "frame": FRAME}
-            # La phase « through » se passe de voile : le plan du portail
-            # Immersive Portals se pose exactement là, et le voile l'occulterait.
-            if veil is not None:
-                elements.append({"from": [3, 0, 7], "to": [13, veil_top, 9],
-                                 "faces": _all_faces("#veil")})
-                textures["veil"] = veil
-            body = {
-                "parent": "minecraft:block/block",
-                "render_type": "minecraft:translucent",
-                "textures": textures,
-                "elements": elements,
-            }
-            path = f"{ASSETS}/models/block/ally_passage_{half}_{phase}.json"
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            with open(path, "w", encoding="utf-8") as f:
-                json.dump(body, f, indent=2)
-                f.write("\n")
-            print("json", path)
+    _raw_block_model("ally_passage_invisible", {"textures": {"particle": FRAME}})
 
-    # Objet : l'arche basse vue en perspective d'inventaire.
-    _item_model("ally_passage", "enderportals:block/ally_passage_lower_closed")
+    _raw_block_model("ally_passage_inventory", {
+        "parent": "minecraft:block/block",
+        "render_type": "minecraft:translucent",
+        "textures": {"particle": FRAME, "frame": FRAME,
+                     "veil": "enderportals:block/ally_veil_closed"},
+        "elements": [
+            {"from": [0, 0, 4], "to": [3, 16, 12], "faces": _all_faces("#frame")},
+            {"from": [13, 0, 4], "to": [16, 16, 12], "faces": _all_faces("#frame")},
+            {"from": [3, 13, 4], "to": [13, 16, 12], "faces": _all_faces("#frame")},
+            {"from": [3, 0, 7], "to": [13, 13, 9], "faces": _all_faces("#veil")},
+        ],
+    })
+
+    _item_model("ally_passage", "enderportals:block/ally_passage_inventory")
     _item_model("friendship_console", "enderportals:block/friendship_console")
 
 
+def _raw_block_model(name, body):
+    """Un modèle de bloc écrit tel quel — sans parent ni couche imposés."""
+    path = f"{ASSETS}/models/block/{name}.json"
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(body, f, indent=2)
+        f.write("\n")
+    print("json", path)
+
+
 def passage_blockstates():
-    variants = {}
-    for facing, y in (("north", 0), ("east", 90), ("south", 180), ("west", 270)):
-        for half in ("lower", "upper"):
-            for phase in _VEIL_TEX:
-                entry = {"model": f"enderportals:block/ally_passage_{half}_{phase}"}
-                if y:
-                    entry["y"] = y
-                variants[f"facing={facing},half={half},phase={phase}"] = entry
-    _blockstate("ally_passage", {"variants": variants})
+    # Un seul variant, comme la Porte de l'Ender : le bloc est INVISIBLE, et
+    # seule sa texture de particule sort d'ici.
+    _blockstate("ally_passage", {"variants": {
+        "": {"model": "enderportals:block/ally_passage_invisible"}}})
 
     console = {}
     for facing, y in (("north", 0), ("east", 90), ("south", 180), ("west", 270)):
@@ -1242,6 +1360,7 @@ def main():
     brick_family_blockstates()
     tex_paradise_frame()
     tex_paradise_veils()
+    tex_passage_entity_sheet()
     tex_friendship_console()
     tex_console_gui()
     passage_models()
