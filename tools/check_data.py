@@ -106,6 +106,27 @@ def _translation_keys(node):
             pass
 
 
+def check_guide_book_pages():
+    """Le livre-guide déclare son nombre de pages en Java ; les textes vivent
+    dans les fichiers de langue. Rien ne relie les deux à la compilation : une
+    page ajoutée au code sans sa traduction s'ouvre sur sa clé brute."""
+    import re
+    source = (ROOT / "src" / "main" / "java" / "com" / "maxezify" / "enderportals"
+              / "item" / "GuideBook.java")
+    match = re.search(r"PAGE_COUNT\s*=\s*(\d+)", source.read_text(encoding="utf-8"))
+    if match is None:
+        fail(source, "PAGE_COUNT introuvable")
+        return
+    count = int(match.group(1))
+    for lang in ("en_us", "fr_fr", "fr_ca"):
+        path = ASSETS / "enderportals" / "lang" / f"{lang}.json"
+        keys = json.loads(path.read_text(encoding="utf-8"))
+        for page in range(1, count + 1):
+            key = f"enderportals.book.page{page}"
+            if key not in keys:
+                fail(path, f"{key} manquante ({count} pages déclarées dans GuideBook.java)")
+
+
 def main():
     check_json_parses()
     if errors:
@@ -113,6 +134,7 @@ def main():
         # fichiers et ne feraient que répéter la même panne.
         report()
     check_written_books()
+    check_guide_book_pages()
     check_translations_exist()
     report()
     print("Données vérifiées : aucune anomalie.")

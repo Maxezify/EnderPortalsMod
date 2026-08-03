@@ -43,6 +43,7 @@ public class EnderPortalsMod {
         ModComponents.COMPONENTS.register(modBus);
         ModRegistries.CHUNK_GENERATORS.register(modBus);
         ModRegistries.CREATIVE_TABS.register(modBus);
+        ModRecipes.RECIPE_SERIALIZERS.register(modBus);
 
         NeoForge.EVENT_BUS.addListener(this::onLeftClickBlock);
         NeoForge.EVENT_BUS.addListener(this::onBreakSpeed);
