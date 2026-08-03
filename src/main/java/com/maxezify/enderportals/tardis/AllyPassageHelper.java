@@ -184,8 +184,14 @@ public final class AllyPassageHelper {
         if (ally != null) {
             dropPortals(server, manager, ally);
         }
-        if (mine.passageOpenAt != 0L) {
+        // L'échéance se remet à zéro des deux côtés : la prochaine ouverture
+        // rejouera son animation au lieu de percer d'un coup sur une valeur
+        // restée en arrière.
+        if (mine.passageOpenAt != 0L || (ally != null && ally.passageOpenAt != 0L)) {
             mine.passageOpenAt = 0L;
+            if (ally != null) {
+                ally.passageOpenAt = 0L;
+            }
             manager.setDirty();
         }
         BlockPos base = mine.passagePos;
