@@ -18,7 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Point d'entrée NeoForge du mod Ender Portals.
+ * Point d'entrée NeoForge du mod World of Ender.
  */
 @Mod(EnderPortalsMod.MODID)
 public class EnderPortalsMod {
@@ -48,7 +48,7 @@ public class EnderPortalsMod {
         NeoForge.EVENT_BUS.addListener(this::onBreakSpeed);
         NeoForge.EVENT_BUS.addListener(this::onBlockBroken);
 
-        LOGGER.info("Ender Portals (NeoForge) initialisé — le vortex vous attend.");
+        LOGGER.info("World of Ender (NeoForge) initialisé — le vortex vous attend.");
         LOGGER.info("Immersive Portals détecté : {}", ImmPtlCompat.isLoaded());
     }
 

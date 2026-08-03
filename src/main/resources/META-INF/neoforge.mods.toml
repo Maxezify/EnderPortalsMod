@@ -6,10 +6,10 @@ issueTrackerURL = "https://github.com/Maxezify/EnderPortalsMod/issues"
 [[mods]]
 modId = "enderportals"
 version = "${version}"
-displayName = "Ender Portals"
+displayName = "World of Ender"
 authors = "Maxezify"
 description = '''
-La Porte de l'Ender : un minerai de l'End, une clé dorée, et tout un monde-caverne — le paradis des blocs — caché derrière votre porte de poche.
+Le joueur a le Nether sous l'Overworld ; l'Enderman a l'Ender sous l'End. Une porte d'obsidienne, une clé dorée, et tout un monde-caverne — le paradis des cubes, où la matière détruite vient se reposer.
 '''
 logoFile = "assets/enderportals/icon.png"
 
