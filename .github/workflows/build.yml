@@ -23,6 +23,12 @@ jobs:
           distribution: temurin
           java-version: "21"
 
+      # Le datapack n'est lu qu'au chargement du monde : une erreur de forme y
+      # est invisible à la compilation et ne se découvre qu'en jeu, sous la
+      # forme d'une recette qui n'existe pas.
+      - name: Vérifier les fichiers de données
+        run: python3 tools/check_data.py
+
       - name: Build
         run: ./gradlew build --stacktrace --no-daemon
 
