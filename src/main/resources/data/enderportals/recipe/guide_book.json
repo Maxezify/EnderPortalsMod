@@ -7,32 +7,75 @@
     "CCC"
   ],
   "key": {
-    "C": { "item": "enderportals:ender_crystal" },
-    "B": { "item": "minecraft:book" }
+    "C": {
+      "item": "enderportals:ender_crystal"
+    },
+    "B": {
+      "item": "minecraft:book"
+    }
   },
   "result": {
     "id": "minecraft:written_book",
     "count": 1,
     "components": {
       "minecraft:written_book_content": {
-        "title": "Guide de la Porte de l'Ender",
+        "title": "World of Ender",
         "author": "Le Vortex",
         "generation": 0,
         "resolved": false,
         "pages": [
-          { "translate": "enderportals.book.page1" },
-          { "translate": "enderportals.book.page2" },
-          { "translate": "enderportals.book.page3" },
-          { "translate": "enderportals.book.page4" },
-          { "translate": "enderportals.book.page5" },
-          { "translate": "enderportals.book.page6" },
-          { "translate": "enderportals.book.page7" },
-          { "translate": "enderportals.book.page8" },
-          { "translate": "enderportals.book.page9" },
-          { "translate": "enderportals.book.page10" }
+          {
+            "translate": "enderportals.book.page1"
+          },
+          {
+            "translate": "enderportals.book.page2"
+          },
+          {
+            "translate": "enderportals.book.page3"
+          },
+          {
+            "translate": "enderportals.book.page4"
+          },
+          {
+            "translate": "enderportals.book.page5"
+          },
+          {
+            "translate": "enderportals.book.page6"
+          },
+          {
+            "translate": "enderportals.book.page7"
+          },
+          {
+            "translate": "enderportals.book.page8"
+          },
+          {
+            "translate": "enderportals.book.page9"
+          },
+          {
+            "translate": "enderportals.book.page10"
+          },
+          {
+            "translate": "enderportals.book.page11"
+          },
+          {
+            "translate": "enderportals.book.page12"
+          },
+          {
+            "translate": "enderportals.book.page13"
+          },
+          {
+            "translate": "enderportals.book.page14"
+          },
+          {
+            "translate": "enderportals.book.page15"
+          }
         ]
       },
-      "minecraft:custom_name": { "translate": "item.enderportals.guide_book", "color": "aqua", "italic": false }
+      "minecraft:custom_name": {
+        "translate": "item.enderportals.guide_book",
+        "color": "aqua",
+        "italic": false
+      }
     }
   }
 }

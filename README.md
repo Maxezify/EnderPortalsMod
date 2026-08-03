@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.16.1**.
+Current version: **0.16.2**.
 
 ---
 
@@ -306,7 +306,7 @@ O O O                C              C C C                I R I
 O C N                P              . S .                I E I
 O O O                G              . S .                I I I
 
-Allies' Passage      Friendship Control     Ender Door Guide
+Allies' Passage      Friendship Control     World of Ender Guide
 Q C Q                q q q                  C C C
 C E C                r C r                  C L C
 Q C Q                q q q                  C C C
@@ -323,8 +323,9 @@ L = Book
 
 The waking ritual also needs a vanilla **Mace**, which is not consumed.
 
-**The Ender Door Guide** (8 crystals around a book) is a ten-page written book:
-the lore, every recipe and the storage compatibility list, in the game's
+**The World of Ender Guide** (8 crystals around a book) is a fifteen-page
+written book: the lore, every machine and every recipe — the door, the pickaxe,
+the bricks, the Transmitter, the Bag and the Allies' Passage — in the game's
 language (English or French).
 
 ---
@@ -380,7 +381,7 @@ mod falls back to its own teleport on its own and says so in the logs.
 Drop the jar in `mods/`, with **NeoForge 21.1.x** for **Minecraft 1.21.1**.
 
 Every build is published automatically to the
-[`dev-latest`](https://github.com/Maxezify/EnderPortalsMod/releases/tag/dev-latest)
+[`dev-latest`](../../releases/tag/dev-latest)
 pre-release.
 
 ## Building
@@ -389,7 +390,7 @@ Requires **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.16.1.jar
+# → build/libs/enderportals-0.16.2.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are

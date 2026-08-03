@@ -9,7 +9,7 @@ Derrière cette porte, une parcelle entière vous appartient — et vous l'empor
 partout : la porte se dématérialise dans votre poche et se repose où vous
 voulez.
 
-Version courante : **0.16.1**.
+Version courante : **0.16.2**.
 
 ---
 
@@ -317,7 +317,7 @@ O O O                C              C C C                I R I
 O C N                P              . S .                I E I
 O O O                G              . S .                I I I
 
-Passage des Alliés   Contrôle de l'amitié   Guide de la Porte de l'Ender
+Passage des Alliés   Contrôle de l'amitié   Guide de World of Ender
 Q C Q                q q q                  C C C
 C E C                r C r                  C L C
 Q C Q                q q q                  C C C
@@ -334,9 +334,10 @@ L = Livre
 
 Le rituel d'éveil demande en plus une **Mace** vanilla, qui n'est pas consommée.
 
-**Le Guide de la Porte de l'Ender** (8 cristaux autour d'un livre) est un livre
-écrit de dix pages : le lore, tous les crafts et la compatibilité rangement,
-dans la langue du jeu (français ou anglais).
+**Le Guide de World of Ender** (8 cristaux autour d'un livre) est un livre écrit
+de quinze pages : le lore, chaque machine et chaque craft — la porte, la pioche,
+les briques, le Transmetteur, le Sac et le Passage des Alliés — dans la langue
+du jeu (français ou anglais).
 
 ---
 
@@ -393,7 +394,7 @@ les logs.
 Placez le jar dans `mods/`, avec **NeoForge 21.1.x** pour **Minecraft 1.21.1**.
 
 Chaque build est publié automatiquement dans la pré-release
-[`dev-latest`](https://github.com/Maxezify/EnderPortalsMod/releases/tag/dev-latest).
+[`dev-latest`](../../releases/tag/dev-latest).
 
 ## Compiler
 
@@ -401,7 +402,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.16.1.jar
+# → build/libs/enderportals-0.16.2.jar
 ```
 
 Le build est géré par **ModDevGradle** ; NeoForge et les mappings officiels sont
