@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.16.4**.
+Current version: **0.17.0**.
 
 ---
 
@@ -323,7 +323,7 @@ L = Book
 
 The waking ritual also needs a vanilla **Mace**, which is not consumed.
 
-**The World of Ender Guide** (8 crystals around a book) is a fifteen-page
+**The World of Ender Guide** (8 crystals around a book) is a twenty-eight page
 written book: the lore, every machine and every recipe — the door, the pickaxe,
 the bricks, the Transmitter, the Bag and the Allies' Passage — in the game's
 language (English or French).
@@ -390,7 +390,7 @@ Requires **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.16.4.jar
+# → build/libs/enderportals-0.17.0.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are

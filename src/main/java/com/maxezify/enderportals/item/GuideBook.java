@@ -47,7 +47,7 @@ public final class GuideBook {
     private static final String AUTHOR = "Le Vortex";
 
     /** Nombre de pages. Les clés {@code enderportals.book.pageN} suivent. */
-    public static final int PAGE_COUNT = 15;
+    public static final int PAGE_COUNT = 28;
 
     public static ItemStack create() {
         ItemStack book = new ItemStack(Items.WRITTEN_BOOK);

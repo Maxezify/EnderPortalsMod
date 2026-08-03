@@ -14,6 +14,8 @@ import json
 import pathlib
 import sys
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DATA = ROOT / "src" / "main" / "resources" / "data"
 ASSETS = ROOT / "src" / "main" / "resources" / "assets"
@@ -120,10 +122,20 @@ def _translation_keys(node):
 
 
 def check_guide_book_pages():
-    """Le livre-guide déclare son nombre de pages en Java ; les textes vivent
-    dans les fichiers de langue. Rien ne relie les deux à la compilation : une
-    page ajoutée au code sans sa traduction s'ouvre sur sa clé brute."""
+    """Chaque page du livre doit exister dans les trois langues, et tenir dans
+    le cadre.
+
+    Deux pannes distinctes, toutes deux muettes. Une page déclarée par
+    {@code PAGE_COUNT} mais absente d'une langue s'ouvre sur sa clé brute. Une
+    page trop longue est simplement <b>tronquée</b> — le jeu n'ajoute pas de
+    page, il coupe au milieu d'une phrase, et rien ne le signale. C'est ce qui
+    est arrivé à la moitié des pages de la 0.16.4.
+
+    La place se mesure en pixels, pas en caractères : voir {@code tools/book.py}.
+    """
     import re
+    import book
+
     source = (ROOT / "src" / "main" / "java" / "com" / "maxezify" / "enderportals"
               / "item" / "GuideBook.java")
     match = re.search(r"PAGE_COUNT\s*=\s*(\d+)", source.read_text(encoding="utf-8"))
@@ -136,8 +148,15 @@ def check_guide_book_pages():
         keys = json.loads(path.read_text(encoding="utf-8"))
         for page in range(1, count + 1):
             key = f"enderportals.book.page{page}"
-            if key not in keys:
+            text = keys.get(key)
+            if text is None:
                 fail(path, f"{key} manquante ({count} pages déclarées dans GuideBook.java)")
+                continue
+            lines = book.wrap(text)
+            if len(lines) > book.PAGE_LINES:
+                perdu = " / ".join(lines[book.PAGE_LINES:])
+                fail(path, f"{key} tient sur {len(lines)} lignes, la page en affiche "
+                           f"{book.PAGE_LINES} — texte perdu : « {perdu} »")
 
 
 def main():

@@ -9,7 +9,7 @@ Derrière cette porte, une parcelle entière vous appartient — et vous l'empor
 partout : la porte se dématérialise dans votre poche et se repose où vous
 voulez.
 
-Version courante : **0.16.4**.
+Version courante : **0.17.0**.
 
 ---
 
@@ -335,7 +335,7 @@ L = Livre
 Le rituel d'éveil demande en plus une **Mace** vanilla, qui n'est pas consommée.
 
 **Le Guide de World of Ender** (8 cristaux autour d'un livre) est un livre écrit
-de quinze pages : le lore, chaque machine et chaque craft — la porte, la pioche,
+de vingt-huit pages : le lore, chaque machine et chaque craft — la porte, la pioche,
 les briques, le Transmetteur, le Sac et le Passage des Alliés — dans la langue
 du jeu (français ou anglais).
 
@@ -402,7 +402,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.16.4.jar
+# → build/libs/enderportals-0.17.0.jar
 ```
 
 Le build est géré par **ModDevGradle** ; NeoForge et les mappings officiels sont
