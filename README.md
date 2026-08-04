@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.18.3**.
+Current version: **0.18.4**.
 
 ---
 
@@ -217,8 +217,13 @@ valid for two minutes; it would be no use to anyone sleeping in a closed screen.
 
 Next to the terminal's title, a lamp reports the one thing that matters:
 **is the passage open on both sides?** **Working** in green when it is,
-**Not working** in red otherwise — no passage against this panel, no link open,
-or an ally who has broken their own arch. Hover it and it names which.
+**Not working** in red otherwise.
+
+The verdict alone would not tell you what to do about it, so the bottom line of
+the terminal names the cause and stays there as long as it lasts: no passage of
+yours against this panel, no link open, or an ally who has broken their own
+arch. It sits outside the log, below a rule — the log tells you what happened,
+that line tells you where you stand.
 
 ### Becoming friends
 

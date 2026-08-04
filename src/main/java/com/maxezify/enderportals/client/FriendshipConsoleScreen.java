@@ -87,9 +87,15 @@ public class FriendshipConsoleScreen extends Screen {
     private static final int TERM_TEXT_X = TERM_X + 5;
     /** Retrait du texte après le chevron — les suites de ligne s'y alignent. */
     private static final int TERM_INDENT = 10;
-    private static final int TERM_LOG_Y = TERM_Y + 17;
+    private static final int TERM_LOG_Y = TERM_Y + 16;
     private static final int TERM_LINE_H = 9;
-    private static final int TERM_LINES = 5;
+    private static final int TERM_LINES = 4;
+    /**
+     * La ligne d'état, détachée du journal par un filet. Elle porte la cause
+     * quand le passage ne fonctionne pas — en permanence, sans rien survoler :
+     * une cause qu'il faut aller chercher n'est pas lue.
+     */
+    private static final int TERM_STATUS_Y = TERM_Y + 54;
     /** Largeur de repli, ascenseur déduit. Doit rester d'accord avec TERM_BAR_X. */
     private static final int TERM_TEXT_W = 180;
     private static final int TERM_BAR_X = TERM_X + TERM_W - 7;
@@ -250,8 +256,6 @@ public class FriendshipConsoleScreen extends Screen {
         renderList(guiGraphics, mouseX, mouseY);
         renderCode(guiGraphics);
         renderTerminal(guiGraphics);
-        // En dernier : une infobulle se pose par-dessus tout le reste.
-        renderPassageTooltip(guiGraphics, mouseX, mouseY);
     }
 
     private void renderDisplay(GuiGraphics guiGraphics) {
@@ -397,6 +401,7 @@ public class FriendshipConsoleScreen extends Screen {
         guiGraphics.drawString(font, Component.translatable("enderportals.console.terminal"),
                 leftPos + TERM_TEXT_X, headerY, COLOR_TERM_TITLE, false);
         renderPassageLamp(guiGraphics, headerY);
+        renderPassageStatus(guiGraphics);
 
         if (termLines.isEmpty()) {
             guiGraphics.drawString(font, Component.translatable("enderportals.console.log_empty"),
@@ -469,32 +474,33 @@ public class FriendshipConsoleScreen extends Screen {
     }
 
     /**
-     * L'explication du témoin, au survol.
+     * La ligne d'état, en bas du terminal.
      *
      * <p>« Ne fonctionne pas » prononce un verdict sans en donner la cause, et
      * les causes n'appellent pas le même geste : poser le panneau contre son
      * passage, cliquer le nom d'un allié, ou attendre que l'allié remette
-     * l'arche qu'il vient de casser. Le survol nomme laquelle.</p>
+     * l'arche qu'il vient de casser. Cette ligne nomme laquelle.</p>
      *
-     * <p>L'emprise se recalcule comme au dessin plutôt que d'être retenue d'une
-     * image à l'autre : rien à garder en cohérence.</p>
+     * <p>Elle est <b>hors du journal</b> et non une ligne de plus dedans. Un
+     * journal raconte ce qui est arrivé, dans l'ordre ; ceci est l'état courant.
+     * L'y verser l'aurait soit répété à chaque relecture, soit laissé remonter
+     * hors de vue à la ligne suivante — alors que la panne, elle, dure.</p>
+     *
+     * <p>Les quatre phrases sont taillées pour tenir sur une ligne : la bande
+     * n'en a qu'une, et un repli mangerait le journal.</p>
      */
-    private void renderPassageTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        int right = leftPos + TERM_X + TERM_W - 5;
-        int left = right - font.width(passageLabel()) - 10;
-        int y = topPos + TERM_Y + 3;
-        if (mouseX >= left && mouseX < right && mouseY >= y && mouseY < y + font.lineHeight) {
-            guiGraphics.renderTooltip(font, Component.translatable(passageHint()), mouseX, mouseY);
-        }
+    private void renderPassageStatus(GuiGraphics guiGraphics) {
+        guiGraphics.drawString(font, Component.translatable(passageStatusKey()),
+                leftPos + TERM_TEXT_X, topPos + TERM_STATUS_Y,
+                passageWorks() ? COLOR_LINKED : COLOR_WARN, false);
     }
 
-    private String passageHint() {
+    private String passageStatusKey() {
         return switch (state.passageState()) {
-            // La même phrase que le refus reçu au clic : c'est le même défaut.
-            case ConsoleStatePayload.PASSAGE_NO_PANEL -> "enderportals.message.passage_missing";
-            case ConsoleStatePayload.PASSAGE_CLOSED -> "enderportals.console.hint_closed";
-            case ConsoleStatePayload.PASSAGE_ONE_SIDED -> "enderportals.console.hint_one_sided";
-            default -> "enderportals.console.passage_ok_hint";
+            case ConsoleStatePayload.PASSAGE_NO_PANEL -> "enderportals.console.status_no_panel";
+            case ConsoleStatePayload.PASSAGE_CLOSED -> "enderportals.console.status_closed";
+            case ConsoleStatePayload.PASSAGE_ONE_SIDED -> "enderportals.console.status_one_sided";
+            default -> "enderportals.console.status_open";
         };
     }
 

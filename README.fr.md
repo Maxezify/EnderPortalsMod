@@ -9,7 +9,7 @@ Derrière cette porte, une parcelle entière vous appartient — et vous l'empor
 partout : la porte se dématérialise dans votre poche et se repose où vous
 voulez.
 
-Version courante : **0.18.3**.
+Version courante : **0.18.4**.
 
 ---
 
@@ -229,9 +229,13 @@ dans un écran fermé.
 
 À côté du titre du terminal, un témoin dit la seule chose qui compte : **le
 passage est-il ouvert des deux côtés ?** **Fonctionne** en vert quand il l'est,
-**Ne fonctionne pas** en rouge sinon — aucun passage accolé à ce panneau, aucun
-lien ouvert, ou un allié qui a cassé sa propre arche. Au survol, le témoin dit
-lequel des trois.
+**Ne fonctionne pas** en rouge sinon.
+
+Le verdict seul ne dirait pas quoi y faire : la ligne du bas du terminal en
+nomme la cause, et elle y reste tant qu'elle dure — aucun passage à vous contre
+ce panneau, aucun lien ouvert, ou un allié qui a cassé sa propre arche. Elle est
+hors du journal, sous un filet : le journal raconte ce qui est arrivé, cette
+ligne dit où l'on en est.
 
 ### Devenir amis
 

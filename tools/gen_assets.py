@@ -1096,6 +1096,8 @@ GUI_ACTIONS_Y = GUI_KEYS_Y + 3 * (GUI_KEY_H + GUI_KEY_GAP) + 1
 GUI_TERM_X, GUI_TERM_W = 8, 204
 GUI_TERM_Y, GUI_TERM_H = 162, 64
 GUI_TERM_HEADER_H = 12
+# Bande d'état, en bas de l'encart : la cause s'y lit en permanence.
+GUI_TERM_STATUS_H = 10
 
 # La planche de sprites tient dans les marges laissées libres par le panneau :
 # la colonne à sa droite (x ≥ GUI_W) porte le sablier et les deux touches, la
@@ -1236,8 +1238,14 @@ def tex_console_gui():
     rect(px, tx0 + 1, ty0 + GUI_TERM_HEADER_H + 2, tx1 - 1, ty0 + GUI_TERM_HEADER_H + 2, inset_edge)
     # Une ligne sur trois est à peine éclaircie : de près on voit un écran, de
     # loin une surface unie. Une trame plus marquée gênerait la lecture.
-    for y in range(ty0 + GUI_TERM_HEADER_H + 4, ty1, 3):
+    status_top = ty1 - GUI_TERM_STATUS_H
+    for y in range(ty0 + GUI_TERM_HEADER_H + 4, status_top - 1, 3):
         rect(px, tx0 + 1, y, tx1 - 1, y, term_scan)
+    # La bande d'état est détachée du journal : ce qu'elle porte n'est pas un
+    # événement de plus, c'est l'état courant, et il doit rester lisible pendant
+    # que les lignes défilent au-dessus.
+    rect(px, tx0 + 1, status_top - 1, tx1 - 1, status_top - 1, inset_edge)
+    rect(px, tx0 + 1, status_top, tx1 - 1, ty1 - 1, (24, 21, 40, 255))
 
     # ---------------------------------------------------------- sprites
     def cap(x0, y0, w, h, face, light, shade, border):
