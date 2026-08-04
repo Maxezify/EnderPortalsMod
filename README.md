@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.18.0**.
+Current version: **0.18.1**.
 
 ---
 
@@ -201,6 +201,24 @@ Every awakened door receives an **eight-digit code, every digit between 1 and
 9**. You read it on your key's tooltip, and it is repeated under the panel's
 buttons. That is the code you tell each other.
 
+### The terminal
+
+The bottom of the panel is a terminal, and everything the Control has to say
+lands there: a code refused, a friendship sealed, an ally asking to connect, a
+passage opened or closed. Those lines used to go to the chat, where they arrived
+while you were busy at the keypad and got buried under everything else.
+
+The log is kept by the server, one per player, so a message sent while you were
+elsewhere is waiting the next time you open the panel — including one sent while
+you were offline, which the chat simply dropped. The wheel scrolls it.
+
+The chat only takes over when you have no panel open. A connection request is
+valid for two minutes; it would be no use to anyone sleeping in a closed screen.
+
+Next to the terminal's title, a lamp reports whether one of your passages is
+flush against this panel: green when it is, red when it is not. Without one, the
+Control has nothing to open.
+
 ### Becoming friends
 
 Type the other player's code on the keypad, digit by digit, then **CONFIRM**
@@ -208,8 +226,8 @@ Type the other player's code on the keypad, digit by digit, then **CONFIRM**
 confirms.
 
 Their name appears in the address book on the left, with an **hourglass**: only
-one of the two codes has been entered. The other player gets a message and has
-to type yours from their side. Once they have, the hourglass gives way to their
+one of the two codes has been entered. The other player reads it on their own terminal
+and has to type yours from their side. Once they have, the hourglass gives way to their
 **player head**: you are friends.
 
 The friendship is symmetric by construction — it is nothing but the meeting of
@@ -220,8 +238,8 @@ and the other does not.
 
 ### Opening the passage
 
-Click your ally's name: its border turns **yellow** — you are waiting. They get
-a message and have **two minutes** to click yours; on their screen, your name
+Click your ally's name: its border turns **yellow** — you are waiting. They read it on their
+terminal and have **two minutes** to click yours; on their screen, your name
 blinks **orange**, the one state that calls for an action. After that, the
 request is dropped.
 

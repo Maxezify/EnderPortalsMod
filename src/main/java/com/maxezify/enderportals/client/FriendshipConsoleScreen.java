@@ -3,6 +3,7 @@ package com.maxezify.enderportals.client;
 import com.maxezify.enderportals.EnderPortalsMod;
 import com.maxezify.enderportals.network.ConsoleActionPayload;
 import com.maxezify.enderportals.network.ConsoleStatePayload;
+import com.maxezify.enderportals.tardis.ConsoleLog;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -15,21 +16,30 @@ import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.FormattedCharSequence;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 /**
- * Le Contrôle de l'amitié à l'écran : un pavé numérique à droite, le carnet
- * d'alliés à gauche.
+ * Le Contrôle de l'amitié à l'écran : le carnet d'alliés à gauche, le pavé
+ * numérique à droite, et le terminal en bas.
  *
  * <p>L'écran n'a aucune mémoire propre au-delà des chiffres en cours de frappe.
  * Tout ce qu'il affiche vient du dernier {@link ConsoleStatePayload} reçu, et
  * chaque clic n'envoie qu'une intention au serveur — qui répond par un état
  * complet. C'est ce qui fait que le panneau se met à jour tout seul quand c'est
  * l'allié, à l'autre bout, qui vient d'agir.</p>
+ *
+ * <p>Le terminal porte ce que le panneau a à dire. Ces phrases partaient
+ * autrefois dans le chat, en bleu : elles y arrivaient pendant qu'on manipulait
+ * l'appareil, donc hors du champ de vision, et s'y mêlaient au reste. Elles
+ * s'affichent maintenant sur l'appareil qui les produit, et le journal étant
+ * tenu côté serveur, celles reçues pendant une absence sont là à la prochaine
+ * ouverture.</p>
  */
 public class FriendshipConsoleScreen extends Screen {
 
@@ -37,7 +47,7 @@ public class FriendshipConsoleScreen extends Screen {
             EnderPortalsMod.id("textures/gui/friendship_console.png");
 
     private static final int WIDTH = 220;
-    private static final int HEIGHT = 166;
+    private static final int HEIGHT = 234;
 
     /** Longueur d'un code d'ami. Voir {@code TardisStateManager}. */
     private static final int CODE_LENGTH = 8;
@@ -60,28 +70,43 @@ public class FriendshipConsoleScreen extends Screen {
     private static final int KEYS_Y = 36;
 
     /**
-     * Le code du joueur se loge sous les deux boutons, dans la colonne du pavé :
-     * il tient dans les 96 px disponibles, et la place ainsi récupérée raccourcit
-     * le panneau de 26 px. Le texte est posé sur la face claire, donc foncé.
+     * Le code du joueur se loge sous les deux boutons, dans la colonne du pavé.
+     * La bande libre va du filet d'or jusqu'au terminal ; le texte s'y centre au
+     * lieu de se poser sur son bord haut, où il paraissait tomber du filet.
      */
-    private static final int CODE_Y = 144;
+    private static final int CODE_ZONE_Y = 141;
+    private static final int CODE_ZONE_H = 19;
     private static final int COLOR_ON_PANEL = 0xFF3F3B46;
-    /**
-     * L'avertissement de passage non accolé reste dans l'encart sombre du carnet,
-     * sous la dernière ligne : c'est là qu'un rouge clair se lit.
-     */
-    private static final int WARN_Y = 148;
-    private static final int COLOR_WARN = 0xFFE05555;
 
-    // Planche de sprites, sous le panneau dans la même texture. Doit rester
-    // d'accord avec tex_console_gui() de tools/gen_assets.py.
-    private static final int KEY_U = 0, KEY_V = 192;
-    private static final int KEY_HOVER_U = 30, KEY_HOVER_V = 192;
-    private static final int VALIDATE_U = 0, VALIDATE_V = 216;
-    private static final int VALIDATE_HOVER_U = 46, VALIDATE_HOVER_V = 216;
-    private static final int CLEAR_U = 92, CLEAR_V = 216;
-    private static final int CLEAR_HOVER_U = 138, CLEAR_HOVER_V = 216;
-    private static final int HOURGLASS_U = 184, HOURGLASS_V = 192;
+    // Terminal, en bas, sur toute la largeur.
+    private static final int TERM_X = 8;
+    private static final int TERM_W = 204;
+    private static final int TERM_Y = 162;
+    private static final int TERM_H = 64;
+    /** Marge de texte à l'intérieur de l'encart. */
+    private static final int TERM_TEXT_X = TERM_X + 5;
+    /** Retrait du texte après le chevron — les suites de ligne s'y alignent. */
+    private static final int TERM_INDENT = 10;
+    private static final int TERM_LOG_Y = TERM_Y + 17;
+    private static final int TERM_LINE_H = 9;
+    private static final int TERM_LINES = 5;
+    /** Largeur de repli, ascenseur déduit. Doit rester d'accord avec TERM_BAR_X. */
+    private static final int TERM_TEXT_W = 180;
+    private static final int TERM_BAR_X = TERM_X + TERM_W - 7;
+    private static final String TERM_PROMPT = ">";
+
+    // Planche de sprites, dans les marges que le panneau laisse libres : la
+    // colonne à sa droite pour le sablier et les touches, la bande sous lui pour
+    // les boutons, trop larges pour la colonne. Doit rester d'accord avec
+    // tex_console_gui() de tools/gen_assets.py, qui refuse de générer une
+    // planche recouverte par le panneau.
+    private static final int KEY_U = 222, KEY_V = 20;
+    private static final int KEY_HOVER_U = 222, KEY_HOVER_V = 48;
+    private static final int VALIDATE_U = 0, VALIDATE_V = 234;
+    private static final int VALIDATE_HOVER_U = 48, VALIDATE_HOVER_V = 234;
+    private static final int CLEAR_U = 96, CLEAR_V = 234;
+    private static final int CLEAR_HOVER_U = 144, CLEAR_HOVER_V = 234;
+    private static final int HOURGLASS_U = 224, HOURGLASS_V = 0;
     private static final int HOURGLASS_SIZE = 16;
     private static final int ACTION_W = 46, ACTION_H = 20;
 
@@ -94,6 +119,11 @@ public class FriendshipConsoleScreen extends Screen {
     private static final int COLOR_AWAITING = 0xFFD9C33A;
     private static final int COLOR_ASKED = 0xFFFF9A28;
 
+    private static final int COLOR_TERM_TITLE = 0xFFD8B45E;
+    private static final int COLOR_TERM_PROMPT = 0xFF6F63A0;
+    private static final int COLOR_TERM_TRACK = 0xFF241E38;
+    private static final int COLOR_WARN = 0xFFE05555;
+
     private final BlockPos console;
     private ConsoleStatePayload state;
     private final StringBuilder typed = new StringBuilder(CODE_LENGTH);
@@ -101,6 +131,16 @@ public class FriendshipConsoleScreen extends Screen {
     private int leftPos;
     private int topPos;
     private int scroll;
+
+    /** Journal mis en lignes pour l'affichage, et l'état dont il est issu. */
+    private final List<TermLine> termLines = new ArrayList<>();
+    private ConsoleStatePayload termSource;
+    /** Lignes remontées depuis le bas. Zéro : on regarde la plus récente. */
+    private int termScroll;
+
+    /** Une ligne du terminal, déjà repliée à la largeur de l'encart. */
+    private record TermLine(FormattedCharSequence text, int color, boolean first) {
+    }
 
     private FriendshipConsoleScreen(ConsoleStatePayload state) {
         super(Component.translatable("block.enderportals.friendship_console"));
@@ -149,6 +189,11 @@ public class FriendshipConsoleScreen extends Screen {
                 Component.translatable("enderportals.console.clear"),
                 CLEAR_U, CLEAR_V, CLEAR_HOVER_U, CLEAR_HOVER_V,
                 COLOR_ACTION_LABEL, true, () -> typed.setLength(0)));
+
+        // La police est en place : le journal peut être replié. Un changement de
+        // résolution rejoue init(), et la largeur de repli ne bouge pas — mais
+        // repartir de l'état courant coûte moins qu'un cas particulier.
+        termSource = null;
     }
 
     private void addKey(String label, int col, int row) {
@@ -196,7 +241,8 @@ public class FriendshipConsoleScreen extends Screen {
         super.render(guiGraphics, mouseX, mouseY, partialTick);
         renderDisplay(guiGraphics);
         renderList(guiGraphics, mouseX, mouseY);
-        renderStatus(guiGraphics);
+        renderCode(guiGraphics);
+        renderTerminal(guiGraphics);
     }
 
     private void renderDisplay(GuiGraphics guiGraphics) {
@@ -212,22 +258,13 @@ public class FriendshipConsoleScreen extends Screen {
         int textY = topPos + DISPLAY_Y + (DISPLAY_H - font.lineHeight) / 2;
         guiGraphics.drawCenteredString(font, spaced.toString(),
                 leftPos + PAD_X + 48, textY, 0xFFF2ECFF);
-
     }
 
-    /**
-     * Sous les deux boutons : le code du joueur, celui qu'il dicte à l'autre.
-     * Et sous la dernière ligne du carnet, l'avertissement d'un passage non
-     * accolé, quand il y a lieu.
-     */
-    private void renderStatus(GuiGraphics guiGraphics) {
+    /** Sous les deux boutons : le code du joueur, celui qu'il dicte à l'autre. */
+    private void renderCode(GuiGraphics guiGraphics) {
+        int y = topPos + CODE_ZONE_Y + (CODE_ZONE_H - font.lineHeight) / 2;
         guiGraphics.drawString(font, Component.translatable("enderportals.console.my_code",
-                        formatCode(state.myCode())),
-                leftPos + PAD_X, topPos + CODE_Y, COLOR_ON_PANEL, false);
-        if (!state.passageReady()) {
-            guiGraphics.drawString(font, Component.translatable("enderportals.console.no_passage"),
-                    leftPos + LIST_X + 4, topPos + WARN_Y, COLOR_WARN, false);
-        }
+                formatCode(state.myCode())), leftPos + PAD_X, y, COLOR_ON_PANEL, false);
     }
 
     private static String formatCode(int code) {
@@ -307,6 +344,105 @@ public class FriendshipConsoleScreen extends Screen {
     }
 
     // ------------------------------------------------------------------
+    // Terminal
+    // ------------------------------------------------------------------
+
+    /**
+     * Replie le journal à la largeur de l'encart. Le calcul ne se refait qu'au
+     * changement d'état — comparé par identité, l'état étant reconstruit à
+     * chaque envoi du serveur — et non à chaque image.
+     */
+    private void rebuildTerminal() {
+        termLines.clear();
+        for (ConsoleLog.Entry entry : state.log()) {
+            Component text = Component.translatable(entry.key(), entry.args().toArray());
+            int color = toneColor(entry.tone());
+            boolean first = true;
+            for (FormattedCharSequence line : font.split(text, TERM_TEXT_W)) {
+                termLines.add(new TermLine(line, color, first));
+                first = false;
+            }
+        }
+        termSource = state;
+        // Une nouvelle ligne ramène la vue en bas : c'est elle qu'on veut lire.
+        termScroll = 0;
+    }
+
+    private static int toneColor(int tone) {
+        return switch (tone) {
+            case ConsoleLog.GOOD -> 0xFF6FE07E;
+            case ConsoleLog.WARN -> 0xFFE8B24A;
+            case ConsoleLog.BAD -> 0xFFE87070;
+            default -> 0xFF7FD3E8;
+        };
+    }
+
+    private void renderTerminal(GuiGraphics guiGraphics) {
+        if (termSource != state) {
+            rebuildTerminal();
+        }
+        int headerY = topPos + TERM_Y + 3;
+        guiGraphics.drawString(font, Component.translatable("enderportals.console.terminal"),
+                leftPos + TERM_TEXT_X, headerY, COLOR_TERM_TITLE, false);
+        renderPassageLamp(guiGraphics, headerY);
+
+        if (termLines.isEmpty()) {
+            guiGraphics.drawString(font, Component.translatable("enderportals.console.log_empty"),
+                    leftPos + TERM_TEXT_X, topPos + TERM_LOG_Y, COLOR_DIM, false);
+            return;
+        }
+        int total = termLines.size();
+        int firstShown = Math.max(0, total - TERM_LINES - termScroll);
+        int lastShown = Math.min(total, firstShown + TERM_LINES);
+        for (int i = firstShown; i < lastShown; i++) {
+            TermLine line = termLines.get(i);
+            int y = topPos + TERM_LOG_Y + (i - firstShown) * TERM_LINE_H;
+            if (line.first()) {
+                guiGraphics.drawString(font, TERM_PROMPT, leftPos + TERM_TEXT_X, y,
+                        COLOR_TERM_PROMPT, false);
+            }
+            guiGraphics.drawString(font, line.text(), leftPos + TERM_TEXT_X + TERM_INDENT, y,
+                    line.color(), false);
+        }
+        renderTerminalBar(guiGraphics, total);
+    }
+
+    /** L'ascenseur du terminal, quand le journal dépasse la hauteur visible. */
+    private void renderTerminalBar(GuiGraphics guiGraphics, int total) {
+        if (total <= TERM_LINES) {
+            return;
+        }
+        int x = leftPos + TERM_BAR_X;
+        int y = topPos + TERM_LOG_Y;
+        int height = TERM_LINES * TERM_LINE_H;
+        guiGraphics.fill(x, y, x + 3, y + height, COLOR_TERM_TRACK);
+        int thumb = Math.max(6, height * TERM_LINES / total);
+        int span = total - TERM_LINES;
+        int offset = (height - thumb) * (span - termScroll) / span;
+        guiGraphics.fill(x, y + offset, x + 3, y + offset + thumb, COLOR_TERM_PROMPT);
+    }
+
+    /**
+     * Le témoin de passage accolé, dans l'en-tête du terminal.
+     *
+     * <p>Il était auparavant posé sous la dernière ligne du carnet, où sa phrase
+     * dépassait des 96 px de l'encart. Un état permanent n'a de toute façon rien
+     * à faire dans une liste : sa place est sur le bandeau, en face du titre.</p>
+     */
+    private void renderPassageLamp(GuiGraphics guiGraphics, int y) {
+        boolean ready = state.passageReady();
+        Component label = Component.translatable(ready
+                ? "enderportals.console.passage_ok"
+                : "enderportals.console.no_passage");
+        int color = ready ? COLOR_LINKED : COLOR_WARN;
+        int textX = leftPos + TERM_X + TERM_W - 5 - font.width(label);
+        guiGraphics.drawString(font, label, textX, y, color, false);
+        int lampX = textX - 9;
+        guiGraphics.fill(lampX - 1, y, lampX + 6, y + 7, 0xFF15111F);
+        guiGraphics.fill(lampX, y + 1, lampX + 5, y + 6, color);
+    }
+
+    // ------------------------------------------------------------------
     // Interaction
     // ------------------------------------------------------------------
 
@@ -334,14 +470,25 @@ public class FriendshipConsoleScreen extends Screen {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
+    /** La molette agit sur ce qu'elle survole : le terminal, ou le carnet. */
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (isOverTerminal(mouseX, mouseY)) {
+            termScroll += (int) Math.signum(scrollY);
+            termScroll = Math.max(0, Math.min(termScroll, Math.max(0, termLines.size() - TERM_LINES)));
+            return true;
+        }
         if (state.allies().size() > MAX_ROWS) {
             scroll -= (int) Math.signum(scrollY);
             clampScroll();
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    private boolean isOverTerminal(double mouseX, double mouseY) {
+        return mouseX >= leftPos + TERM_X && mouseX < leftPos + TERM_X + TERM_W
+                && mouseY >= topPos + TERM_Y && mouseY < topPos + TERM_Y + TERM_H;
     }
 
     private void clampScroll() {
@@ -376,10 +523,25 @@ public class FriendshipConsoleScreen extends Screen {
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
+    /**
+     * Le serveur doit savoir que ce panneau n'est plus à l'écran : c'est ce qui
+     * décide si ses messages vont au terminal ou repartent dans le chat.
+     *
+     * <p>L'avis part de {@code removed()} et non de {@code onClose()}, parce que
+     * {@code onClose()} ne couvre que l'échappe. Un joueur qui meurt devant son
+     * panneau le voit remplacé par l'écran de mort sans qu'elle soit appelée : le
+     * serveur le croirait encore devant, garderait ses messages pour un terminal
+     * fermé, et lui rouvrirait l'interface de force au prochain rafraîchissement.
+     * {@code removed()}, lui, passe sur tous les retraits d'écran.</p>
+     */
     @Override
-    public void onClose() {
-        PacketDistributor.sendToServer(ConsoleActionPayload.close(console));
-        super.onClose();
+    public void removed() {
+        // Le retrait peut aussi venir d'une déconnexion, où il n'y a plus de
+        // connexion pour porter le message — et plus de panneau à refermer.
+        if (minecraft != null && minecraft.getConnection() != null) {
+            PacketDistributor.sendToServer(ConsoleActionPayload.close(console));
+        }
+        super.removed();
     }
 
     @Override

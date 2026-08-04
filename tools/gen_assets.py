@@ -1083,7 +1083,7 @@ def tex_friendship_console():
 # Géométrie de l'interface. Doit rester d'accord avec FriendshipConsoleScreen :
 # c'est ici que sont creusés les logements des touches, et une touche posée
 # ailleurs que son logement se verrait immédiatement.
-GUI_W, GUI_H = 220, 166
+GUI_W, GUI_H = 220, 234
 GUI_PAD_X, GUI_KEYS_Y = 112, 36
 GUI_KEY_W, GUI_KEY_H, GUI_KEY_GAP = 30, 24, 3
 GUI_ACTION_W, GUI_ACTION_H = 46, 20
@@ -1091,6 +1091,34 @@ GUI_ACTION_W, GUI_ACTION_H = 46, 20
 # donc le pavé n'a pas de dixième touche.
 GUI_KEY_CELLS = [(i % 3, i // 3) for i in range(9)]
 GUI_ACTIONS_Y = GUI_KEYS_Y + 3 * (GUI_KEY_H + GUI_KEY_GAP) + 1
+
+# Le terminal, en bas, sur toute la largeur utile.
+GUI_TERM_X, GUI_TERM_W = 8, 204
+GUI_TERM_Y, GUI_TERM_H = 162, 64
+GUI_TERM_HEADER_H = 12
+
+# La planche de sprites tient dans les marges laissées libres par le panneau :
+# la colonne à sa droite (x ≥ GUI_W) porte le sablier et les deux touches, la
+# bande sous lui (y ≥ GUI_H) les quatre boutons d'action, trop larges pour la
+# colonne. Le panneau ayant grandi pour loger le terminal, la planche ne peut
+# plus occuper la bande y = 192 : elle y serait recouverte par le panneau.
+GUI_HOURGLASS_X, GUI_HOURGLASS_Y = 224, 0
+GUI_KEY_SPRITE_X = 222
+GUI_KEY_SPRITE_Y, GUI_KEY_HOVER_SPRITE_Y = 20, 48
+GUI_ACTION_SPRITE_Y = 234
+GUI_ACTION_SPRITE_X = (0, 48, 96, 144)
+
+
+def _outside_panel(x, y, w, h, what):
+    """Un sprite posé sous le panneau serait simplement écrasé par lui, et ce
+    sont les boutons de l'interface qui disparaîtraient — sans rien signaler.
+    Le défaut est arrivé en agrandissant le panneau pour loger le terminal ;
+    il tombe désormais à la génération."""
+    if x < GUI_W and y < GUI_H:
+        raise SystemExit(f"{what} en ({x},{y}) recouvert par le panneau "
+                         f"{GUI_W}x{GUI_H} — déplacer la planche de sprites")
+    if x + w > 256 or y + h > 256:
+        raise SystemExit(f"{what} en ({x},{y}) déborde de la texture 256x256")
 
 
 def tex_console_gui():
@@ -1102,9 +1130,14 @@ def tex_console_gui():
     laissés aux widgets vanilla, dont le gris passe-partout est précisément ce
     qui faisait générique.
 
-    La planche occupe la bande libre sous le panneau : touches au repos et
-    survolées, boutons de validation et d'effacement dans leurs deux états, et le
-    sablier des amitiés en attente.
+    Le terminal, en bas, occupe toute la largeur : c'est là que s'affiche ce que
+    le panneau a à dire, et ce qui partait auparavant dans le chat. Son encart
+    est plus sombre que celui du carnet, avec un bandeau de titre et de fines
+    lignes de balayage — de quoi le lire comme un écran et non comme du papier.
+
+    La planche de sprites occupe les marges que le panneau laisse libres : la
+    colonne à sa droite pour le sablier, la bande sous lui pour les touches et
+    les boutons.
     """
     edge = (44, 42, 52, 255)
     body = (178, 176, 186, 255)          # quartz froid, pour que l'or tranche
@@ -1192,6 +1225,20 @@ def tex_console_gui():
         put(px, x, hairline - 1, body_shade)
         put(px, x, hairline + 1, body_light)
 
+    # ---- le terminal : encart très sombre, bandeau de titre, lignes de balayage
+    term_bg = (14, 12, 24, 255)
+    term_scan = (19, 17, 32, 255)
+    tx0, ty0 = GUI_TERM_X, GUI_TERM_Y
+    tx1, ty1 = GUI_TERM_X + GUI_TERM_W - 1, GUI_TERM_Y + GUI_TERM_H - 1
+    sunken(tx0, ty0, tx1, ty1, term_bg, inset_edge)
+    rect(px, tx0 + 1, ty0 + 1, tx1 - 1, ty0 + GUI_TERM_HEADER_H, inset_title)
+    rect(px, tx0 + 1, ty0 + GUI_TERM_HEADER_H + 1, tx1 - 1, ty0 + GUI_TERM_HEADER_H + 1, gold)
+    rect(px, tx0 + 1, ty0 + GUI_TERM_HEADER_H + 2, tx1 - 1, ty0 + GUI_TERM_HEADER_H + 2, inset_edge)
+    # Une ligne sur trois est à peine éclaircie : de près on voit un écran, de
+    # loin une surface unie. Une trame plus marquée gênerait la lecture.
+    for y in range(ty0 + GUI_TERM_HEADER_H + 4, ty1, 3):
+        rect(px, tx0 + 1, y, tx1 - 1, y, term_scan)
+
     # ---------------------------------------------------------- sprites
     def cap(x0, y0, w, h, face, light, shade, border):
         rect(px, x0, y0, x0 + w - 1, y0 + h - 1, face)
@@ -1206,8 +1253,12 @@ def tex_console_gui():
     # Touches accordées au corps : un beige chaud sur un gris froid se voyait.
     key_face = (196, 196, 208, 255)
     key_hover = (232, 232, 244, 255)
-    cap(0, 192, GUI_KEY_W, GUI_KEY_H, key_face, body_light, body_shade, edge)
-    cap(30, 192, GUI_KEY_W, GUI_KEY_H, key_hover, (255, 255, 255, 255), gold, gold)
+    _outside_panel(GUI_KEY_SPRITE_X, GUI_KEY_SPRITE_Y, GUI_KEY_W, GUI_KEY_H, "touche")
+    _outside_panel(GUI_KEY_SPRITE_X, GUI_KEY_HOVER_SPRITE_Y, GUI_KEY_W, GUI_KEY_H, "touche survolée")
+    cap(GUI_KEY_SPRITE_X, GUI_KEY_SPRITE_Y, GUI_KEY_W, GUI_KEY_H,
+        key_face, body_light, body_shade, edge)
+    cap(GUI_KEY_SPRITE_X, GUI_KEY_HOVER_SPRITE_Y, GUI_KEY_W, GUI_KEY_H,
+        key_hover, (255, 255, 255, 255), gold, gold)
 
     green = (66, 142, 76, 255)
     green_hi = (108, 196, 116, 255)
@@ -1215,10 +1266,13 @@ def tex_console_gui():
     amber = (150, 96, 52, 255)
     amber_hi = (206, 148, 88, 255)
     amber_lo = (96, 58, 30, 255)
-    cap(0, 216, GUI_ACTION_W, GUI_ACTION_H, green, green_hi, green_lo, edge)
-    cap(46, 216, GUI_ACTION_W, GUI_ACTION_H, green_hi, (168, 236, 172, 255), green, gold_lit)
-    cap(92, 216, GUI_ACTION_W, GUI_ACTION_H, amber, amber_hi, amber_lo, edge)
-    cap(138, 216, GUI_ACTION_W, GUI_ACTION_H, amber_hi, (232, 190, 140, 255), amber, gold_lit)
+    actions = ((green, green_hi, green_lo, edge),
+               (green_hi, (168, 236, 172, 255), green, gold_lit),
+               (amber, amber_hi, amber_lo, edge),
+               (amber_hi, (232, 190, 140, 255), amber, gold_lit))
+    for x, (face, light, shade, border) in zip(GUI_ACTION_SPRITE_X, actions):
+        _outside_panel(x, GUI_ACTION_SPRITE_Y, GUI_ACTION_W, GUI_ACTION_H, "bouton d'action")
+        cap(x, GUI_ACTION_SPRITE_Y, GUI_ACTION_W, GUI_ACTION_H, face, light, shade, border)
 
     # Le sablier : deux cônes, un col, du sable qui a déjà coulé.
     hg = {
@@ -1246,10 +1300,11 @@ def tex_console_gui():
         "   gggggggggg   ",
         "                ",
     ]
+    _outside_panel(GUI_HOURGLASS_X, GUI_HOURGLASS_Y, 16, 16, "sablier")
     for y, row in enumerate(hourglass):
         for x, ch in enumerate(row):
             if ch != " ":
-                put(px, 184 + x, 192 + y, hg[ch])
+                put(px, GUI_HOURGLASS_X + x, GUI_HOURGLASS_Y + y, hg[ch])
 
     write_png(f"{ASSETS}/textures/gui/friendship_console.png", 256, 256, px)
 

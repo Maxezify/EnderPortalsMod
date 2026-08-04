@@ -9,7 +9,7 @@ Derrière cette porte, une parcelle entière vous appartient — et vous l'empor
 partout : la porte se dématérialise dans votre poche et se repose où vous
 voulez.
 
-Version courante : **0.18.0**.
+Version courante : **0.18.1**.
 
 ---
 
@@ -210,6 +210,27 @@ Chaque porte éveillée reçoit un **code de huit chiffres, tous compris entre 1
 9**. Vous le lisez sur l'infobulle de votre clé, et il est rappelé sous les
 boutons du panneau. C'est ce code que l'on se dicte.
 
+### Le terminal
+
+Le bas du panneau est un terminal, et tout ce que le Contrôle a à dire s'y
+affiche : un code refusé, une amitié scellée, un allié qui demande à se
+connecter, un passage ouvert ou refermé. Ces phrases partaient auparavant dans
+le chat, où elles arrivaient pendant qu'on était occupé au pavé, noyées dans le
+reste.
+
+Le journal est tenu par le serveur, un par joueur : un message reçu pendant que
+vous étiez ailleurs vous attend à la prochaine ouverture du panneau — y compris
+un message reçu hors ligne, que le chat perdait purement et simplement. La
+molette le fait défiler.
+
+Le chat ne prend le relais que si vous n'avez aucun panneau ouvert. Une demande
+de connexion ne vaut que deux minutes : elle ne servirait à personne à dormir
+dans un écran fermé.
+
+À côté du titre du terminal, un témoin dit si l'un de vos passages est bien
+accolé à ce panneau — vert quand c'est le cas, rouge sinon. Sans passage, le
+Contrôle n'a rien à ouvrir.
+
 ### Devenir amis
 
 Tapez le code de l'autre sur le pavé, chiffre par chiffre, puis **VALIDER**
@@ -217,8 +238,8 @@ Tapez le code de l'autre sur le pavé, chiffre par chiffre, puis **VALIDER**
 valide.
 
 Son nom apparaît dans le carnet, à gauche, accompagné d'un **sablier** : un seul
-des deux codes a été tapé. L'autre reçoit un message et doit taper le vôtre de
-son côté. Quand c'est fait, le sablier laisse place à sa **tête de joueur** :
+des deux codes a été tapé. L'autre le lit sur son terminal et doit taper le vôtre
+de son côté. Quand c'est fait, le sablier laisse place à sa **tête de joueur** :
 vous êtes amis.
 
 L'amitié est symétrique par construction — elle n'est que la rencontre de deux
@@ -228,8 +249,8 @@ déclarations. Il n'existe aucun état où l'un se croirait ami et l'autre non.
 
 ### Ouvrir le passage
 
-Cliquez le nom de votre allié : sa bordure passe au **jaune**, vous attendez. Il
-reçoit un message et dispose de **deux minutes** pour cliquer le vôtre — chez
+Cliquez le nom de votre allié : sa bordure passe au **jaune**, vous attendez. Il le
+lit sur son terminal et dispose de **deux minutes** pour cliquer le vôtre — chez
 lui, votre nom clignote en **orange**, le seul état qui réclame un geste. Passé
 ce délai, la demande est abandonnée.
 

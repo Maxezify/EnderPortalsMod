@@ -1,6 +1,7 @@
 package com.maxezify.enderportals.network;
 
 import com.maxezify.enderportals.EnderPortalsMod;
+import com.maxezify.enderportals.tardis.ConsoleLog;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -18,8 +19,13 @@ import java.util.UUID;
  * ce que le serveur sait et ce que le joueur voit. C'est aussi ce qui permet au
  * serveur de rafraîchir l'écran d'un joueur quand c'est l'action d'un
  * <i>autre</i> qui a changé son état.</p>
+ *
+ * <p>Le journal voyage avec le reste, sous forme de clés de traduction et
+ * d'arguments : le terminal du panneau se remplit donc dans la langue de celui
+ * qui le lit, et non dans celle de celui qui a déclenché le message.</p>
  */
-public record ConsoleStatePayload(BlockPos console, int myCode, boolean passageReady, List<Ally> allies)
+public record ConsoleStatePayload(BlockPos console, int myCode, boolean passageReady,
+                                  List<Ally> allies, List<ConsoleLog.Entry> log)
         implements CustomPacketPayload {
 
     /** Déclaré de mon côté seulement : l'autre n'a pas encore tapé mon code. */
@@ -56,6 +62,15 @@ public record ConsoleStatePayload(BlockPos console, int myCode, boolean passageR
             buf.writeUtf(ally.name(), 32);
             buf.writeVarInt(ally.state());
         }
+        buf.writeVarInt(payload.log().size());
+        for (ConsoleLog.Entry line : payload.log()) {
+            buf.writeUtf(line.key(), ConsoleLog.MAX_KEY);
+            buf.writeVarInt(line.tone());
+            buf.writeVarInt(line.args().size());
+            for (String arg : line.args()) {
+                buf.writeUtf(arg, ConsoleLog.MAX_ARG);
+            }
+        }
     }
 
     private static ConsoleStatePayload read(FriendlyByteBuf buf) {
@@ -67,7 +82,19 @@ public record ConsoleStatePayload(BlockPos console, int myCode, boolean passageR
         for (int i = 0; i < count; i++) {
             allies.add(new Ally(buf.readUUID(), buf.readUtf(32), buf.readVarInt()));
         }
-        return new ConsoleStatePayload(console, code, ready, allies);
+        int lines = buf.readVarInt();
+        List<ConsoleLog.Entry> log = new ArrayList<>(Math.min(lines, ConsoleLog.CAPACITY));
+        for (int i = 0; i < lines; i++) {
+            String key = buf.readUtf(ConsoleLog.MAX_KEY);
+            int tone = buf.readVarInt();
+            int argCount = buf.readVarInt();
+            List<String> args = new ArrayList<>(Math.min(argCount, ConsoleLog.MAX_ARGS));
+            for (int a = 0; a < argCount; a++) {
+                args.add(buf.readUtf(ConsoleLog.MAX_ARG));
+            }
+            log.add(new ConsoleLog.Entry(key, args, tone));
+        }
+        return new ConsoleStatePayload(console, code, ready, allies, log);
     }
 
     @Override

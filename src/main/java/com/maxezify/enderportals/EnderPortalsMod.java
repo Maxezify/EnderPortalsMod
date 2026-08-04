@@ -2,6 +2,7 @@ package com.maxezify.enderportals;
 
 import com.maxezify.enderportals.block.InactiveTardisDoorBlock;
 import com.maxezify.enderportals.compat.ImmPtlCompat;
+import com.maxezify.enderportals.tardis.TardisStateManager;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -48,6 +49,7 @@ public class EnderPortalsMod {
         NeoForge.EVENT_BUS.addListener(this::onLeftClickBlock);
         NeoForge.EVENT_BUS.addListener(this::onBreakSpeed);
         NeoForge.EVENT_BUS.addListener(this::onBlockBroken);
+        NeoForge.EVENT_BUS.addListener(this::onPlayerLoggedOut);
 
         LOGGER.info("World of Ender (NeoForge) initialisé — le vortex vous attend.");
         LOGGER.info("Immersive Portals détecté : {}", ImmPtlCompat.isLoaded());
@@ -63,6 +65,21 @@ public class EnderPortalsMod {
         if (event.getState().is(ModBlocks.ENDER_BLOCK.get())
                 && ModEnchantments.allowsEnderBlock(event.getEntity().level(), event.getEntity().getMainHandItem())) {
             event.setNewSpeed(Math.max(event.getNewSpeed(), 9.0f));
+        }
+    }
+
+    /**
+     * Un joueur déconnecté n'a plus de Contrôle de l'amitié à l'écran.
+     *
+     * <p>Le serveur retient quel panneau chaque joueur regarde, pour savoir où
+     * porter ses messages : sur le terminal du panneau, ou dans le chat quand il
+     * n'en a aucun d'ouvert. Cette note ne survit pas à une déconnexion, sans
+     * quoi le joueur reviendrait en jeu réputé devant un panneau fermé — et ses
+     * messages iraient dormir dans un terminal qu'il ne regarde pas.</p>
+     */
+    private void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            TardisStateManager.get(player.server).allies().setViewing(player.getUUID(), null);
         }
     }
 

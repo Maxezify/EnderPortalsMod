@@ -5,6 +5,7 @@ import com.maxezify.enderportals.ModBlocks;
 import com.maxezify.enderportals.block.AllyPassageBlock;
 import com.maxezify.enderportals.tardis.AllyLinks;
 import com.maxezify.enderportals.tardis.AllyPassageHelper;
+import com.maxezify.enderportals.tardis.ConsoleLog;
 import com.maxezify.enderportals.tardis.TardisData;
 import com.maxezify.enderportals.tardis.TardisStateManager;
 import net.minecraft.ChatFormatting;
@@ -31,6 +32,12 @@ import java.util.UUID;
  * réciproque. Après chaque action l'état complet repart vers l'écran — et aussi
  * vers celui du pair concerné, dont l'affichage vient de changer sans qu'il ait
  * touché à quoi que ce soit.</p>
+ *
+ * <p>Aucun message ne part plus directement dans le chat : tout passe par
+ * {@link #say}, qui l'écrit au journal du destinataire — le terminal du panneau
+ * l'affichera. Le chat n'est plus qu'un relais, et seulement pour un joueur qui
+ * n'a pas ce panneau sous les yeux ; sans quoi il verrait la même phrase deux
+ * fois.</p>
  */
 public final class ConsoleServerLogic {
 
@@ -49,6 +56,8 @@ public final class ConsoleServerLogic {
         }
         TardisStateManager manager = TardisStateManager.get(server);
         if (manager.findByOwner(player.getUUID()) == null) {
+            // Le seul message qui reste hors du terminal : il explique
+            // justement pourquoi le panneau ne s'ouvre pas.
             player.displayClientMessage(
                     Component.translatable("enderportals.message.console_no_door"), true);
             return;
@@ -105,7 +114,7 @@ public final class ConsoleServerLogic {
                 : Integer.compare(rank(a.state()), rank(b.state())));
 
         return new ConsoleStatePayload(console, manager.codeOf(me),
-                hasOwnPassageNextTo(player, manager, console), allies);
+                hasOwnPassageNextTo(player, manager, console), allies, manager.log().of(me));
     }
 
     /** Priorité d'affichage : ce qui demande une action du joueur remonte. */
@@ -138,7 +147,13 @@ public final class ConsoleServerLogic {
         }
         TardisStateManager manager = TardisStateManager.get(server);
         if (payload.action() == ConsoleActionPayload.CLOSE) {
-            manager.allies().setViewing(player.getUUID(), null);
+            // Seulement si c'est bien le panneau noté comme ouvert : l'avis de
+            // fermeture d'un écran remplacé par un autre arrive après l'avis
+            // d'ouverture du nouveau, et effacerait celui-ci.
+            BlockPos viewed = manager.allies().viewedConsole(player.getUUID());
+            if (viewed != null && viewed.equals(payload.console())) {
+                manager.allies().setViewing(player.getUUID(), null);
+            }
             return;
         }
         if (!canReach(player, payload.console())) {
@@ -153,8 +168,13 @@ public final class ConsoleServerLogic {
             case ConsoleActionPayload.TOGGLE -> toggle(player, manager, payload);
             case ConsoleActionPayload.FORGET -> forget(player, manager, payload);
             default -> {
+                return;
             }
         }
+        // Le renvoi vers l'auteur du geste est fait ici, une fois pour toutes :
+        // chaque action écrit au moins une ligne à son terminal, y compris les
+        // refus, qui sortaient autrefois par des retours anticipés.
+        refresh(server, player.getUUID());
     }
 
     /**
@@ -170,39 +190,34 @@ public final class ConsoleServerLogic {
 
     private static void submitCode(ServerPlayer player, TardisStateManager manager,
                                    ConsoleActionPayload payload) {
+        MinecraftServer server = player.server;
+        UUID me = player.getUUID();
         TardisData target = manager.findByCode(payload.code());
         if (target == null || target.ownerUuid == null) {
-            player.displayClientMessage(
-                    Component.translatable("enderportals.message.ally_unknown").withStyle(ChatFormatting.RED),
-                    true);
+            say(server, me, ConsoleLog.BAD, "enderportals.message.ally_unknown");
             return;
         }
-        UUID me = player.getUUID();
         AllyLinks.DeclareResult result = manager.allies().declare(me, target.ownerUuid);
         manager.setDirty();
-        MinecraftServer server = player.server;
         switch (result) {
-            case SELF -> player.displayClientMessage(
-                    Component.translatable("enderportals.message.ally_self"), true);
-            case ALREADY -> player.displayClientMessage(
-                    Component.translatable("enderportals.message.ally_already", target.ownerName), true);
+            case SELF -> say(server, me, ConsoleLog.WARN, "enderportals.message.ally_self");
+            case ALREADY -> say(server, me, ConsoleLog.INFO,
+                    "enderportals.message.ally_already", target.ownerName);
             case PENDING -> {
-                player.displayClientMessage(Component.translatable(
-                        "enderportals.message.ally_pending", target.ownerName), true);
-                notify(server, target.ownerUuid, "enderportals.message.ally_wants_you",
-                        player.getGameProfile().getName(), manager.codeOf(me));
+                say(server, me, ConsoleLog.INFO,
+                        "enderportals.message.ally_pending", target.ownerName);
+                say(server, target.ownerUuid, ConsoleLog.INFO, "enderportals.message.ally_wants_you",
+                        player.getGameProfile().getName(), formatCode(manager.codeOf(me)));
             }
             case CONFIRMED -> {
-                player.displayClientMessage(Component.translatable(
-                        "enderportals.message.ally_confirmed", target.ownerName)
-                        .withStyle(ChatFormatting.GREEN), false);
-                notify(server, target.ownerUuid, "enderportals.message.ally_confirmed",
+                say(server, me, ConsoleLog.GOOD,
+                        "enderportals.message.ally_confirmed", target.ownerName);
+                say(server, target.ownerUuid, ConsoleLog.GOOD, "enderportals.message.ally_confirmed",
                         player.getGameProfile().getName());
             }
             default -> {
             }
         }
-        refresh(server, me);
         refresh(server, target.ownerUuid);
     }
 
@@ -217,9 +232,7 @@ public final class ConsoleServerLogic {
         // Ouvrir exige le panneau accolé au passage ; refermer, non — on doit
         // toujours pouvoir couper, même si le passage a été démonté depuis.
         if (!wasLinked && !hasOwnPassageNextTo(player, manager, payload.console())) {
-            player.displayClientMessage(
-                    Component.translatable("enderportals.message.passage_missing")
-                            .withStyle(ChatFormatting.RED), true);
+            say(server, me, ConsoleLog.BAD, "enderportals.message.passage_missing");
             return;
         }
 
@@ -227,12 +240,12 @@ public final class ConsoleServerLogic {
         manager.setDirty();
         String otherName = displayName(manager, other);
         switch (result) {
-            case NOT_FRIENDS -> player.displayClientMessage(
-                    Component.translatable("enderportals.message.connect_not_friends", otherName), true);
+            case NOT_FRIENDS -> say(server, me, ConsoleLog.WARN,
+                    "enderportals.message.connect_not_friends", otherName);
             case REQUESTED -> {
-                player.displayClientMessage(Component.translatable(
-                        "enderportals.message.connect_requested", otherName), true);
-                notify(server, other, "enderportals.message.connect_asked",
+                say(server, me, ConsoleLog.INFO,
+                        "enderportals.message.connect_requested", otherName);
+                say(server, other, ConsoleLog.WARN, "enderportals.message.connect_asked",
                         player.getGameProfile().getName());
             }
             case OPENED -> {
@@ -240,6 +253,7 @@ public final class ConsoleServerLogic {
                 // l'autre : on referme les arches ainsi laissées sans pair.
                 for (UUID displaced : links.takeDisplaced()) {
                     AllyPassageHelper.closeOne(server, displaced);
+                    say(server, displaced, ConsoleLog.WARN, "enderportals.message.connect_displaced");
                     refresh(server, displaced);
                 }
                 AllyPassageHelper.openBoth(server, me, other);
@@ -248,23 +262,19 @@ public final class ConsoleServerLogic {
                 if (ally != null) {
                     ModAdvancements.award(ally, ModAdvancements.ALLIES);
                 }
-                player.displayClientMessage(Component.translatable(
-                        "enderportals.message.connect_opened", otherName)
-                        .withStyle(ChatFormatting.GREEN), false);
-                notify(server, other, "enderportals.message.connect_opened",
+                say(server, me, ConsoleLog.GOOD, "enderportals.message.connect_opened", otherName);
+                say(server, other, ConsoleLog.GOOD, "enderportals.message.connect_opened",
                         player.getGameProfile().getName());
             }
             case CLOSED -> {
                 AllyPassageHelper.closeBoth(server, me, other);
-                player.displayClientMessage(Component.translatable(
-                        "enderportals.message.connect_closed", otherName), false);
-                notify(server, other, "enderportals.message.connect_closed",
+                say(server, me, ConsoleLog.INFO, "enderportals.message.connect_closed", otherName);
+                say(server, other, ConsoleLog.INFO, "enderportals.message.connect_closed",
                         player.getGameProfile().getName());
             }
             default -> {
             }
         }
-        refresh(server, me);
         refresh(server, other);
     }
 
@@ -275,14 +285,15 @@ public final class ConsoleServerLogic {
         MinecraftServer server = player.server;
         // Ne refermer que si le lien portait bien sur l'allié oublié.
         boolean wasLinked = other.equals(manager.allies().linkOf(me));
+        String otherName = displayName(manager, other);
         manager.allies().forget(me, other);
         manager.setDirty();
         if (wasLinked) {
             AllyPassageHelper.closeBoth(server, me, other);
+            say(server, other, ConsoleLog.INFO, "enderportals.message.connect_closed",
+                    player.getGameProfile().getName());
         }
-        player.displayClientMessage(Component.translatable(
-                "enderportals.message.ally_forgotten", displayName(manager, other)), true);
-        refresh(server, me);
+        say(server, me, ConsoleLog.WARN, "enderportals.message.ally_forgotten", otherName);
         refresh(server, other);
     }
 
@@ -312,11 +323,39 @@ public final class ConsoleServerLogic {
         return false;
     }
 
-    private static void notify(MinecraftServer server, UUID who, String key, Object... args) {
+    /**
+     * Dit quelque chose à un joueur.
+     *
+     * <p>La ligne est d'abord écrite à son journal — c'est le terminal du
+     * panneau qui la porte, et elle l'y attendra même s'il est hors ligne. Le
+     * chat ne prend le relais que dans le seul cas où le terminal ne peut rien :
+     * un joueur connecté qui n'a pas de panneau ouvert. Une demande de connexion
+     * n'a que deux minutes de validité ; la laisser dormir dans un écran fermé
+     * serait la perdre.</p>
+     */
+    private static void say(MinecraftServer server, UUID who, int tone, String key, Object... args) {
+        TardisStateManager manager = TardisStateManager.get(server);
+        manager.log().add(who, tone, key, args);
+        manager.setDirty();
         ServerPlayer target = server.getPlayerList().getPlayer(who);
-        if (target != null) {
-            target.sendSystemMessage(Component.translatable(key, args).withStyle(ChatFormatting.AQUA));
+        if (target != null && manager.allies().viewedConsole(who) == null) {
+            target.sendSystemMessage(Component.translatable(key, args).withStyle(chatColor(tone)));
         }
+    }
+
+    private static ChatFormatting chatColor(int tone) {
+        return switch (tone) {
+            case ConsoleLog.GOOD -> ChatFormatting.GREEN;
+            case ConsoleLog.WARN -> ChatFormatting.GOLD;
+            case ConsoleLog.BAD -> ChatFormatting.RED;
+            default -> ChatFormatting.AQUA;
+        };
+    }
+
+    /** Un code d'ami se dicte par groupes de quatre, comme il s'affiche. */
+    private static String formatCode(int code) {
+        String digits = Integer.toString(code);
+        return digits.length() == 8 ? digits.substring(0, 4) + " " + digits.substring(4) : digits;
     }
 
     private ConsoleServerLogic() {

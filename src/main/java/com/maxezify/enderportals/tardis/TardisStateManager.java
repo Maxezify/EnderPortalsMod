@@ -57,6 +57,7 @@ public class TardisStateManager extends SavedData {
 
     private final Map<UUID, TardisData> tardises = new HashMap<>();
     private final AllyLinks allyLinks = new AllyLinks();
+    private final ConsoleLog consoleLog = new ConsoleLog();
     private int nextPlot;
 
     public static TardisStateManager get(MinecraftServer server) {
@@ -81,6 +82,11 @@ public class TardisStateManager extends SavedData {
 
     public AllyLinks allies() {
         return allyLinks;
+    }
+
+    /** Le journal affiché sur le terminal du Contrôle de l'amitié. */
+    public ConsoleLog log() {
+        return consoleLog;
     }
 
     /**
@@ -260,6 +266,7 @@ public class TardisStateManager extends SavedData {
             manager.tardises.put(data.id, data);
         }
         manager.allyLinks.load(nbt.getCompound("Allies"));
+        manager.consoleLog.load(nbt.getCompound("ConsoleLog"));
         // Deux cas à rattraper ici, une fois toutes les portes chargées pour que
         // freshCode() voie bien les codes déjà pris : celles éveillées avant
         // l'arrivée du Passage des Alliés n'ont pas de code du tout, et celles
@@ -282,6 +289,7 @@ public class TardisStateManager extends SavedData {
         }
         nbt.put("Tardises", list);
         nbt.put("Allies", allyLinks.toNbt());
+        nbt.put("ConsoleLog", consoleLog.toNbt());
         return nbt;
     }
 }
