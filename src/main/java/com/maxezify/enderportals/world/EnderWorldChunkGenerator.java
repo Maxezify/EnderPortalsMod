@@ -1,6 +1,5 @@
 package com.maxezify.enderportals.world;
 
-import com.maxezify.enderportals.EnderPortalsTiming;
 import com.maxezify.enderportals.ModBlocks;
 import com.maxezify.enderportals.tardis.TardisStateManager;
 import com.mojang.serialization.MapCodec;
@@ -236,7 +235,6 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
     @Override
     public CompletableFuture<ChunkAccess> fillFromNoise(Blender blender, RandomState randomState,
                                                         StructureManager structureManager, ChunkAccess chunk) {
-        long chronoStart = EnderPortalsTiming.start();
         ChunkPos chunkPos = chunk.getPos();
         int bottom = chunk.getMinBuildHeight();
         int top = bottom + chunk.getHeight();
@@ -293,7 +291,6 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
         // Les heightmaps, une fois, à la fin — comme le fait vanilla.
         Heightmap.primeHeightmaps(chunk, EnumSet.of(
                 Heightmap.Types.WORLD_SURFACE_WG, Heightmap.Types.OCEAN_FLOOR_WG));
-        EnderPortalsTiming.chunkGenerated(System.nanoTime() - chronoStart);
         return CompletableFuture.completedFuture(chunk);
     }
 

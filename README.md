@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.17.3**.
+Current version: **0.17.4**.
 
 ---
 
@@ -352,6 +352,20 @@ to black closes the view before the chunk limit — you will never see the edge 
 the loaded world, whatever your render distance. Now and then that far distance
 flares for a fraction of a second: silent storm light.
 
+### A pause on the first crossing, with shaders
+
+The very first time you open the door in a play session, the screen freezes for
+two to four seconds. That is **Iris compiling its render pipeline** for a
+dimension that had never appeared before — work done on the render thread, over
+which no mod has any control.
+
+Immersive Portals is what makes the pause visible: to show you the Ender through
+the doorway, it creates the destination world **while you are still outside**.
+The same compilation happens for a Nether portal, but there it hides behind the
+travel loading screen.
+
+You pay it **once per session**, and not at all without shaders.
+
 **Want depth blur?** Complementary provides it, but off by default: *Camera
 Settings → World Blur → World Blur → **Distance Blur***. Then set the strength on
 the **"Dis. Blur — The Nether"** slider (default 64): the higher the value, the
@@ -390,7 +404,7 @@ Requires **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.17.3.jar
+# → build/libs/enderportals-0.17.4.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are

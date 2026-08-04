@@ -9,7 +9,7 @@ Derrière cette porte, une parcelle entière vous appartient — et vous l'empor
 partout : la porte se dématérialise dans votre poche et se repose où vous
 voulez.
 
-Version courante : **0.17.3**.
+Version courante : **0.17.4**.
 
 ---
 
@@ -364,6 +364,20 @@ noir ferme la vue avant la limite des chunks — vous ne verrez jamais le bord d
 monde chargé, quel que soit votre réglage de distance de rendu. De loin en loin,
 ce lointain s'embrase une fraction de seconde : de silencieuses lueurs d'orage.
 
+### Une pause au premier passage, avec shaders
+
+À la toute première ouverture de la porte dans une session de jeu, l'écran se
+fige deux à quatre secondes. C'est **Iris qui compile sa passe de rendu** pour
+une dimension qui n'était encore jamais apparue — un travail qui se fait sur le
+fil d'affichage, et sur lequel aucun mod n'a la main.
+
+Immersive Portals rend la pause visible : pour vous montrer l'Ender à travers
+l'embrasure, il crée le monde d'arrivée **pendant que vous êtes encore dehors**.
+La même compilation existe pour un portail du Nether, mais elle s'y cache
+derrière l'écran de chargement du voyage.
+
+Elle ne se paie **qu'une fois par session**, et pas du tout sans shaders.
+
 **Envie d'un flou de profondeur ?** Complementary le fournit, mais désactivé par
 défaut : *Camera Settings → World Blur → World Blur → **Distance Blur***. Réglez
 ensuite l'intensité sur le curseur **« Dis. Blur — The Nether »** (défaut 64) :
@@ -402,7 +416,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.17.3.jar
+# → build/libs/enderportals-0.17.4.jar
 ```
 
 Le build est géré par **ModDevGradle** ; NeoForge et les mappings officiels sont
