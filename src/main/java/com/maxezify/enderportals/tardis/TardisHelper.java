@@ -11,6 +11,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.TicketType;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -19,6 +20,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -27,7 +29,11 @@ import net.minecraft.world.level.portal.DimensionTransition;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 /**
  * Toute la mécanique TARDIS : activation, salle intérieure, matérialisation,
@@ -52,7 +58,9 @@ public final class TardisHelper {
         TardisStateManager manager = TardisStateManager.get(server);
         TardisData data = manager.createTardis(player.getUUID(), player.getGameProfile().getName());
         buildInteriorRoom(enderWorld, data);
-        warmInterior(server, data);
+        // Le voisinage se taille en fond, pendant que le joueur se relève de sa
+        // chute : la première ouverture n'aura plus rien à attendre.
+        warmInterior(enderWorld, data.interiorDoorPos);
 
         // Remplace la porte inactive par la porte active, sans réactions de voisins.
         int swapFlags = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE;
@@ -109,18 +117,59 @@ public final class TardisHelper {
     private static final int WARMUP_RADIUS = 4;
 
     /**
-     * Demande la génération des chunks autour de la salle, sans attendre.
-     * Appelée à l'éveil de la porte puis à chaque ouverture : la première fois
-     * le monde se taille, les suivantes le ticket ne fait que retenir ce qui
-     * existe déjà.
+     * Rayon, en chunks, dont on attend la génération avant de toucher à la
+     * salle. Un carré de 3 sur 3 : la salle fait 13 blocs sur 13 et peut donc
+     * chevaucher quatre chunks, et {@link #buildInteriorRoom} y écrit
+     * directement — un seul chunk garanti ne suffirait pas.
      */
-    private static void warmInterior(MinecraftServer server, TardisData data) {
+    private static final int INTERIOR_RADIUS = 1;
+
+    /** Pose le ticket de préchauffage et rend le chunk visé. */
+    private static ChunkPos warmInterior(ServerLevel enderWorld, BlockPos interior) {
+        ChunkPos center = new ChunkPos(interior);
+        enderWorld.getChunkSource().addRegionTicket(WARMUP, center, WARMUP_RADIUS, center);
+        return center;
+    }
+
+    /**
+     * Exécute une tâche dès que les chunks de la salle sont prêts, <b>sans
+     * arrêter le fil du serveur</b>.
+     *
+     * <p>C'est ici que se jouait le gel. Poser un ticket ne suffit pas : la
+     * génération qu'il déclenche est asynchrone, et la moindre lecture qui
+     * suit — un simple {@code getBlockState} sur le monde de l'Ender — repasse
+     * par {@code getChunk(…, FULL, true)}, qui arrête le fil du serveur jusqu'à
+     * ce que le chunk soit prêt. Le ticket de la 0.17.1 ne servait donc à rien :
+     * la ligne suivante bloquait sur le chunk qu'il venait de demander.</p>
+     *
+     * <p>Pire, un seul chunk réclamé au statut FULL en entraîne une vingtaine :
+     * il lui faut ses voisins pour ses structures et sa lumière. Le fil du
+     * serveur attendait donc la génération de tout un voisinage.</p>
+     *
+     * <p>D'où cette continuation. On demande les chunks, on rend la main, et le
+     * travail reprend sur le fil du serveur quand ils arrivent — exactement ce
+     * que fait un portail du Nether, dont le monde d'arrivée se taille pendant
+     * que le jeu continue de tourner.</p>
+     */
+    private static void whenInteriorReady(MinecraftServer server, @Nullable BlockPos interior,
+                                          Consumer<ServerLevel> task) {
         ServerLevel enderWorld = server.getLevel(ModDimensions.ENDER_WORLD);
-        if (enderWorld == null || data.interiorDoorPos == null) {
+        if (enderWorld == null || interior == null) {
             return;
         }
-        ChunkPos center = new ChunkPos(data.interiorDoorPos);
-        enderWorld.getChunkSource().addRegionTicket(WARMUP, center, WARMUP_RADIUS, center);
+        ChunkPos center = warmInterior(enderWorld, interior);
+        ServerChunkCache chunks = enderWorld.getChunkSource();
+
+        List<CompletableFuture<?>> pending = new ArrayList<>();
+        for (int dx = -INTERIOR_RADIUS; dx <= INTERIOR_RADIUS; dx++) {
+            for (int dz = -INTERIOR_RADIUS; dz <= INTERIOR_RADIUS; dz++) {
+                pending.add(chunks.getChunkFuture(center.x + dx, center.z + dz, ChunkStatus.FULL, true));
+            }
+        }
+        // thenRunAsync(…, server) : la suite repart sur le fil du serveur, seul
+        // endroit d'où l'on ait le droit de toucher au monde.
+        CompletableFuture.allOf(pending.toArray(CompletableFuture[]::new))
+                .thenRunAsync(() -> task.accept(enderWorld), server);
     }
 
     // ------------------------------------------------------------------
@@ -188,16 +237,18 @@ public final class TardisHelper {
         data.exteriorWorld = level.dimension();
         data.exteriorPos = base;
         data.exteriorFacing = facing;
-        setInteriorOpen(server, data, open);
         TardisStateManager.get(server).setDirty();
 
         level.playSound(null, base, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 1.2f, 0.5f);
         level.playSound(null, base, SoundEvents.ENDERMAN_TELEPORT, SoundSource.BLOCKS, 1.0f, 0.6f);
 
-        if (open) {
-            ImmPtlCompat.tryCreatePortals(server, data);
-        }
-        updatePortalFlags(server, data);
+        whenInteriorReady(server, data.interiorDoorPos, enderWorld -> {
+            setOpen(enderWorld, data.interiorDoorPos, open);
+            if (open) {
+                ImmPtlCompat.tryCreatePortals(server, data);
+            }
+            updatePortalFlags(server, data);
+        });
         return true;
     }
 
@@ -353,9 +404,12 @@ public final class TardisHelper {
      * disparition, puis les blocs s'effacent).
      */
     public static void dismissExterior(MinecraftServer server, TardisData data) {
-        ImmPtlCompat.removePortals(server, data);
-        setInteriorOpen(server, data, false);
         data.open = false;
+        whenInteriorReady(server, data.interiorDoorPos, enderWorld -> {
+            ImmPtlCompat.removePortals(server, data);
+            setOpen(enderWorld, data.interiorDoorPos, false);
+            updatePortalFlags(server, data);
+        });
 
         ServerLevel level = server.getLevel(data.exteriorWorld);
         if (level != null && data.deployed) {
@@ -371,7 +425,6 @@ public final class TardisHelper {
             }
         }
         data.deployed = false;
-        updatePortalFlags(server, data);
         TardisStateManager.get(server).setDirty();
     }
 
@@ -389,20 +442,26 @@ public final class TardisHelper {
                         SoundSource.BLOCKS, 1.0f, 1.0f);
             }
         }
-        if (open) {
-            // Le joueur va traverser dans un instant : que ses chunks soient
-            // prêts avant lui, et non sous ses pieds.
-            warmInterior(server, data);
-        }
-        setInteriorOpen(server, data, open);
         TardisStateManager.get(server).setDirty();
 
-        if (open && data.deployed) {
-            ImmPtlCompat.tryCreatePortals(server, data);
-        } else {
-            ImmPtlCompat.removePortals(server, data);
-        }
-        updatePortalFlags(server, data);
+        // La porte extérieure a déjà répondu au clic — son bruit, son battant.
+        // Tout ce qui touche au monde de l'Ender attend que ses chunks se
+        // présentent : c'est ce qui gelait le jeu.
+        whenInteriorReady(server, data.interiorDoorPos, enderWorld -> {
+            if (data.open != open) {
+                // Le joueur a rouvert ou refermé entre-temps : l'ordre en cours
+                // est le seul qui vaille, celui-ci est périmé.
+                return;
+            }
+            setOpen(enderWorld, data.interiorDoorPos, open);
+            if (open && data.deployed) {
+                ImmPtlCompat.tryCreatePortals(server, data);
+            } else {
+                ImmPtlCompat.removePortals(server, data);
+            }
+            updatePortalFlags(server, data);
+            TardisStateManager.get(server).setDirty();
+        });
     }
 
     /**
@@ -422,13 +481,6 @@ public final class TardisHelper {
         if (enderWorld != null && data.interiorDoorPos != null
                 && enderWorld.getBlockEntity(data.interiorDoorPos) instanceof TardisDoorBlockEntity door) {
             door.setPortalActive(active);
-        }
-    }
-
-    private static void setInteriorOpen(MinecraftServer server, TardisData data, boolean open) {
-        ServerLevel enderWorld = server.getLevel(ModDimensions.ENDER_WORLD);
-        if (enderWorld != null && data.interiorDoorPos != null) {
-            setOpen(enderWorld, data.interiorDoorPos, open);
         }
     }
 
