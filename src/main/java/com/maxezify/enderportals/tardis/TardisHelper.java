@@ -1,6 +1,7 @@
 package com.maxezify.enderportals.tardis;
 
 import com.maxezify.enderportals.EnderPortalsMod;
+import com.maxezify.enderportals.EnderPortalsTiming;
 import com.maxezify.enderportals.ModBlocks;
 import com.maxezify.enderportals.ModDimensions;
 import com.maxezify.enderportals.block.TardisDoorBlock;
@@ -168,8 +169,13 @@ public final class TardisHelper {
         }
         // thenRunAsync(…, server) : la suite repart sur le fil du serveur, seul
         // endroit d'où l'on ait le droit de toucher au monde.
+        long chrono = EnderPortalsTiming.start();
         CompletableFuture.allOf(pending.toArray(CompletableFuture[]::new))
-                .thenRunAsync(() -> task.accept(enderWorld), server);
+                .thenRunAsync(() -> {
+                    EnderPortalsTiming.since("attente des chunks de la salle", chrono);
+                    EnderPortalsTiming.measure("travaux dans la salle (fil du serveur)",
+                            () -> task.accept(enderWorld));
+                }, server);
     }
 
     // ------------------------------------------------------------------
@@ -432,6 +438,7 @@ public final class TardisHelper {
      * Ouvre ou ferme les deux portes (extérieure et intérieure) d'un coup.
      */
     public static void setDoorsOpen(MinecraftServer server, TardisData data, boolean open) {
+        long chrono = EnderPortalsTiming.start();
         data.open = open;
         if (data.deployed) {
             ServerLevel level = server.getLevel(data.exteriorWorld);
@@ -462,6 +469,7 @@ public final class TardisHelper {
             updatePortalFlags(server, data);
             TardisStateManager.get(server).setDirty();
         });
+        EnderPortalsTiming.since("clic sur la porte (fil du serveur)", chrono);
     }
 
     /**
@@ -527,8 +535,9 @@ public final class TardisHelper {
         }
         BlockPos front = data.interiorDoorPos.relative(data.interiorFacing);
         player.setPortalCooldown(PORTAL_COOLDOWN_TICKS);
-        player.changeDimension(new DimensionTransition(enderWorld, Vec3.atBottomCenterOf(front),
-                Vec3.ZERO, data.interiorFacing.toYRot(), 0.0f, DimensionTransition.DO_NOTHING));
+        EnderPortalsTiming.measure("traversée vers l'Ender", () ->
+                player.changeDimension(new DimensionTransition(enderWorld, Vec3.atBottomCenterOf(front),
+                        Vec3.ZERO, data.interiorFacing.toYRot(), 0.0f, DimensionTransition.DO_NOTHING)));
         enderWorld.playSound(null, front, SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 0.8f, 0.9f);
     }
 
