@@ -9,7 +9,7 @@ Derrière cette porte, une parcelle entière vous appartient — et vous l'empor
 partout : la porte se dématérialise dans votre poche et se repose où vous
 voulez.
 
-Version courante : **0.18.1**.
+Version courante : **0.18.2**.
 
 ---
 
@@ -227,9 +227,11 @@ Le chat ne prend le relais que si vous n'avez aucun panneau ouvert. Une demande
 de connexion ne vaut que deux minutes : elle ne servirait à personne à dormir
 dans un écran fermé.
 
-À côté du titre du terminal, un témoin dit si l'un de vos passages est bien
-accolé à ce panneau — vert quand c'est le cas, rouge sinon. Sans passage, le
-Contrôle n'a rien à ouvrir.
+À côté du titre du terminal, un témoin dit si ce panneau commande bien un
+passage **à vous** — **Fonctionne** en vert, **Ne fonctionne pas** en rouge. Un
+panneau n'appartient à personne ; ce qu'il lui faut, c'est l'un de vos propres
+passages accolé, et le témoin le dit d'un coup d'œil. Au survol, il en nomme la
+cause.
 
 ### Devenir amis
 

@@ -243,6 +243,8 @@ public class FriendshipConsoleScreen extends Screen {
         renderList(guiGraphics, mouseX, mouseY);
         renderCode(guiGraphics);
         renderTerminal(guiGraphics);
+        // En dernier : une infobulle se pose par-dessus tout le reste.
+        renderPassageTooltip(guiGraphics, mouseX, mouseY);
     }
 
     private void renderDisplay(GuiGraphics guiGraphics) {
@@ -423,23 +425,53 @@ public class FriendshipConsoleScreen extends Screen {
     }
 
     /**
-     * Le témoin de passage accolé, dans l'en-tête du terminal.
+     * Le témoin du panneau, dans l'en-tête du terminal : ce Contrôle commande-t-il
+     * bien un passage à vous ?
      *
      * <p>Il était auparavant posé sous la dernière ligne du carnet, où sa phrase
      * dépassait des 96 px de l'encart. Un état permanent n'a de toute façon rien
      * à faire dans une liste : sa place est sur le bandeau, en face du titre.</p>
+     *
+     * <p>C'est la <b>couleur</b> qui porte l'état, comme sur n'importe quel
+     * voyant ; le libellé se contente de dire ce qui marche ou non. Il ne dit
+     * donc pas <i>pourquoi</i> — c'est le rôle de l'infobulle, qui nomme la
+     * cause au survol.</p>
      */
     private void renderPassageLamp(GuiGraphics guiGraphics, int y) {
-        boolean ready = state.passageReady();
-        Component label = Component.translatable(ready
-                ? "enderportals.console.passage_ok"
-                : "enderportals.console.no_passage");
-        int color = ready ? COLOR_LINKED : COLOR_WARN;
+        Component label = passageLabel();
+        int color = state.passageReady() ? COLOR_LINKED : COLOR_WARN;
         int textX = leftPos + TERM_X + TERM_W - 5 - font.width(label);
         guiGraphics.drawString(font, label, textX, y, color, false);
         int lampX = textX - 9;
         guiGraphics.fill(lampX - 1, y, lampX + 6, y + 7, 0xFF15111F);
         guiGraphics.fill(lampX, y + 1, lampX + 5, y + 6, color);
+    }
+
+    private Component passageLabel() {
+        return Component.translatable(state.passageReady()
+                ? "enderportals.console.passage_ok"
+                : "enderportals.console.no_passage");
+    }
+
+    /**
+     * L'explication du témoin, au survol. « Ne fonctionne pas » désigne un
+     * défaut sans le nommer ; le joueur a besoin de savoir qu'il lui manque un
+     * Passage des Alliés accolé à ce panneau-ci. C'est exactement ce que dit le
+     * refus reçu au clic, et la même phrase sert donc aux deux.
+     *
+     * <p>Le survol se teste sur l'emprise du témoin et de son libellé, calculée
+     * comme au dessin plutôt que retenue d'une image à l'autre : rien à garder
+     * en cohérence.</p>
+     */
+    private void renderPassageTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        int right = leftPos + TERM_X + TERM_W - 5;
+        int left = right - font.width(passageLabel()) - 10;
+        int y = topPos + TERM_Y + 3;
+        if (mouseX >= left && mouseX < right && mouseY >= y && mouseY < y + font.lineHeight) {
+            guiGraphics.renderTooltip(font, Component.translatable(state.passageReady()
+                    ? "enderportals.console.passage_ok_hint"
+                    : "enderportals.message.passage_missing"), mouseX, mouseY);
+        }
     }
 
     // ------------------------------------------------------------------
