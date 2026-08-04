@@ -1123,6 +1123,106 @@ def _outside_panel(x, y, w, h, what):
         raise SystemExit(f"{what} en ({x},{y}) déborde de la texture 256x256")
 
 
+# ----------------------------------------------------------------------
+# Le Téléporteur d'entité et son Atterrisseur
+# ----------------------------------------------------------------------
+
+# Métal froid sur noir d'obsidienne : la palette des machines de l'Ender, mais
+# assombrie. Le Téléporteur se pose dehors, souvent en plein jour, et devait se
+# distinguer d'un bateau au premier coup d'œil.
+TELE_DARK = (18, 14, 26, 255)
+TELE_HULL = (46, 42, 62, 255)
+TELE_HULL_HI = (78, 74, 98, 255)
+TELE_STEEL = (128, 126, 142, 255)
+TELE_GOLD = (196, 158, 74, 255)
+TELE_LAMP_OFF = (54, 60, 56, 255)
+TELE_LAMP_ON = (96, 236, 128, 255)
+
+
+def tex_entity_teleporter():
+    """Planche 32x32 de la coque, découpée comme l'attend
+    EntityTeleporterRenderer : flanc, pont, liseré, témoin éteint, témoin
+    allumé. Les cinq régions doivent rester à leur place — le renderer les y
+    lit par coordonnées."""
+    px = canvas(32, 32)
+
+    # Flanc (0,0)-(16,8) : plaques rivetées, biseau clair en haut.
+    rect(px, 0, 0, 15, 7, TELE_HULL)
+    rect(px, 0, 0, 15, 0, TELE_HULL_HI)
+    rect(px, 0, 7, 15, 7, TELE_DARK)
+    for x in range(2, 15, 4):
+        put(px, x, 2, TELE_STEEL)
+        put(px, x, 5, TELE_STEEL)
+    for x in range(0, 16, 8):
+        rect(px, x, 1, x, 6, TELE_DARK)
+
+    # Pont (16,0)-(32,8) : obsidienne piquetée d'éclats.
+    rect(px, 16, 0, 31, 7, TELE_DARK)
+    for x, y in ((18, 2), (22, 5), (27, 1), (29, 6), (24, 3)):
+        put(px, x, y, TELE_HULL)
+    for x in range(17, 31, 6):
+        put(px, x, 4, TELE_HULL_HI)
+
+    # Liseré (0,8)-(16,12) : la bande d'or qui court sur le bord haut.
+    rect(px, 0, 8, 15, 11, TELE_GOLD)
+    rect(px, 0, 8, 15, 8, (232, 198, 112, 255))
+    rect(px, 0, 11, 15, 11, (140, 108, 44, 255))
+
+    # Témoin éteint (16,8)-(24,12), allumé (24,8)-(32,12).
+    for x0, glass in ((16, TELE_LAMP_OFF), (24, TELE_LAMP_ON)):
+        rect(px, x0, 8, x0 + 7, 11, TELE_DARK)
+        rect(px, x0 + 1, 9, x0 + 6, 10, glass)
+    rect(px, 25, 9, 30, 9, (170, 255, 190, 255))
+
+    write_png(f"{ASSETS}/textures/entity/entity_teleporter.png", 32, 32, px)
+
+
+def tex_entity_lander():
+    """Les deux faces de l'Atterrisseur : un dessus de piste marqué d'une croix
+    d'or, et un flanc de machine sombre."""
+    top = canvas(16, 16)
+    rect(top, 0, 0, 15, 15, TELE_DARK)
+    outline(top, 0, 0, 15, 15, TELE_HULL)
+    outline(top, 2, 2, 13, 13, TELE_HULL_HI)
+    # La croix d'atterrissage, creusée puis dorée.
+    rect(top, 7, 4, 8, 11, TELE_GOLD)
+    rect(top, 4, 7, 11, 8, TELE_GOLD)
+    rect(top, 7, 7, 8, 8, (240, 214, 140, 255))
+    for x, y in ((3, 3), (12, 3), (3, 12), (12, 12)):
+        put(top, x, y, TELE_STEEL)
+    write_png(f"{ASSETS}/textures/block/entity_lander_top.png", 16, 16, top)
+
+    side = canvas(16, 16)
+    rect(side, 0, 0, 15, 15, TELE_HULL)
+    rect(side, 0, 0, 15, 1, TELE_HULL_HI)
+    rect(side, 0, 14, 15, 15, TELE_DARK)
+    for x in range(2, 15, 5):
+        rect(side, x, 4, x + 2, 11, TELE_DARK)
+        put(side, x + 1, 7, TELE_LAMP_ON)
+    write_png(f"{ASSETS}/textures/block/entity_lander_side.png", 16, 16, side)
+
+
+def tex_entity_teleporter_item():
+    """L'objet en main : la coque vue de trois quarts, ramassée sur 16x16."""
+    px = canvas(16, 16)
+    # Coque.
+    rect(px, 2, 7, 13, 12, TELE_HULL)
+    rect(px, 2, 7, 13, 7, TELE_HULL_HI)
+    rect(px, 2, 12, 13, 12, TELE_DARK)
+    outline(px, 2, 7, 13, 12, TELE_DARK)
+    # Pont creux.
+    rect(px, 4, 8, 11, 9, TELE_DARK)
+    # Liseré d'or sur le bord haut.
+    rect(px, 3, 6, 12, 6, TELE_GOLD)
+    # Témoin de proue.
+    rect(px, 6, 3, 9, 5, TELE_DARK)
+    rect(px, 7, 4, 8, 4, TELE_LAMP_ON)
+    # Patins.
+    put(px, 3, 13, TELE_STEEL)
+    put(px, 12, 13, TELE_STEEL)
+    write_png(f"{ASSETS}/textures/item/entity_teleporter.png", 16, 16, px)
+
+
 def tex_console_gui():
     """Fond d'interface et planche de sprites du Contrôle de l'amitié.
 
@@ -1426,6 +1526,9 @@ def main():
     tex_passage_entity_sheet()
     tex_friendship_console()
     tex_console_gui()
+    tex_entity_teleporter()
+    tex_entity_lander()
+    tex_entity_teleporter_item()
     passage_models()
     passage_blockstates()
 

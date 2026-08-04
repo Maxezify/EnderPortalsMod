@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "enderportals:block/entity_lander_top",
+    "side": "enderportals:block/entity_lander_side",
+    "bottom": "enderportals:block/entity_lander_side"
+  }
+}

@@ -12,16 +12,12 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerChunkCache;
-import net.minecraft.server.level.TicketType;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -30,10 +26,6 @@ import net.minecraft.world.level.portal.DimensionTransition;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 /**
@@ -61,7 +53,7 @@ public final class TardisHelper {
         buildInteriorRoom(enderWorld, data);
         // Le voisinage se taille en fond, pendant que le joueur se relève de sa
         // chute : la première ouverture n'aura plus rien à attendre.
-        warmInterior(enderWorld, data.interiorDoorPos);
+        EnderChunks.warm(enderWorld, data.interiorDoorPos, WARMUP_RADIUS);
 
         // Remplace la porte inactive par la porte active, sans réactions de voisins.
         int swapFlags = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE;
@@ -89,28 +81,6 @@ public final class TardisHelper {
     // ------------------------------------------------------------------
 
     /**
-     * Ticket temporaire posé autour de la salle intérieure, le temps que ses
-     * chunks se génèrent.
-     *
-     * <p>Sans lui, la parcelle ne se génère qu'au moment où quelqu'un la
-     * réclame — et le premier à la réclamer est le fil du serveur lui-même, qui
-     * s'arrête alors jusqu'à ce que la génération finisse. C'est ce gel de
-     * quelques secondes que l'on voyait à la première ouverture, et c'est aussi
-     * ce qui distingue notre porte d'un portail du Nether : là-bas le monde
-     * d'arrivée se taille sur les fils de génération pendant que le jeu
-     * continue de tourner.</p>
-     *
-     * <p>Un ticket remet ce travail à sa place : à l'avance, en fond, pendant
-     * que le joueur est encore dehors. Il expire de lui-même au bout de
-     * {@value #WARMUP_TICKS} ticks — une parcelle que personne n'occupe n'a
-     * aucune raison de rester chargée.</p>
-     */
-    private static final int WARMUP_TICKS = 600;
-
-    private static final TicketType<ChunkPos> WARMUP =
-            TicketType.create("enderportals_warmup", Comparator.comparingLong(ChunkPos::toLong), WARMUP_TICKS);
-
-    /**
      * Rayon préchauffé, en chunks. Neuf chunks de côté : de quoi couvrir la
      * salle et ses abords immédiats sans mettre en chantier un carré de
      * plusieurs centaines de chunks dont on ne verra rien.
@@ -125,57 +95,18 @@ public final class TardisHelper {
      */
     private static final int INTERIOR_RADIUS = 1;
 
-    /** Pose le ticket de préchauffage et rend le chunk visé. */
-    private static ChunkPos warmInterior(ServerLevel enderWorld, BlockPos interior) {
-        ChunkPos center = new ChunkPos(interior);
-        enderWorld.getChunkSource().addRegionTicket(WARMUP, center, WARMUP_RADIUS, center);
-        return center;
-    }
-
     /**
-     * Exécute une tâche dès que les chunks de la salle sont prêts, <b>sans
-     * arrêter le fil du serveur</b>.
+     * Exécute une tâche dès que les chunks de la salle sont prêts, sans arrêter
+     * le fil du serveur.
      *
-     * <p>C'est ici que se jouait le gel. Poser un ticket ne suffit pas : la
-     * génération qu'il déclenche est asynchrone, et la moindre lecture qui
-     * suit — un simple {@code getBlockState} sur le monde de l'Ender — repasse
-     * par {@code getChunk(…, FULL, true)}, qui arrête le fil du serveur jusqu'à
-     * ce que le chunk soit prêt. Le ticket de la 0.17.1 ne servait donc à rien :
-     * la ligne suivante bloquait sur le chunk qu'il venait de demander.</p>
-     *
-     * <p>Pire, un seul chunk réclamé au statut FULL en entraîne une vingtaine :
-     * il lui faut ses voisins pour ses structures et sa lumière. Le fil du
-     * serveur attendait donc la génération de tout un voisinage.</p>
-     *
-     * <p>D'où cette continuation. On demande les chunks, on rend la main, et le
-     * travail reprend sur le fil du serveur quand ils arrivent — exactement ce
-     * que fait un portail du Nether, dont le monde d'arrivée se taille pendant
-     * que le jeu continue de tourner.</p>
+     * <p>Le ticket, l'attente asynchrone et le gel qu'il a fallu trois versions
+     * pour supprimer sont dans {@link EnderChunks} — un seul endroit, parce que
+     * l'atterrissage d'un Téléporteur d'entité pose exactement le même
+     * problème.</p>
      */
     private static void whenInteriorReady(MinecraftServer server, @Nullable BlockPos interior,
                                           Consumer<ServerLevel> task) {
-        ServerLevel enderWorld = server.getLevel(ModDimensions.ENDER_WORLD);
-        if (enderWorld == null || interior == null) {
-            return;
-        }
-        ChunkPos center = warmInterior(enderWorld, interior);
-        ServerChunkCache chunks = enderWorld.getChunkSource();
-
-        List<CompletableFuture<?>> pending = new ArrayList<>();
-        for (int dx = -INTERIOR_RADIUS; dx <= INTERIOR_RADIUS; dx++) {
-            for (int dz = -INTERIOR_RADIUS; dz <= INTERIOR_RADIUS; dz++) {
-                pending.add(chunks.getChunkFuture(center.x + dx, center.z + dz, ChunkStatus.FULL, true));
-            }
-        }
-        // thenRunAsync(…, server) : la suite repart sur le fil du serveur, seul
-        // endroit d'où l'on ait le droit de toucher au monde.
-        long chrono = EnderPortalsTiming.start();
-        CompletableFuture.allOf(pending.toArray(CompletableFuture[]::new))
-                .thenRunAsync(() -> {
-                    EnderPortalsTiming.since("attente des chunks de la salle", chrono);
-                    EnderPortalsTiming.measure("travaux dans la salle (fil du serveur)",
-                            () -> task.accept(enderWorld));
-                }, server);
+        EnderChunks.whenReady(server, interior, WARMUP_RADIUS, INTERIOR_RADIUS, "salle intérieure", task);
     }
 
     // ------------------------------------------------------------------

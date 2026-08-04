@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "enderportals:block/entity_lander"
+    }
+  }
+}

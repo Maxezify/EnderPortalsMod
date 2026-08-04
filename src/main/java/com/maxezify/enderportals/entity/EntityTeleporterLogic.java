@@ -1,0 +1,181 @@
+package com.maxezify.enderportals.entity;
+
+import com.maxezify.enderportals.ModBlocks;
+import com.maxezify.enderportals.ModComponents;
+import com.maxezify.enderportals.ModDimensions;
+import com.maxezify.enderportals.ModItems;
+import com.maxezify.enderportals.tardis.EnderChunks;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.portal.DimensionTransition;
+import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
+
+/**
+ * Ce que fait un clic droit sur un Téléporteur d'entité, et comment la coque
+ * rejoint son Atterrisseur.
+ *
+ * <p>Le départ se joue en deux temps, et c'est délibéré. Au clic, on ne fait que
+ * <b>demander les chunks d'arrivée</b> ; le voyage n'a lieu qu'une fois qu'ils
+ * sont là. Déposer une créature dans un chunk non généré reviendrait à la
+ * confier à un monde qui n'existe pas encore, et le seul moyen de forcer sa
+ * génération sur-le-champ serait d'arrêter le fil du serveur — le gel que la
+ * 0.17 a mis trois versions à supprimer. Voir {@link EnderChunks}.</p>
+ *
+ * <p>Une fois posée, la coque et ce qu'elle transporte ne font qu'un objet aux
+ * yeux de la sauvegarde : les passagers sont écrits <b>dans</b> la fiche du
+ * bateau. Le chunk peut donc se décharger derrière eux sans que personne ne se
+ * perde — c'est exactement ce qui fait qu'un cochon en barque survit à
+ * l'éloignement du joueur.</p>
+ */
+public final class EntityTeleporterLogic {
+
+    /** Chunks mis en chantier autour de l'Atterrisseur. */
+    private static final int WARM_RADIUS = 2;
+    /**
+     * Chunks dont on attend réellement la génération. Un carré de 3 sur 3 : la
+     * coque fait 1,4 bloc de large et peut chevaucher une bordure.
+     */
+    private static final int WAIT_RADIUS = 1;
+
+    /**
+     * Un clic droit : la machine part si elle transporte quelque chose, sinon
+     * elle retourne en main.
+     */
+    public static void click(ServerPlayer player, EntityTeleporterEntity machine) {
+        if (machine.getPassengers().isEmpty()) {
+            pickUp(player, machine);
+        } else {
+            depart(player, machine);
+        }
+    }
+
+    /**
+     * Reprend la machine vide, son lien avec elle.
+     *
+     * <p>Sans ce geste il faudrait la casser pour la déplacer, et donc la relier
+     * à chaque voyage — alors que faire l'aller-retour est précisément son
+     * usage.</p>
+     */
+    private static void pickUp(ServerPlayer player, EntityTeleporterEntity machine) {
+        ItemStack stack = new ItemStack(ModItems.ENTITY_TELEPORTER.get());
+        BlockPos lander = machine.getLander();
+        if (lander != null) {
+            stack.set(ModComponents.LANDER_POS.get(), lander);
+        }
+        if (!player.getInventory().add(stack)) {
+            player.drop(stack, false);
+        }
+        machine.level().playSound(null, machine.getX(), machine.getY(), machine.getZ(),
+                SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 0.7f, 1.4f);
+        machine.discard();
+    }
+
+    /** Le départ : vérifications, puis attente des chunks d'arrivée. */
+    private static void depart(ServerPlayer player, EntityTeleporterEntity machine) {
+        BlockPos lander = machine.getLander();
+        if (lander == null) {
+            say(player, "enderportals.message.teleporter_unlinked", ChatFormatting.RED);
+            return;
+        }
+        MinecraftServer server = player.server;
+        if (server.getLevel(ModDimensions.ENDER_WORLD) == null) {
+            return;
+        }
+        say(player, "enderportals.message.teleporter_departing", ChatFormatting.AQUA);
+        machine.level().playSound(null, machine.getX(), machine.getY(), machine.getZ(),
+                SoundEvents.BEACON_POWER_SELECT, SoundSource.BLOCKS, 0.8f, 1.5f);
+
+        EnderChunks.whenReady(server, lander, WARM_RADIUS, WAIT_RADIUS, "atterrisseur",
+                enderWorld -> land(player, machine, lander, enderWorld));
+    }
+
+    /**
+     * L'arrivée, une fois les chunks prêts.
+     *
+     * <p>Tout est revérifié : entre le clic et ce point, il a pu s'écouler
+     * plusieurs secondes de génération, pendant lesquelles la machine a pu être
+     * cassée, vidée, ou l'Atterrisseur démonté.</p>
+     */
+    private static void land(ServerPlayer player, EntityTeleporterEntity machine, BlockPos lander,
+                             ServerLevel enderWorld) {
+        if (machine.isRemoved() || machine.getPassengers().isEmpty()) {
+            return;
+        }
+        if (!enderWorld.getBlockState(lander).is(ModBlocks.ENTITY_LANDER.get())) {
+            say(player, "enderportals.message.teleporter_no_lander", ChatFormatting.RED);
+            machine.setLander(null);
+            return;
+        }
+        Vec3 arrival = Vec3.atBottomCenterOf(lander.above());
+        EntityTeleporterEntity arrived = move(machine, enderWorld, arrival);
+        if (arrived == null) {
+            say(player, "enderportals.message.teleporter_failed", ChatFormatting.RED);
+            return;
+        }
+        enderWorld.playSound(null, arrival.x, arrival.y, arrival.z,
+                SoundEvents.END_PORTAL_SPAWN, SoundSource.BLOCKS, 0.6f, 1.7f);
+        say(player, "enderportals.message.teleporter_arrived", ChatFormatting.GREEN);
+    }
+
+    /**
+     * Déplace la coque et ses passagers, et rend la coque telle qu'elle existe
+     * à l'arrivée.
+     *
+     * <p>Deux mondes, deux méthodes. Dans le même monde, {@code teleportTo}
+     * suffit : il repositionne les passagers avec le véhicule. D'un monde à
+     * l'autre, chaque entité est <b>recréée</b> de l'autre côté — l'ancienne est
+     * retirée et une copie apparaît — et c'est là qu'il faut être explicite.</p>
+     *
+     * <p>Les passagers sont <b>débarqués avant</b> le changement de dimension,
+     * puis remontés à l'arrivée sur la coque neuve. Laisser vanilla s'en charger
+     * aurait marché ou non selon la façon dont il traite un véhicule chargé, et
+     * une créature laissée derrière est une perte que le joueur ne peut pas
+     * réparer. Débarquer d'abord retire la question.</p>
+     */
+    @Nullable
+    private static EntityTeleporterEntity move(EntityTeleporterEntity machine, ServerLevel enderWorld,
+                                               Vec3 arrival) {
+        if (machine.level() == enderWorld) {
+            machine.teleportTo(arrival.x, arrival.y, arrival.z);
+            return machine;
+        }
+        List<Entity> riders = List.copyOf(machine.getPassengers());
+        for (Entity rider : riders) {
+            rider.stopRiding();
+        }
+        Entity moved = machine.changeDimension(transition(enderWorld, arrival, machine.getYRot()));
+        if (!(moved instanceof EntityTeleporterEntity arrived)) {
+            return null;
+        }
+        for (Entity rider : riders) {
+            Entity landed = rider.changeDimension(transition(enderWorld, arrival, rider.getYRot()));
+            if (landed != null) {
+                landed.startRiding(arrived, true);
+            }
+        }
+        return arrived;
+    }
+
+    private static DimensionTransition transition(ServerLevel enderWorld, Vec3 arrival, float yRot) {
+        return new DimensionTransition(enderWorld, arrival, Vec3.ZERO, yRot, 0.0f,
+                DimensionTransition.DO_NOTHING);
+    }
+
+    private static void say(ServerPlayer player, String key, ChatFormatting color) {
+        player.displayClientMessage(Component.translatable(key).withStyle(color), true);
+    }
+
+    private EntityTeleporterLogic() {
+    }
+}

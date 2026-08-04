@@ -3,6 +3,7 @@ package com.maxezify.enderportals;
 import com.maxezify.enderportals.block.AllyPassageBlock;
 import com.maxezify.enderportals.block.CentralizerBlock;
 import com.maxezify.enderportals.block.EnderBlock;
+import com.maxezify.enderportals.block.EntityLanderBlock;
 import com.maxezify.enderportals.block.FriendshipConsoleBlock;
 import com.maxezify.enderportals.block.InactiveTardisDoorBlock;
 import com.maxezify.enderportals.block.TardisDoorBlock;
@@ -164,6 +165,24 @@ public final class ModBlocks {
                     .isValidSpawn((state, level, pos, type) -> false)
                     .pushReaction(PushReaction.BLOCK)
                     .sound(SoundType.AMETHYST)));
+
+    /**
+     * Atterrisseur d'entité — la dalle où se pose un Téléporteur.
+     *
+     * <p>Aussi résistante que ce qu'elle sert : une machine peut arriver
+     * pendant une absence, et il serait fâcheux qu'elle trouve sa cible
+     * disparue. Immobile au piston, pour la même raison qu'ailleurs — un lien
+     * note une position, et un bloc qui bouge la rend fausse.</p>
+     */
+    public static final DeferredBlock<EntityLanderBlock> ENTITY_LANDER = BLOCKS.register("entity_lander",
+            () -> new EntityLanderBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .strength(3.5f, 1200.0f)
+                    .requiresCorrectToolForDrops()
+                    .lightLevel(state -> 6)
+                    .isValidSpawn((state, level, pos, type) -> false)
+                    .pushReaction(PushReaction.BLOCK)
+                    .sound(SoundType.NETHERITE_BLOCK)));
 
     /**
      * Contrôle de l'amitié — le pavé numérique qui commande le Passage.

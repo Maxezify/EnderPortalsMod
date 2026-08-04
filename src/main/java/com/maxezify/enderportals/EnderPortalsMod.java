@@ -43,6 +43,7 @@ public class EnderPortalsMod {
         ModBlocks.BLOCKS.register(modBus);
         ModItems.ITEMS.register(modBus);
         ModBlockEntities.BLOCK_ENTITIES.register(modBus);
+        ModEntities.ENTITIES.register(modBus);
         ModComponents.COMPONENTS.register(modBus);
         ModRegistries.CHUNK_GENERATORS.register(modBus);
         ModRegistries.CREATIVE_TABS.register(modBus);

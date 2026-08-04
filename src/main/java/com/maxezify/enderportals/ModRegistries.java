@@ -45,6 +45,8 @@ public final class ModRegistries {
                         output.accept(ModItems.CENTRALIZER.get());
                         output.accept(ModItems.ALLY_PASSAGE.get());
                         output.accept(ModItems.FRIENDSHIP_CONSOLE.get());
+                        output.accept(ModItems.ENTITY_TELEPORTER.get());
+                        output.accept(ModItems.ENTITY_LANDER.get());
                         output.accept(ModItems.ENDER_BAG.get());
                     })
                     .build());

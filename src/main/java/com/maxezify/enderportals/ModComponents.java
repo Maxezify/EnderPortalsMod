@@ -1,6 +1,7 @@
 package com.maxezify.enderportals;
 
 import com.mojang.serialization.Codec;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -27,6 +28,18 @@ public final class ModComponents {
     public static final Supplier<DataComponentType<Integer>> FRIEND_CODE = COMPONENTS.registerComponentType(
             "friend_code",
             builder -> builder.persistent(Codec.INT).networkSynchronized(ByteBufCodecs.VAR_INT));
+
+    /**
+     * Atterrisseur visé par un Téléporteur d'entité, tant qu'il est en main.
+     *
+     * <p>Sur l'objet et non dans un registre : la machine se règle dans la base,
+     * s'emporte réglée, et deux Téléporteurs liés à des Atterrisseurs différents
+     * ne se confondent pas dans l'inventaire — un composant différent suffit à
+     * séparer deux piles.</p>
+     */
+    public static final Supplier<DataComponentType<BlockPos>> LANDER_POS = COMPONENTS.registerComponentType(
+            "lander_pos",
+            builder -> builder.persistent(BlockPos.CODEC).networkSynchronized(BlockPos.STREAM_CODEC));
 
     private ModComponents() {
     }

@@ -3,6 +3,7 @@ package com.maxezify.enderportals;
 import com.maxezify.enderportals.item.CentralizerBlockItem;
 import com.maxezify.enderportals.item.EnderBagItem;
 import com.maxezify.enderportals.item.EnderWorldBlockItem;
+import com.maxezify.enderportals.item.EntityTeleporterItem;
 import com.maxezify.enderportals.item.EnderPickaxeItem;
 import com.maxezify.enderportals.item.EnderToolMaterial;
 import com.maxezify.enderportals.item.TardisKeyItem;
@@ -78,6 +79,21 @@ public final class ModItems {
                     new Item.Properties().rarity(Rarity.RARE),
                     "enderportals.message.console_here",
                     "enderportals.tooltip.friendship_console"));
+
+    /**
+     * Téléporteur d'entité — la coque qui se pose au sol et part avec ce qu'elle
+     * transporte. Une par pile : elle porte un réglage, empiler deux machines
+     * liées à des Atterrisseurs différents n'aurait aucun sens.
+     */
+    public static final DeferredItem<EntityTeleporterItem> ENTITY_TELEPORTER = ITEMS.register(
+            "entity_teleporter",
+            () -> new EntityTeleporterItem(new Item.Properties().stacksTo(1).rarity(Rarity.RARE)));
+
+    public static final DeferredItem<EnderWorldBlockItem> ENTITY_LANDER = ITEMS.register("entity_lander",
+            () -> new EnderWorldBlockItem(ModBlocks.ENTITY_LANDER.get(),
+                    new Item.Properties().rarity(Rarity.RARE),
+                    "enderportals.message.lander_here",
+                    "enderportals.tooltip.entity_lander"));
 
     /** Le Sac de l'Ender — en seconde main, range la ligne du haut dans la base. */
     public static final DeferredItem<EnderBagItem> ENDER_BAG = ITEMS.register("ender_bag",

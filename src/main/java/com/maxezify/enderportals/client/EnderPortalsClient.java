@@ -2,6 +2,7 @@ package com.maxezify.enderportals.client;
 
 import com.maxezify.enderportals.EnderPortalsMod;
 import com.maxezify.enderportals.ModBlockEntities;
+import com.maxezify.enderportals.ModEntities;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -28,6 +29,7 @@ public final class EnderPortalsClient {
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerBlockEntityRenderer(ModBlockEntities.TARDIS_DOOR.get(), TardisDoorRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.ALLY_PASSAGE.get(), AllyPassageRenderer::new);
+        event.registerEntityRenderer(ModEntities.ENTITY_TELEPORTER.get(), EntityTeleporterRenderer::new);
     }
 
     private EnderPortalsClient() {
