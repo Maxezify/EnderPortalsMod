@@ -97,7 +97,7 @@ public final class ConsoleServerLogic {
             return;
         }
         if (adjacentPassage(player, manager, console) == null) {
-            player.displayClientMessage(Component.translatable(refusalFor(player, console)), true);
+            player.displayClientMessage(Component.translatable(refusalFor(player, manager, console)), true);
             return;
         }
         manager.allies().setViewing(player.getUUID(), console);
@@ -159,7 +159,6 @@ public final class ConsoleServerLogic {
         UUID me = player.getUUID();
         AllyLinks links = manager.allies();
         long gameTime = player.serverLevel().getGameTime();
-        UUID myRequest = links.pendingRequestTarget(me, gameTime);
 
         List<ConsoleStatePayload.Ally> allies = new ArrayList<>();
         for (UUID other : links.declaredBy(me)) {
@@ -170,9 +169,9 @@ public final class ConsoleServerLogic {
                 state = ConsoleStatePayload.LINKED;
             } else if (!links.isConfirmed(me, other)) {
                 state = ConsoleStatePayload.PENDING;
-            } else if (other.equals(myRequest)) {
+            } else if (links.hasRequest(me, other, gameTime)) {
                 state = ConsoleStatePayload.AWAITING_THEM;
-            } else if (me.equals(links.pendingRequestTarget(other, gameTime))) {
+            } else if (links.hasRequest(other, me, gameTime)) {
                 state = ConsoleStatePayload.THEY_ASK;
             } else {
                 state = ConsoleStatePayload.CONFIRMED;
@@ -465,14 +464,21 @@ public final class ConsoleServerLogic {
      * est à quelqu'un d'autre. N'est appelé que lorsqu'il n'en commande pas
      * exactement une, ce qui rend les trois cas exhaustifs.
      */
-    private static String refusalFor(ServerPlayer player, BlockPos console) {
-        int touching = AllyPassageBlock.passagesTouching(player.level(), console, null).size();
-        if (touching > 1) {
+    private static String refusalFor(ServerPlayer player, TardisStateManager manager,
+                                     BlockPos console) {
+        Set<BlockPos> touching = AllyPassageBlock.passagesTouching(player.level(), console, null);
+        if (touching.size() > 1) {
             return "enderportals.message.console_ambiguous";
         }
-        return touching == 0
-                ? "enderportals.message.console_unattached"
-                : "enderportals.message.console_not_yours";
+        if (touching.isEmpty()) {
+            return "enderportals.message.console_unattached";
+        }
+        // Une arche voisine, mais pas la mienne. Encore faut-il qu'elle soit à
+        // quelqu'un : une arche absente du registre — monde édité hors du jeu —
+        // ne rend ce Contrôle à personne, elle le laisse sans commande.
+        return manager.findByPassage(touching.iterator().next()) != null
+                ? "enderportals.message.console_not_yours"
+                : "enderportals.message.console_unattached";
     }
 
     /**

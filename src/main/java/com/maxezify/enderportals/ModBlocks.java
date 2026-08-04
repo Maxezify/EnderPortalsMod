@@ -165,7 +165,14 @@ public final class ModBlocks {
                     .pushReaction(PushReaction.BLOCK)
                     .sound(SoundType.AMETHYST)));
 
-    /** Contrôle de l'amitié — le pavé numérique qui commande le Passage. */
+    /**
+     * Contrôle de l'amitié — le pavé numérique qui commande le Passage.
+     *
+     * <p>Immobile au piston, comme les trois autres appareils, et pour une
+     * raison qui lui est propre : la pose refuse un Contrôle qui toucherait deux
+     * arches, et un piston aurait pu l'y amener après coup. Ce qu'une règle
+     * interdit à la main ne doit pas être atteignable par la mécanique.</p>
+     */
     public static final DeferredBlock<FriendshipConsoleBlock> FRIENDSHIP_CONSOLE = BLOCKS.register(
             "friendship_console",
             () -> new FriendshipConsoleBlock(BlockBehaviour.Properties.of()
@@ -173,6 +180,7 @@ public final class ModBlocks {
                     .strength(3.5f, 9.0f)
                     .requiresCorrectToolForDrops()
                     .lightLevel(state -> 7)
+                    .pushReaction(PushReaction.BLOCK)
                     .sound(SoundType.METAL)));
 
     private ModBlocks() {

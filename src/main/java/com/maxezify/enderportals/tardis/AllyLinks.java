@@ -46,8 +46,17 @@ public class AllyLinks {
 
     /** Déclarations, à sens unique : déclarant → déclarés. */
     private final Map<UUID, Set<UUID>> declared = new HashMap<>();
-    /** Demandes de connexion en cours — au plus une par joueur. */
-    private final Map<UUID, Request> requests = new HashMap<>();
+    /**
+     * Demandes de connexion en cours : demandeur → (cible → demande).
+     *
+     * <p>Une par <b>paire</b>, et non une par joueur. Tant qu'un joueur n'avait
+     * qu'une arche, il n'avait qu'un lien à négocier et une seule demande
+     * suffisait. Depuis qu'il en pose autant qu'il a d'amis, il peut vouloir en
+     * solliciter plusieurs de suite : avec une demande unique, la seconde
+     * effaçait la première sans rien dire, et le premier allié voyait son nom
+     * cesser d'attendre sans raison visible.</p>
+     */
+    private final Map<UUID, Map<UUID, Request>> requests = new HashMap<>();
 
     /**
      * Liens lus dans une sauvegarde d'avant la 0.19.0, le temps d'un chargement.
@@ -67,12 +76,12 @@ public class AllyLinks {
     private final Map<UUID, BlockPos> viewers = new HashMap<>();
 
     /**
-     * Une demande de connexion : vers qui, depuis quelle arche, et jusqu'à
-     * quand. L'arche est celle que commandait le panneau utilisé — c'est elle
-     * qui se liera si l'autre accepte, et non « l'arche du joueur », qui n'a
-     * plus de sens depuis qu'il peut en avoir plusieurs.
+     * Une demande de connexion : depuis quelle arche, et jusqu'à quand. La cible
+     * est la clé. L'arche est celle que commandait le panneau utilisé — c'est
+     * elle qui se liera si l'autre accepte, et non « l'arche du joueur », qui
+     * n'a plus de sens depuis qu'il peut en avoir plusieurs.
      */
-    private record Request(UUID target, BlockPos passage, long expiresAt) {
+    private record Request(BlockPos passage, long expiresAt) {
     }
 
     /** Ce que devient une déclaration de code. */
@@ -148,21 +157,10 @@ public class AllyLinks {
                 declared.remove(from);
             }
         }
-        if (targetOf(from) != null && to.equals(targetOf(from))) {
-            requests.remove(from);
-        }
-        if (targetOf(to) != null && from.equals(targetOf(to))) {
-            requests.remove(to);
-        }
+        dropRequest(from, to);
+        dropRequest(to, from);
         // Le lien lui-même vit sur l'arche : c'est l'appelant qui le dénoue,
         // parce que lui seul voit les deux fiches de TARDIS.
-    }
-
-    /** Cible brute d'une demande, sans regarder sa péremption. */
-    @Nullable
-    private UUID targetOf(UUID player) {
-        Request request = requests.get(player);
-        return request == null ? null : request.target();
     }
 
     // ------------------------------------------------------------------
@@ -193,46 +191,55 @@ public class AllyLinks {
     public Connect toggleConnect(UUID from, UUID to, long gameTime, boolean alreadyLinked,
                                  BlockPos myPassage) {
         if (alreadyLinked) {
-            requests.remove(from);
+            // Seule la demande portant sur cette paire tombe : les autres
+            // sollicitations de ce joueur ne regardent pas cet allié.
+            dropRequest(from, to);
             return new Connect(ConnectResult.CLOSED, null);
         }
         if (!isConfirmed(from, to)) {
             return new Connect(ConnectResult.NOT_FRIENDS, null);
         }
         // L'autre a-t-il une demande vivante tournée vers moi ?
-        Request theirs = liveRequest(to, gameTime);
-        if (theirs != null && theirs.target().equals(from)) {
-            requests.remove(to);
-            requests.remove(from);
+        Request theirs = liveRequest(to, from, gameTime);
+        if (theirs != null) {
+            dropRequest(to, from);
+            dropRequest(from, to);
             return new Connect(ConnectResult.OPENED, theirs.passage());
         }
-        requests.put(from, new Request(to, myPassage, gameTime + REQUEST_TIMEOUT_TICKS));
+        requests.computeIfAbsent(from, key -> new HashMap<>())
+                .put(to, new Request(myPassage, gameTime + REQUEST_TIMEOUT_TICKS));
         return new Connect(ConnectResult.REQUESTED, null);
     }
 
     /**
-     * La demande de ce joueur si elle est encore valable. Les demandes périmées
-     * sont retirées à la lecture : elles sont au plus une par joueur, une purge
-     * périodique serait du travail pour rien.
+     * La demande de ce joueur vers cet allié, si elle est encore valable. Les
+     * demandes périmées sont retirées à la lecture : elles sont peu nombreuses
+     * et toujours relues, une purge périodique serait du travail pour rien.
      */
     @Nullable
-    private Request liveRequest(UUID player, long gameTime) {
-        Request request = requests.get(player);
+    private Request liveRequest(UUID from, UUID to, long gameTime) {
+        Map<UUID, Request> mine = requests.get(from);
+        Request request = mine == null ? null : mine.get(to);
         if (request == null) {
             return null;
         }
         if (gameTime >= request.expiresAt()) {
-            requests.remove(player);
+            dropRequest(from, to);
             return null;
         }
         return request;
     }
 
-    /** Vers qui ce joueur a une demande en cours, ou {@code null}. */
-    @Nullable
-    public UUID pendingRequestTarget(UUID player, long gameTime) {
-        Request request = liveRequest(player, gameTime);
-        return request == null ? null : request.target();
+    /** Ce joueur attend-il une réponse de cet allié ? */
+    public boolean hasRequest(UUID from, UUID to, long gameTime) {
+        return liveRequest(from, to, gameTime) != null;
+    }
+
+    private void dropRequest(UUID from, UUID to) {
+        Map<UUID, Request> mine = requests.get(from);
+        if (mine != null && mine.remove(to) != null && mine.isEmpty()) {
+            requests.remove(from);
+        }
     }
 
     // ------------------------------------------------------------------
