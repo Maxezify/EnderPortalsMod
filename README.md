@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.18.2**.
+Current version: **0.18.3**.
 
 ---
 
@@ -215,10 +215,10 @@ you were offline, which the chat simply dropped. The wheel scrolls it.
 The chat only takes over when you have no panel open. A connection request is
 valid for two minutes; it would be no use to anyone sleeping in a closed screen.
 
-Next to the terminal's title, a lamp reports whether this panel commands a
-passage of **yours** — **Working** in green, **Not working** in red. A panel
-belongs to nobody; what it needs is one of your own passages flush against it,
-and the lamp says so at a glance. Hover it and it names the reason.
+Next to the terminal's title, a lamp reports the one thing that matters:
+**is the passage open on both sides?** **Working** in green when it is,
+**Not working** in red otherwise — no passage against this panel, no link open,
+or an ally who has broken their own arch. Hover it and it names which.
 
 ### Becoming friends
 

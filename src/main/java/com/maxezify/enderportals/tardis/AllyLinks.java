@@ -275,6 +275,15 @@ public class AllyLinks {
         return viewers.get(player);
     }
 
+    /**
+     * Les joueurs qui ont un panneau à l'écran. La copie est délibérée :
+     * l'appelant leur renvoie leur état, et ce parcours retire au passage les
+     * demandes de connexion périmées — donc écrit dans les cartes voisines.
+     */
+    public List<UUID> viewers() {
+        return List.copyOf(viewers.keySet());
+    }
+
     // ------------------------------------------------------------------
     // Persistance
     // ------------------------------------------------------------------

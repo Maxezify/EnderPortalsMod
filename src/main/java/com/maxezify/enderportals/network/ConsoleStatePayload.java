@@ -24,9 +24,22 @@ import java.util.UUID;
  * d'arguments : le terminal du panneau se remplit donc dans la langue de celui
  * qui le lit, et non dans celle de celui qui a déclenché le message.</p>
  */
-public record ConsoleStatePayload(BlockPos console, int myCode, boolean passageReady,
+public record ConsoleStatePayload(BlockPos console, int myCode, int passageState,
                                   List<Ally> allies, List<ConsoleLog.Entry> log)
         implements CustomPacketPayload {
+
+    /** Aucun passage à moi n'est accolé à ce panneau : il ne commande rien. */
+    public static final int PASSAGE_NO_PANEL = 0;
+    /** Le panneau commande bien mon passage, mais aucun lien n'est ouvert. */
+    public static final int PASSAGE_CLOSED = 1;
+    /**
+     * Le lien existe, mais l'allié n'a plus de passage — cassé depuis. Les deux
+     * arches ne peuvent pas s'ouvrir, et c'est exactement le cas qu'un simple
+     * « lien ouvert » aurait affiché en vert à tort.
+     */
+    public static final int PASSAGE_ONE_SIDED = 2;
+    /** Ouvert des deux côtés. */
+    public static final int PASSAGE_OPEN = 3;
 
     /** Déclaré de mon côté seulement : l'autre n'a pas encore tapé mon code. */
     public static final int PENDING = 0;
@@ -55,7 +68,7 @@ public record ConsoleStatePayload(BlockPos console, int myCode, boolean passageR
     private static void write(FriendlyByteBuf buf, ConsoleStatePayload payload) {
         buf.writeBlockPos(payload.console());
         buf.writeVarInt(payload.myCode());
-        buf.writeBoolean(payload.passageReady());
+        buf.writeVarInt(payload.passageState());
         buf.writeVarInt(payload.allies().size());
         for (Ally ally : payload.allies()) {
             buf.writeUUID(ally.uuid());
@@ -76,7 +89,7 @@ public record ConsoleStatePayload(BlockPos console, int myCode, boolean passageR
     private static ConsoleStatePayload read(FriendlyByteBuf buf) {
         BlockPos console = buf.readBlockPos();
         int code = buf.readVarInt();
-        boolean ready = buf.readBoolean();
+        int passage = buf.readVarInt();
         int count = buf.readVarInt();
         List<Ally> allies = new ArrayList<>(Math.min(count, 64));
         for (int i = 0; i < count; i++) {
@@ -94,7 +107,7 @@ public record ConsoleStatePayload(BlockPos console, int myCode, boolean passageR
             }
             log.add(new ConsoleLog.Entry(key, args, tone));
         }
-        return new ConsoleStatePayload(console, code, ready, allies, log);
+        return new ConsoleStatePayload(console, code, passage, allies, log);
     }
 
     @Override

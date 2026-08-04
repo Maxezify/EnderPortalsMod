@@ -2,6 +2,7 @@ package com.maxezify.enderportals;
 
 import com.maxezify.enderportals.block.InactiveTardisDoorBlock;
 import com.maxezify.enderportals.compat.ImmPtlCompat;
+import com.maxezify.enderportals.network.ConsoleServerLogic;
 import com.maxezify.enderportals.tardis.TardisStateManager;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -15,6 +16,7 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +52,7 @@ public class EnderPortalsMod {
         NeoForge.EVENT_BUS.addListener(this::onBreakSpeed);
         NeoForge.EVENT_BUS.addListener(this::onBlockBroken);
         NeoForge.EVENT_BUS.addListener(this::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(this::onServerTick);
 
         LOGGER.info("World of Ender (NeoForge) initialisé — le vortex vous attend.");
         LOGGER.info("Immersive Portals détecté : {}", ImmPtlCompat.isLoaded());
@@ -79,8 +82,21 @@ public class EnderPortalsMod {
      */
     private void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            TardisStateManager.get(player.server).allies().setViewing(player.getUUID(), null);
+            ConsoleServerLogic.stopViewing(TardisStateManager.get(player.server), player.getUUID());
         }
+    }
+
+    /**
+     * Tient à jour les Contrôles de l'amitié ouverts à l'écran.
+     *
+     * <p>Leur témoin de passage dépend de choses qu'aucun clic n'annonce :
+     * l'arche s'ouvre trois secondes après la poignée de main, et un allié peut
+     * casser la sienne à l'autre bout du monde. La cadence et l'économie de
+     * paquets sont réglées dans {@link ConsoleServerLogic#tick} ; il n'y a ici
+     * que le branchement.</p>
+     */
+    private void onServerTick(ServerTickEvent.Post event) {
+        ConsoleServerLogic.tick(event.getServer());
     }
 
     /**

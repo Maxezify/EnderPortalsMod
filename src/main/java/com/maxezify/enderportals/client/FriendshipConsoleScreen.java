@@ -135,6 +135,13 @@ public class FriendshipConsoleScreen extends Screen {
     /** Journal mis en lignes pour l'affichage, et l'état dont il est issu. */
     private final List<TermLine> termLines = new ArrayList<>();
     private ConsoleStatePayload termSource;
+    /**
+     * Le journal dont {@link #termLines} est le repli. Le panneau se relit
+     * chaque seconde ; comparer le journal plutôt que l'état évite de replier
+     * pour rien, et surtout de renvoyer le lecteur en bas alors qu'il vient de
+     * remonter — le témoin de passage change sans que le journal bouge.
+     */
+    private List<ConsoleLog.Entry> termLog = List.of();
     /** Lignes remontées depuis le bas. Zéro : on regarde la plus récente. */
     private int termScroll;
 
@@ -190,9 +197,9 @@ public class FriendshipConsoleScreen extends Screen {
                 CLEAR_U, CLEAR_V, CLEAR_HOVER_U, CLEAR_HOVER_V,
                 COLOR_ACTION_LABEL, true, () -> typed.setLength(0)));
 
-        // La police est en place : le journal peut être replié. Un changement de
-        // résolution rejoue init(), et la largeur de repli ne bouge pas — mais
-        // repartir de l'état courant coûte moins qu'un cas particulier.
+        // La police est en place : le journal peut être replié. Les lignes
+        // survivent à un changement de résolution — la largeur de repli ne
+        // dépend pas de la fenêtre — donc seule la source est à redemander.
         termSource = null;
     }
 
@@ -365,7 +372,6 @@ public class FriendshipConsoleScreen extends Screen {
                 first = false;
             }
         }
-        termSource = state;
         // Une nouvelle ligne ramène la vue en bas : c'est elle qu'on veut lire.
         termScroll = 0;
     }
@@ -381,7 +387,11 @@ public class FriendshipConsoleScreen extends Screen {
 
     private void renderTerminal(GuiGraphics guiGraphics) {
         if (termSource != state) {
-            rebuildTerminal();
+            termSource = state;
+            if (!state.log().equals(termLog)) {
+                termLog = state.log();
+                rebuildTerminal();
+            }
         }
         int headerY = topPos + TERM_Y + 3;
         guiGraphics.drawString(font, Component.translatable("enderportals.console.terminal"),
@@ -439,7 +449,7 @@ public class FriendshipConsoleScreen extends Screen {
      */
     private void renderPassageLamp(GuiGraphics guiGraphics, int y) {
         Component label = passageLabel();
-        int color = state.passageReady() ? COLOR_LINKED : COLOR_WARN;
+        int color = passageWorks() ? COLOR_LINKED : COLOR_WARN;
         int textX = leftPos + TERM_X + TERM_W - 5 - font.width(label);
         guiGraphics.drawString(font, label, textX, y, color, false);
         int lampX = textX - 9;
@@ -447,31 +457,45 @@ public class FriendshipConsoleScreen extends Screen {
         guiGraphics.fill(lampX, y + 1, lampX + 5, y + 6, color);
     }
 
+    /** Le passage est-il ouvert des deux côtés ? C'est la seule chose qui est verte. */
+    private boolean passageWorks() {
+        return state.passageState() == ConsoleStatePayload.PASSAGE_OPEN;
+    }
+
     private Component passageLabel() {
-        return Component.translatable(state.passageReady()
+        return Component.translatable(passageWorks()
                 ? "enderportals.console.passage_ok"
                 : "enderportals.console.no_passage");
     }
 
     /**
-     * L'explication du témoin, au survol. « Ne fonctionne pas » désigne un
-     * défaut sans le nommer ; le joueur a besoin de savoir qu'il lui manque un
-     * Passage des Alliés accolé à ce panneau-ci. C'est exactement ce que dit le
-     * refus reçu au clic, et la même phrase sert donc aux deux.
+     * L'explication du témoin, au survol.
      *
-     * <p>Le survol se teste sur l'emprise du témoin et de son libellé, calculée
-     * comme au dessin plutôt que retenue d'une image à l'autre : rien à garder
-     * en cohérence.</p>
+     * <p>« Ne fonctionne pas » prononce un verdict sans en donner la cause, et
+     * les causes n'appellent pas le même geste : poser le panneau contre son
+     * passage, cliquer le nom d'un allié, ou attendre que l'allié remette
+     * l'arche qu'il vient de casser. Le survol nomme laquelle.</p>
+     *
+     * <p>L'emprise se recalcule comme au dessin plutôt que d'être retenue d'une
+     * image à l'autre : rien à garder en cohérence.</p>
      */
     private void renderPassageTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         int right = leftPos + TERM_X + TERM_W - 5;
         int left = right - font.width(passageLabel()) - 10;
         int y = topPos + TERM_Y + 3;
         if (mouseX >= left && mouseX < right && mouseY >= y && mouseY < y + font.lineHeight) {
-            guiGraphics.renderTooltip(font, Component.translatable(state.passageReady()
-                    ? "enderportals.console.passage_ok_hint"
-                    : "enderportals.message.passage_missing"), mouseX, mouseY);
+            guiGraphics.renderTooltip(font, Component.translatable(passageHint()), mouseX, mouseY);
         }
+    }
+
+    private String passageHint() {
+        return switch (state.passageState()) {
+            // La même phrase que le refus reçu au clic : c'est le même défaut.
+            case ConsoleStatePayload.PASSAGE_NO_PANEL -> "enderportals.message.passage_missing";
+            case ConsoleStatePayload.PASSAGE_CLOSED -> "enderportals.console.hint_closed";
+            case ConsoleStatePayload.PASSAGE_ONE_SIDED -> "enderportals.console.hint_one_sided";
+            default -> "enderportals.console.passage_ok_hint";
+        };
     }
 
     // ------------------------------------------------------------------

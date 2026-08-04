@@ -20,7 +20,9 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -44,6 +46,26 @@ public final class ConsoleServerLogic {
     /** Portée d'interaction admise, au carré. Huit blocs : large, mais borné. */
     private static final double REACH_SQR = 64.0;
 
+    /** Période de relecture des panneaux ouverts, en ticks. Une seconde. */
+    private static final int REFRESH_PERIOD = 20;
+
+    /**
+     * Dernier état envoyé à chaque écran ouvert.
+     *
+     * <p>Le panneau se relit chaque seconde parce que le témoin de passage
+     * dépend de choses qu'aucun clic n'annonce — l'ouverture qui aboutit trois
+     * secondes après la poignée de main, un allié qui casse son arche à l'autre
+     * bout. Réémettre pour autant un état identique coûterait un paquet par
+     * seconde et par écran, et surtout ferait retomber le terminal en bas du
+     * journal à chaque envoi : impossible d'y remonter. On ne parle donc que
+     * quand quelque chose a changé.</p>
+     *
+     * <p>L'entrée est retirée en même temps que le panneau se ferme, par
+     * {@link #stopViewing} — sans quoi rouvrir un panneau inchangé n'enverrait
+     * rien, et l'écran ne s'ouvrirait pas.</p>
+     */
+    private static final Map<UUID, ConsoleStatePayload> LAST_SENT = new HashMap<>();
+
     // ------------------------------------------------------------------
     // Ouverture et rafraîchissement
     // ------------------------------------------------------------------
@@ -63,7 +85,35 @@ public final class ConsoleServerLogic {
             return;
         }
         manager.allies().setViewing(player.getUUID(), console);
+        // L'ouverture doit parler, même sur un état identique au dernier connu :
+        // c'est ce paquet qui fait apparaître l'écran.
+        LAST_SENT.remove(player.getUUID());
         send(player, manager, console);
+    }
+
+    /** Ce panneau n'est plus à l'écran de ce joueur. */
+    public static void stopViewing(TardisStateManager manager, UUID player) {
+        manager.allies().setViewing(player, null);
+        LAST_SENT.remove(player);
+    }
+
+    /**
+     * Relit les panneaux ouverts, une fois par seconde.
+     *
+     * <p>Le témoin de passage ne dépend pas que des clics : l'arche s'ouvre trois
+     * secondes après la poignée de main, et un allié peut casser la sienne à
+     * l'autre bout du monde. Sans cette relecture, le témoin garderait la
+     * couleur qu'il avait au dernier geste — c'est-à-dire qu'il mentirait
+     * précisément dans les cas où il sert.</p>
+     */
+    public static void tick(MinecraftServer server) {
+        if (server.getTickCount() % REFRESH_PERIOD != 0) {
+            return;
+        }
+        TardisStateManager manager = TardisStateManager.get(server);
+        for (UUID viewer : manager.allies().viewers()) {
+            refresh(server, viewer);
+        }
     }
 
     /** Renvoie l'état au joueur si son panneau est encore ouvert. */
@@ -80,7 +130,12 @@ public final class ConsoleServerLogic {
     }
 
     private static void send(ServerPlayer player, TardisStateManager manager, BlockPos console) {
-        ModNetwork.toPlayer(player, buildState(player, manager, console));
+        ConsoleStatePayload state = buildState(player, manager, console);
+        if (state.equals(LAST_SENT.get(player.getUUID()))) {
+            return;
+        }
+        LAST_SENT.put(player.getUUID(), state);
+        ModNetwork.toPlayer(player, state);
     }
 
     private static ConsoleStatePayload buildState(ServerPlayer player, TardisStateManager manager,
@@ -114,7 +169,36 @@ public final class ConsoleServerLogic {
                 : Integer.compare(rank(a.state()), rank(b.state())));
 
         return new ConsoleStatePayload(console, manager.codeOf(me),
-                hasOwnPassageNextTo(player, manager, console), allies, manager.log().of(me));
+                passageState(player, manager, console), allies, manager.log().of(me));
+    }
+
+    /**
+     * Ce que le témoin du panneau doit montrer.
+     *
+     * <p>La condition d'ouverture est celle-là même que suit
+     * {@code AllyPassageHelper.reconcile} pour percer les arches : un lien, et
+     * un passage <b>de chaque côté</b>. La lire ici deux fois plutôt que de
+     * regarder l'état des blocs évite de faire charger la parcelle de l'allié
+     * chaque seconde, pour une réponse que le registre donne déjà.</p>
+     *
+     * <p>L'animation d'ouverture — trois secondes — compte comme ouverte : les
+     * deux arches y sont engagées sur une échéance commune, et rien ne peut plus
+     * l'interrompre. Clignoter en rouge à chaque ouverture réussie ferait
+     * craindre un défaut là où tout se passe bien.</p>
+     */
+    private static int passageState(ServerPlayer player, TardisStateManager manager,
+                                    BlockPos console) {
+        if (!hasOwnPassageNextTo(player, manager, console)) {
+            return ConsoleStatePayload.PASSAGE_NO_PANEL;
+        }
+        UUID allyId = manager.allies().linkOf(player.getUUID());
+        if (allyId == null) {
+            return ConsoleStatePayload.PASSAGE_CLOSED;
+        }
+        TardisData ally = manager.findByOwner(allyId);
+        return ally != null && ally.passagePos != null
+                ? ConsoleStatePayload.PASSAGE_OPEN
+                : ConsoleStatePayload.PASSAGE_ONE_SIDED;
     }
 
     /** Priorité d'affichage : ce qui demande une action du joueur remonte. */
@@ -152,12 +236,12 @@ public final class ConsoleServerLogic {
             // d'ouverture du nouveau, et effacerait celui-ci.
             BlockPos viewed = manager.allies().viewedConsole(player.getUUID());
             if (viewed != null && viewed.equals(payload.console())) {
-                manager.allies().setViewing(player.getUUID(), null);
+                stopViewing(manager, player.getUUID());
             }
             return;
         }
         if (!canReach(player, payload.console())) {
-            manager.allies().setViewing(player.getUUID(), null);
+            stopViewing(manager, player.getUUID());
             return;
         }
         if (manager.findByOwner(player.getUUID()) == null) {
