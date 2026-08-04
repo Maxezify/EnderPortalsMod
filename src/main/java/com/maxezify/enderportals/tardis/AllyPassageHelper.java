@@ -18,6 +18,7 @@ import net.minecraft.world.level.portal.DimensionTransition;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -31,15 +32,19 @@ import java.util.UUID;
  * parfaitement fonctionnel. On voyait la base d'en face sans pouvoir y aller.</p>
  *
  * <p>D'où la règle que tient {@link #reconcile} : la phase se <b>calcule</b>, à
- * partir du lien et d'une <b>échéance commune aux deux arches</b>
- * ({@link TardisData#passageOpenAt}), et elle s'écrit des <b>deux côtés à la
- * fois</b>. Deux propriétés en découlent, et ce sont elles qui comptent :</p>
+ * partir du lien porté par l'arche et d'une <b>échéance commune aux deux
+ * arches</b> ({@link PassageData#openAt}), et elle s'écrit des <b>deux côtés à
+ * la fois</b>. Deux propriétés en découlent, et ce sont elles qui comptent :</p>
  * <ul>
  *   <li>les deux arches ne peuvent pas diverger — quel que soit le côté qui
  *       calcule, il calcule la même chose et l'écrit aux deux ;</li>
  *   <li>aucun état n'est définitif — appelée une fois par seconde par chaque
  *       arche chargée, la réconciliation rattrape n'importe quel raté.</li>
  * </ul>
+ *
+ * <p>Depuis la 0.19.0 tout ceci se raisonne <b>par arche</b> et non par joueur :
+ * un joueur en a autant qu'il a d'amis reliés, et deux de ses arches n'ont rien
+ * à voir l'une avec l'autre.</p>
  */
 public final class AllyPassageHelper {
 
@@ -52,57 +57,106 @@ public final class AllyPassageHelper {
     // Entrées : le panneau, puis les arches elles-mêmes
     // ------------------------------------------------------------------
 
-    /** Le lien vient de s'ouvrir : les deux arches s'engagent. */
-    public static void openBoth(MinecraftServer server, UUID a, UUID b) {
-        // L'échéance est remise à zéro des deux côtés avant tout calcul : c'est
-        // ce qui garantit que l'animation d'ouverture est bien rejouée, y
-        // compris si les deux fiches portaient par hasard la même valeur d'une
-        // connexion antérieure.
-        TardisStateManager manager = TardisStateManager.get(server);
-        forget(manager.findByOwner(a));
-        forget(manager.findByOwner(b));
-        manager.setDirty();
-        reconcile(server, a);
-        reconcile(server, b);
+    /**
+     * Le lien vient de s'ouvrir entre deux arches nommément désignées : les deux
+     * s'engagent.
+     *
+     * <p>L'échéance est remise à zéro des deux côtés avant tout calcul, ce qui
+     * garantit que l'animation d'ouverture est bien rejouée — y compris si les
+     * deux arches portaient par hasard la même valeur d'une connexion
+     * antérieure.</p>
+     */
+    public static void openBoth(MinecraftServer server, PassageData mine, PassageData theirs) {
+        mine.openAt = 0L;
+        theirs.openAt = 0L;
+        TardisStateManager.get(server).setDirty();
+        reconcile(server, mine);
+        reconcile(server, theirs);
     }
 
-    private static void forget(@Nullable TardisData data) {
-        if (data != null) {
-            data.passageOpenAt = 0L;
+    /** Une arche dont le lien vient d'être dénoué, et son ancien pair. */
+    public static void closeBoth(MinecraftServer server, @Nullable PassageData mine,
+                                 @Nullable PassageData theirs) {
+        if (mine != null) {
+            reconcile(server, mine);
         }
-    }
-
-    /** Le lien vient d'être coupé : les deux arches se referment. */
-    public static void closeBoth(MinecraftServer server, UUID a, @Nullable UUID b) {
-        reconcile(server, a);
-        if (b != null) {
-            reconcile(server, b);
+        if (theirs != null) {
+            reconcile(server, theirs);
         }
     }
 
     /**
-     * Un seul joueur : le pair délogé par une nouvelle connexion. Son lien vient
-     * d'être retiré, donc la réconciliation le referme — portails compris, sans
-     * quoi il resterait une vue, et un chemin, vers une base dont le lien vient
-     * d'être coupé.
+     * L'arche vient d'être cassée : elle quitte le registre, son lien se dénoue,
+     * et celle d'en face se referme — sans quoi l'allié garderait une arche
+     * ouverte sur une adresse vide.
      */
-    public static void closeOne(MinecraftServer server, UUID player) {
-        reconcile(server, player);
+    public static void demolish(MinecraftServer server, BlockPos base) {
+        TardisStateManager manager = TardisStateManager.get(server);
+        TardisData owner = manager.findByPassage(base);
+        if (owner == null) {
+            return;
+        }
+        PassageData passage = TardisStateManager.passageAt(owner, base);
+        if (passage != null) {
+            dissolve(server, manager, owner, passage);
+        }
+    }
+
+    /**
+     * Retire une arche du registre et referme la paire.
+     *
+     * <p>Les portails sont retirés depuis <b>notre</b> arche avant qu'elle ne
+     * disparaisse : ils y sont inscrits aussi, et une arche jetée avec ses
+     * identifiants laisserait deux entités que plus personne ne saurait
+     * retrouver. La réconciliation d'en face fait le reste.</p>
+     */
+    private static void dissolve(MinecraftServer server, TardisStateManager manager,
+                                 TardisData owner, PassageData passage) {
+        PassageData theirs = pairOf(manager, owner, passage);
+        dropPortals(server, manager, passage);
+        manager.unlink(owner, passage);
+        manager.removePassage(owner, passage.pos);
+        if (theirs != null) {
+            theirs.openAt = 0L;
+            reconcile(server, theirs);
+        }
+    }
+
+    /**
+     * Toutes les arches de ce joueur. À réserver aux changements qui ne
+     * désignent aucune arche en particulier — un allié délogé, par exemple, dont
+     * on ne sait pas par quel couloir il passait.
+     */
+    public static void reconcileAll(MinecraftServer server, UUID owner) {
+        TardisData data = TardisStateManager.get(server).findByOwner(owner);
+        if (data == null) {
+            return;
+        }
+        // Copie : la réconciliation peut retirer une arche dont le bloc a disparu.
+        for (PassageData passage : List.copyOf(data.passages)) {
+            reconcile(server, passage);
+        }
     }
 
     /**
      * Réconciliation depuis l'arche elle-même, une fois par seconde. Rend le
-     * pseudo à afficher sur la façade close, ou une chaîne vide si l'arche
-     * n'appartient à personne.
+     * pseudo à afficher sur la façade close — celui de <b>l'allié</b> auquel
+     * cette arche mène, et non celui du propriétaire : ses arches sont toutes à
+     * lui, c'est leur destination qui les distingue.
      */
     public static String reconcileAt(ServerLevel level, BlockPos base) {
         MinecraftServer server = level.getServer();
-        TardisData mine = TardisStateManager.get(server).findByPassage(base);
-        if (mine == null || mine.ownerUuid == null) {
+        TardisStateManager manager = TardisStateManager.get(server);
+        TardisData mine = manager.findByPassage(base);
+        if (mine == null) {
             return "";
         }
-        reconcile(server, mine.ownerUuid);
-        return mine.ownerName;
+        PassageData passage = TardisStateManager.passageAt(mine, base);
+        if (passage == null) {
+            return "";
+        }
+        reconcile(server, passage);
+        return passage.ally == null ? "" : manager.nameOf(passage.ally);
     }
 
     // ------------------------------------------------------------------
@@ -110,51 +164,48 @@ public final class AllyPassageHelper {
     // ------------------------------------------------------------------
 
     /**
-     * Aligne l'arche de ce joueur — et celle de son allié — sur le lien noté
-     * côté serveur.
+     * Aligne cette arche — et celle de son allié — sur le lien qu'elle porte.
      *
      * <p>Idempotente : appelée en boucle sur un état déjà correct, elle ne
      * touche à rien. C'est ce qui permet de l'appeler à la fois sur décision du
      * panneau et à intervalle régulier.</p>
      */
-    public static void reconcile(MinecraftServer server, UUID owner) {
+    public static void reconcile(MinecraftServer server, PassageData mine) {
         TardisStateManager manager = TardisStateManager.get(server);
-        TardisData mine = manager.findByOwner(owner);
         ServerLevel level = server.getLevel(ModDimensions.ENDER_WORLD);
-        if (mine == null || level == null) {
+        if (level == null) {
             return;
         }
-        UUID allyId = manager.allies().linkOf(owner);
-        TardisData ally = allyId == null ? null : manager.findByOwner(allyId);
-        boolean linked = mine.passagePos != null && ally != null && ally.passagePos != null;
+        TardisData owner = manager.findByPassage(mine.pos);
+        PassageData theirs = pairOf(manager, owner, mine);
 
-        if (!linked) {
-            close(server, manager, level, mine, ally);
+        if (theirs == null) {
+            close(server, manager, level, mine, null);
             return;
         }
 
         long now = level.getGameTime();
-        if (mine.passageOpenAt == 0L || ally.passageOpenAt != mine.passageOpenAt) {
-            // L'échéance est commune aux deux fiches : c'est elle qui garantit
-            // que les deux arches perceront au même tick, y compris quand une
-            // seule des deux parcelles tourne.
+        if (mine.openAt == 0L || theirs.openAt != mine.openAt) {
+            // L'échéance est commune aux deux arches : c'est elle qui garantit
+            // qu'elles perceront au même tick, y compris quand une seule des
+            // deux parcelles tourne.
             long deadline = now + OPENING_TICKS;
-            mine.passageOpenAt = deadline;
-            ally.passageOpenAt = deadline;
+            mine.openAt = deadline;
+            theirs.openAt = deadline;
             manager.setDirty();
             // Invariant : une arche pleine ne porte jamais de portail. Pendant
             // les trois secondes d'animation elle l'est — un portail devant un
             // bloc plein, c'est une vue traversante qu'on ne peut pas franchir.
             dropPortals(server, manager, mine);
-            dropPortals(server, manager, ally);
-            writePhase(level, manager, ally, PassagePhase.OPENING);
+            dropPortals(server, manager, theirs);
+            writePhase(level, manager, theirs, PassagePhase.OPENING);
             if (writePhase(level, manager, mine, PassagePhase.OPENING)) {
-                level.playSound(null, mine.passagePos, SoundEvents.END_PORTAL_FRAME_FILL,
+                level.playSound(null, mine.pos, SoundEvents.END_PORTAL_FRAME_FILL,
                         SoundSource.BLOCKS, 0.9f, 1.4f);
             }
             return;
         }
-        if (now < mine.passageOpenAt) {
+        if (now < mine.openAt) {
             writePhase(level, manager, mine, PassagePhase.OPENING);
             return;
         }
@@ -162,47 +213,64 @@ public final class AllyPassageHelper {
         // L'échéance est passée : la paire de portails doit exister. Elle est
         // recréée à la demande — si les entités ont disparu (rechargement du
         // monde, purge), tryCreatePassagePortals les refait.
-        boolean wasActive = mine.passagePortalsActive;
-        int portalCount = mine.passagePortalIds.size();
-        boolean through = ImmPtlCompat.tryCreatePassagePortals(server, mine, ally);
-        if (wasActive != mine.passagePortalsActive || portalCount != mine.passagePortalIds.size()) {
+        boolean wasActive = mine.portalsActive;
+        int portalCount = mine.portalIds.size();
+        boolean through = ImmPtlCompat.tryCreatePassagePortals(server, mine, theirs);
+        if (wasActive != mine.portalsActive || portalCount != mine.portalIds.size()) {
             manager.setDirty();
         }
         PassagePhase target = through ? PassagePhase.THROUGH : PassagePhase.OPEN;
         if (writePhase(level, manager, mine, target)) {
             // On ne va toucher au chunk de l'allié que sur transition : le lire
             // à chaque seconde ferait charger sa parcelle pour rien.
-            writePhase(level, manager, ally, target);
-            level.playSound(null, mine.passagePos, SoundEvents.END_PORTAL_SPAWN,
+            writePhase(level, manager, theirs, target);
+            level.playSound(null, mine.pos, SoundEvents.END_PORTAL_SPAWN,
                     SoundSource.BLOCKS, 0.5f, 1.8f);
         }
     }
 
+    /**
+     * L'arche d'en face, si le lien est bien noué des deux côtés.
+     *
+     * <p>Un lien à sens unique ne compte pas : l'allié a pu casser son arche, et
+     * l'on se retrouve alors avec une destination qui ne mène nulle part. Rendre
+     * {@code null} referme la nôtre, ce qui est la seule chose honnête à
+     * faire.</p>
+     */
+    @Nullable
+    private static PassageData pairOf(TardisStateManager manager, @Nullable TardisData owner,
+                                      PassageData mine) {
+        if (owner == null || owner.ownerUuid == null || mine.ally == null) {
+            return null;
+        }
+        return TardisStateManager.passageTo(manager.findByOwner(mine.ally), owner.ownerUuid);
+    }
+
     private static void close(MinecraftServer server, TardisStateManager manager, ServerLevel level,
-                              TardisData mine, @Nullable TardisData ally) {
+                              PassageData mine, @Nullable PassageData theirs) {
         dropPortals(server, manager, mine);
-        if (ally != null) {
-            dropPortals(server, manager, ally);
+        if (theirs != null) {
+            dropPortals(server, manager, theirs);
         }
         // L'échéance se remet à zéro des deux côtés : la prochaine ouverture
         // rejouera son animation au lieu de percer d'un coup sur une valeur
         // restée en arrière.
-        if (mine.passageOpenAt != 0L || (ally != null && ally.passageOpenAt != 0L)) {
-            mine.passageOpenAt = 0L;
-            if (ally != null) {
-                ally.passageOpenAt = 0L;
+        if (mine.openAt != 0L || (theirs != null && theirs.openAt != 0L)) {
+            mine.openAt = 0L;
+            if (theirs != null) {
+                theirs.openAt = 0L;
             }
             manager.setDirty();
         }
-        BlockPos base = mine.passagePos;
-        if (base != null && writePhase(level, manager, mine, PassagePhase.CLOSED)) {
-            level.playSound(null, base, SoundEvents.BEACON_DEACTIVATE, SoundSource.BLOCKS, 0.7f, 1.6f);
+        if (writePhase(level, manager, mine, PassagePhase.CLOSED)) {
+            level.playSound(null, mine.pos, SoundEvents.BEACON_DEACTIVATE, SoundSource.BLOCKS, 0.7f, 1.6f);
         }
     }
 
-    private static void dropPortals(MinecraftServer server, TardisStateManager manager, TardisData data) {
-        if (data.passagePortalsActive || !data.passagePortalIds.isEmpty()) {
-            ImmPtlCompat.removePassagePortals(server, data);
+    private static void dropPortals(MinecraftServer server, TardisStateManager manager,
+                                    PassageData passage) {
+        if (passage.portalsActive || !passage.portalIds.isEmpty()) {
+            ImmPtlCompat.removePassagePortals(server, passage);
             manager.setDirty();
         }
     }
@@ -214,22 +282,17 @@ public final class AllyPassageHelper {
      *
      * <p>Le chunk est chargé au passage : l'arche d'un allié hors ligne doit
      * pouvoir s'ouvrir et se refermer, et sans cela l'écriture partirait dans le
-     * vide. Si le bloc a disparu entre-temps, la position mémorisée est
-     * nettoyée — le registre ne doit pas garder une adresse qui ne mène nulle
-     * part.</p>
+     * vide. Si le bloc a disparu entre-temps, l'arche est retirée du registre —
+     * il ne doit pas garder une adresse qui ne mène nulle part.</p>
      */
     private static boolean writePhase(ServerLevel level, TardisStateManager manager,
-                                      TardisData data, PassagePhase phase) {
-        BlockPos base = data.passagePos;
-        if (base == null) {
-            return false;
-        }
+                                      PassageData passage, PassagePhase phase) {
+        BlockPos base = passage.pos;
         // getBlockState ne charge pas le chunk ; getChunk si.
         level.getChunk(base);
         BlockState lower = level.getBlockState(base);
         if (!AllyPassageBlock.isPassage(lower)) {
-            data.passagePos = null;
-            manager.setDirty();
+            forgetVanished(level.getServer(), manager, passage);
             return false;
         }
         boolean changed = writeOne(level, base, lower, phase);
@@ -238,6 +301,20 @@ public final class AllyPassageHelper {
             changed |= writeOne(level, base.above(), upper, phase);
         }
         return changed;
+    }
+
+    /**
+     * Une arche dont le bloc a disparu sans passer par {@code onRemove} — monde
+     * édité hors du jeu, /setblock, explosion mal rattrapée. On la retire, et on
+     * dénoue son lien : sans quoi l'allié garderait une arche ouverte sur une
+     * adresse vide.
+     */
+    private static void forgetVanished(MinecraftServer server, TardisStateManager manager,
+                                       PassageData passage) {
+        TardisData owner = manager.findByPassage(passage.pos);
+        if (owner != null) {
+            dissolve(server, manager, owner, passage);
+        }
     }
 
     private static boolean writeOne(ServerLevel level, BlockPos pos, BlockState state, PassagePhase phase) {
@@ -257,11 +334,11 @@ public final class AllyPassageHelper {
     // ------------------------------------------------------------------
 
     /**
-     * Fait traverser un joueur vers le passage de son allié — le repli quand
-     * Immersive Portals est absent (phase {@link PassagePhase#OPEN}).
+     * Fait traverser un joueur vers l'arche d'en face — le repli quand Immersive
+     * Portals est absent (phase {@link PassagePhase#OPEN}).
      *
-     * <p>L'arrivée se fait devant le passage de l'autre, pas dedans : y déposer
-     * le joueur le ferait ressortir aussitôt par le même passage.</p>
+     * <p>L'arrivée se fait devant l'arche de l'autre, pas dedans : y déposer le
+     * joueur le ferait ressortir aussitôt par le même passage.</p>
      */
     public static void cross(ServerPlayer player, BlockPos passageBase, DoubleBlockHalf half) {
         MinecraftServer server = player.getServer();
@@ -274,25 +351,23 @@ public final class AllyPassageHelper {
         if (here == null || here.ownerUuid == null) {
             return;
         }
-        UUID ally = manager.allies().linkOf(here.ownerUuid);
-        if (ally == null) {
+        PassageData passage = TardisStateManager.passageAt(here, base);
+        if (passage == null || passage.ally == null) {
             return;
         }
-        TardisData there = manager.findByOwner(ally);
-        if (there == null || there.passagePos == null) {
-            return;
-        }
+        PassageData arrival = TardisStateManager.passageTo(
+                manager.findByOwner(passage.ally), here.ownerUuid);
         ServerLevel level = server.getLevel(ModDimensions.ENDER_WORLD);
-        if (level == null) {
+        if (arrival == null || level == null) {
             return;
         }
-        BlockPos arrival = there.passagePos.relative(there.passageFacing);
+        BlockPos landing = arrival.pos.relative(arrival.facing);
         player.setPortalCooldown(PORTAL_COOLDOWN_TICKS);
-        player.changeDimension(new DimensionTransition(level, Vec3.atBottomCenterOf(arrival),
-                Vec3.ZERO, there.passageFacing.toYRot(), 0.0f, DimensionTransition.DO_NOTHING));
-        level.playSound(null, arrival, SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 0.8f, 1.2f);
-        player.displayClientMessage(
-                Component.translatable("enderportals.message.passage_crossed", there.ownerName), true);
+        player.changeDimension(new DimensionTransition(level, Vec3.atBottomCenterOf(landing),
+                Vec3.ZERO, arrival.facing.toYRot(), 0.0f, DimensionTransition.DO_NOTHING));
+        level.playSound(null, landing, SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 0.8f, 1.2f);
+        player.displayClientMessage(Component.translatable("enderportals.message.passage_crossed",
+                manager.nameOf(passage.ally)), true);
     }
 
     private AllyPassageHelper() {

@@ -53,30 +53,15 @@ public class TardisData {
     @Nullable
     public BlockPos centralizerPos;
 
-    /** Passage des Alliés du joueur, dans le monde de l'Ender (ou null). */
-    @Nullable
-    public BlockPos passagePos;
-    public Direction passageFacing = Direction.NORTH;
-
     /**
-     * Portails Immersive Portals du Passage des Alliés. Les deux mêmes
-     * identifiants sont inscrits chez les deux alliés : le lien est symétrique,
-     * et chacun doit pouvoir nettoyer la paire depuis son côté.
-     */
-    public final List<UUID> passagePortalIds = new ArrayList<>();
-    public boolean passagePortalsActive;
-
-    /**
-     * Tick de jeu où l'arche finit de s'ouvrir ; zéro tant qu'elle est close.
+     * Les Passages des Alliés du joueur, dans le monde de l'Ender.
      *
-     * <p>La même valeur est écrite dans les <b>deux</b> fiches d'une paire. Une
-     * échéance partagée plutôt qu'un compte à rebours par arche : les deux
-     * percent alors au même tick, y compris quand une seule des deux parcelles
-     * tourne — et c'est très exactement ce qui manquait à la 0.15.0, où chaque
-     * arche attendait son propre tick programmé et où celle du chunk endormi
-     * n'en recevait jamais.</p>
+     * <p>Autant qu'il veut, un par ami à relier : chaque arche porte elle-même
+     * l'allié auquel elle mène (voir {@link PassageData}). Jusqu'à la 0.19.0 il
+     * n'y avait ici qu'une position, et le lien vivait dans le carnet à raison
+     * d'un seul par joueur — ouvrir avec l'un fermait donc avec l'autre.</p>
      */
-    public long passageOpenAt;
+    public final List<PassageData> passages = new ArrayList<>();
 
     /**
      * Code d'ami : huit chiffres, tapés au pavé numérique du Contrôle de
@@ -116,20 +101,12 @@ public class TardisData {
         if (centralizerPos != null) {
             putPos(nbt, "Centralizer", centralizerPos);
         }
-        if (passagePos != null) {
-            putPos(nbt, "Passage", passagePos);
-            nbt.putString("PassageFacing", passageFacing.getName());
-        }
         nbt.putInt("FriendCode", friendCode);
-        ListTag passagePortals = new ListTag();
-        for (UUID portal : passagePortalIds) {
-            CompoundTag tag = new CompoundTag();
-            tag.putUUID("Id", portal);
-            passagePortals.add(tag);
+        ListTag passageList = new ListTag();
+        for (PassageData passage : passages) {
+            passageList.add(passage.toNbt());
         }
-        nbt.put("PassagePortals", passagePortals);
-        nbt.putBoolean("PassagePortalsActive", passagePortalsActive);
-        nbt.putLong("PassageOpenAt", passageOpenAt);
+        nbt.put("Passages", passageList);
         return nbt;
     }
 
@@ -155,28 +132,30 @@ public class TardisData {
         data.immptlActive = nbt.getBoolean("ImmptlActive");
         data.centralizerPos = nbt.contains("Centralizer", Tag.TAG_INT_ARRAY)
                 ? getPos(nbt, "Centralizer") : null;
-        data.passagePos = nbt.contains("Passage", Tag.TAG_INT_ARRAY)
-                ? getPos(nbt, "Passage") : null;
-        data.passageFacing = directionOrDefault(nbt.getString("PassageFacing"), Direction.NORTH);
         data.friendCode = nbt.getInt("FriendCode");
-        for (Tag element : nbt.getList("PassagePortals", Tag.TAG_COMPOUND)) {
-            data.passagePortalIds.add(((CompoundTag) element).getUUID("Id"));
+        if (nbt.contains("Passages", Tag.TAG_LIST)) {
+            for (Tag element : nbt.getList("Passages", Tag.TAG_COMPOUND)) {
+                data.passages.add(PassageData.fromNbt((CompoundTag) element));
+            }
+        } else if (nbt.contains("Passage", Tag.TAG_INT_ARRAY)) {
+            // Sauvegarde d'avant la 0.19.0 : l'arche unique devient le premier
+            // élément de la liste. L'allié auquel elle menait est repris du
+            // carnet par TardisStateManager.load, seul endroit qui voie les deux.
+            data.passages.add(PassageData.fromLegacyNbt(nbt));
         }
-        data.passagePortalsActive = nbt.getBoolean("PassagePortalsActive");
-        data.passageOpenAt = nbt.getLong("PassageOpenAt");
         return data;
     }
 
-    private static Direction directionOrDefault(String name, Direction fallback) {
+    static Direction directionOrDefault(String name, Direction fallback) {
         Direction direction = Direction.byName(name);
         return direction != null && direction.getAxis().isHorizontal() ? direction : fallback;
     }
 
-    private static void putPos(CompoundTag nbt, String key, BlockPos pos) {
+    static void putPos(CompoundTag nbt, String key, BlockPos pos) {
         nbt.putIntArray(key, new int[]{pos.getX(), pos.getY(), pos.getZ()});
     }
 
-    private static BlockPos getPos(CompoundTag nbt, String key) {
+    static BlockPos getPos(CompoundTag nbt, String key) {
         int[] xyz = nbt.getIntArray(key);
         return xyz.length == 3 ? new BlockPos(xyz[0], xyz[1], xyz[2]) : BlockPos.ZERO;
     }

@@ -127,8 +127,8 @@ FR = [
     # 25
     "§5Le Passage§0\n\nÀ poser dans l'Ender, un "
     "§6Contrôle de l'amitié§0 collé contre lui.\n\n"
-    "Le panneau commande tout ; l'arche n'en est que "
-    "la porte.",
+    "§lUn passage par ami§r : posez-en autant que vous "
+    "voulez, chacun avec son panneau.",
     # 26
     "§5Le Code d'ami§0\n\nVotre clé porte un code de "
     "huit chiffres.\n\nDictez-le. Tapez celui de "
@@ -255,7 +255,8 @@ EN = [
 
     "§5The Passage§0\n\nPlace it in the Ender, with "
     "a §6Friendship Control§0 flush against it.\n\n"
-    "The panel drives everything.",
+    "§lOne passage per friend§r: place as many as you "
+    "like, each with its own panel.",
 
     "§5The Friend Code§0\n\nYour key carries an "
     "eight-digit code.\n\nRead it out. Type the "

@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.18.4**.
+Current version: **0.19.0**.
 
 ---
 
@@ -195,6 +195,15 @@ keypad that drives everything.
 
 The panel has to touch the passage — flush against it, on any of its four sides.
 
+**Place as many passages as you have friends to link.** Each arch carries one
+ally, and the panel next to it is what commands that arch: clicking a name at a
+panel binds *the* passage it touches. So a base with three friends has three
+arches, each with its own Control. A closed arch shows the name of the friend it
+leads to, which is how you tell them apart at a glance.
+
+Nothing forces you to have several. One arch, one Control, one friend at a time
+works exactly as before.
+
 ### The friend code
 
 Every awakened door receives an **eight-digit code, every digit between 1 and
@@ -254,8 +263,12 @@ and then open, with a **green** border on either side. The link stays open as
 long as you want it, and **you cross it both ways**: each of you walks freely
 into the other's base.
 
-To close it, click the name ringed in green. To reopen it, start over — both
-players click each other's name again.
+To close it, click the name ringed in green — from any of your panels. To
+reopen it, start over: both players click each other's name again.
+
+Two arches of yours never interfere: opening one leaves the others alone. The
+only displacement left is within a single arch — binding it to a new friend
+releases the one it held, and that friend is told.
 
 Once the link is established, the two bases stay connected **permanently**,
 including while one of the two players is offline: their passage remains open on

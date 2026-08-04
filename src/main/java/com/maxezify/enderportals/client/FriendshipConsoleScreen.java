@@ -96,6 +96,8 @@ public class FriendshipConsoleScreen extends Screen {
      * une cause qu'il faut aller chercher n'est pas lue.
      */
     private static final int TERM_STATUS_Y = TERM_Y + 54;
+    /** Largeur utile de la ligne d'état : de la marge de texte au bord opposé. */
+    private static final int TERM_STATUS_W = TERM_W - 11;
     /** Largeur de repli, ascenseur déduit. Doit rester d'accord avec TERM_BAR_X. */
     private static final int TERM_TEXT_W = 180;
     private static final int TERM_BAR_X = TERM_X + TERM_W - 7;
@@ -490,11 +492,34 @@ public class FriendshipConsoleScreen extends Screen {
      * n'en a qu'une, et un repli mangerait le journal.</p>
      */
     private void renderPassageStatus(GuiGraphics guiGraphics) {
-        guiGraphics.drawString(font, Component.translatable(passageStatusKey()),
-                leftPos + TERM_TEXT_X, topPos + TERM_STATUS_Y,
+        guiGraphics.drawString(font, statusLine(), leftPos + TERM_TEXT_X, topPos + TERM_STATUS_Y,
                 passageWorks() ? COLOR_LINKED : COLOR_WARN, false);
     }
 
+    /**
+     * La ligne d'état, garantie sur une seule ligne.
+     *
+     * <p>Deux des quatre phrases citent un pseudo, et un pseudo va jusqu'à seize
+     * caractères : les tailler à la mesure ne suffit donc pas, il faut rogner le
+     * nom. La bande n'a qu'une ligne et il n'y a pas de repli — un débordement
+     * partirait sous le cadre, silencieusement.</p>
+     */
+    private Component statusLine() {
+        String key = passageStatusKey();
+        Component line = Component.translatable(key, state.passageAlly());
+        if (font.width(line) <= TERM_STATUS_W) {
+            return line;
+        }
+        int budget = TERM_STATUS_W - font.width(Component.translatable(key, "")) - font.width("…");
+        return Component.translatable(key,
+                font.plainSubstrByWidth(state.passageAlly(), Math.max(0, budget)) + "…");
+    }
+
+    /**
+     * Deux des quatre phrases nomment l'allié : depuis qu'un joueur pose autant
+     * d'arches qu'il a d'amis, « ouvert » ne dit plus rien sans dire avec qui —
+     * deux panneaux voisins commandent deux couloirs différents.
+     */
     private String passageStatusKey() {
         return switch (state.passageState()) {
             case ConsoleStatePayload.PASSAGE_NO_PANEL -> "enderportals.console.status_no_panel";

@@ -2,6 +2,7 @@ package com.maxezify.enderportals.compat;
 
 import com.maxezify.enderportals.EnderPortalsMod;
 import com.maxezify.enderportals.ModDimensions;
+import com.maxezify.enderportals.tardis.PassageData;
 import com.maxezify.enderportals.tardis.TardisData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -181,16 +182,16 @@ public final class ImmPtlCompat {
      * @return {@code true} si la paire existe désormais, {@code false} s'il faut
      *         s'en tenir à la traversée par contact
      */
-    public static boolean tryCreatePassagePortals(MinecraftServer server, TardisData a, TardisData b) {
-        if (!isLoaded() || a.passagePos == null || b.passagePos == null) {
+    public static boolean tryCreatePassagePortals(MinecraftServer server, PassageData a, PassageData b) {
+        if (!isLoaded()) {
             return false;
         }
         // Les deux fiches portent la même paire d'identifiants : il suffit que
         // l'une des deux la voie vivante pour qu'il n'y ait rien à refaire.
         // N'interroger que « a » laissait passer le cas où c'est l'arche de
         // l'allié qui réconcilie en premier.
-        if ((a.passagePortalsActive && passagePortalsAlive(server, a))
-                || (b.passagePortalsActive && passagePortalsAlive(server, b))) {
+        if ((a.portalsActive && passagePortalsAlive(server, a))
+                || (b.portalsActive && passagePortalsAlive(server, b))) {
             return true;
         }
         removePassagePortals(server, a);
@@ -200,30 +201,29 @@ public final class ImmPtlCompat {
             return false;
         }
         try {
-            Vec3 centerA = doorwayCenter(a.passagePos);
-            Vec3 centerB = doorwayCenter(b.passagePos);
-            double rotation = Mth.wrapDegrees(
-                    a.passageFacing.toYRot() - b.passageFacing.toYRot() + 180.0);
+            Vec3 centerA = doorwayCenter(a.pos);
+            Vec3 centerB = doorwayCenter(b.pos);
+            double rotation = Mth.wrapDegrees(a.facing.toYRot() - b.facing.toYRot() + 180.0);
 
-            Entity first = spawnPortal(level, centerA, a.passageFacing,
+            Entity first = spawnPortal(level, centerA, a.facing,
                     ModDimensions.ENDER_WORLD, centerB, rotation, DOOR_WIDTH, DOOR_HEIGHT);
-            a.passagePortalIds.add(first.getUUID());
-            b.passagePortalIds.add(first.getUUID());
+            a.portalIds.add(first.getUUID());
+            b.portalIds.add(first.getUUID());
 
-            Entity second = spawnPortal(level, centerB, b.passageFacing,
+            Entity second = spawnPortal(level, centerB, b.facing,
                     ModDimensions.ENDER_WORLD, centerA, Mth.wrapDegrees(-rotation),
                     DOOR_WIDTH, DOOR_HEIGHT);
-            a.passagePortalIds.add(second.getUUID());
-            b.passagePortalIds.add(second.getUUID());
+            a.portalIds.add(second.getUUID());
+            b.portalIds.add(second.getUUID());
 
-            a.passagePortalsActive = true;
-            b.passagePortalsActive = true;
+            a.portalsActive = true;
+            b.portalsActive = true;
             // Les cotes des deux plans sont journalisées : c'est le seul moyen
             // de départager, sur un rapport de jeu, une géométrie fausse d'un
             // bloc resté plein sous un portail correct.
             EnderPortalsMod.LOGGER.info(
-                    "Portails du Passage créés : {} {} face {} <-> {} {} face {} (rotation {}°)",
-                    a.ownerName, centerA, a.passageFacing, b.ownerName, centerB, b.passageFacing, rotation);
+                    "Portails du Passage créés : {} face {} <-> {} face {} (rotation {}°)",
+                    centerA, a.facing, centerB, b.facing, rotation);
             return true;
         } catch (Throwable t) {
             broken = true;
@@ -236,26 +236,26 @@ public final class ImmPtlCompat {
     }
 
     /** Supprime les portails du Passage de ce joueur, s'ils existent. */
-    public static void removePassagePortals(MinecraftServer server, TardisData data) {
-        if (!data.passagePortalIds.isEmpty()) {
+    public static void removePassagePortals(MinecraftServer server, PassageData passage) {
+        if (!passage.portalIds.isEmpty()) {
             ServerLevel level = server.getLevel(ModDimensions.ENDER_WORLD);
-            for (UUID id : data.passagePortalIds) {
+            for (UUID id : passage.portalIds) {
                 discardEntity(level, id);
             }
-            data.passagePortalIds.clear();
+            passage.portalIds.clear();
         }
-        data.passagePortalsActive = false;
+        passage.portalsActive = false;
     }
 
-    private static boolean passagePortalsAlive(MinecraftServer server, TardisData data) {
-        if (data.passagePortalIds.isEmpty()) {
+    private static boolean passagePortalsAlive(MinecraftServer server, PassageData passage) {
+        if (passage.portalIds.isEmpty()) {
             return false;
         }
         ServerLevel level = server.getLevel(ModDimensions.ENDER_WORLD);
         if (level == null) {
             return false;
         }
-        for (UUID id : data.passagePortalIds) {
+        for (UUID id : passage.portalIds) {
             if (level.getEntity(id) == null) {
                 return false;
             }

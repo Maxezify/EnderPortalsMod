@@ -15,10 +15,10 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Le carnet d'adresses du Passage des Alliés : qui a déclaré qui, qui attend
- * une réponse, et quels passages sont ouverts.
+ * Le carnet d'adresses du Passage des Alliés : qui a déclaré qui, et qui attend
+ * une réponse.
  *
- * <p>Trois notions distinctes, qu'il vaut mieux ne pas confond:</p>
+ * <p>Trois notions distinctes, qu'il vaut mieux ne pas confondre :</p>
  * <ol>
  *   <li><b>La déclaration</b> est à sens unique — j'ai tapé le code de
  *       quelqu'un sur mon panneau. Elle est <b>durable</b>.</li>
@@ -31,10 +31,13 @@ import java.util.UUID;
  *       <b>lien</b> ouvert jusqu'à ce que l'un des deux le ferme.</li>
  * </ol>
  *
- * <p>Les liens sont stockés dans les deux sens. C'est une redondance assumée :
- * elle rend la lecture immédiate depuis n'importe quel bout, et
- * {@link #openLink} / {@link #closeLink} sont les deux seuls endroits qui
- * écrivent, donc les deux seuls à pouvoir la rompre.</p>
+ * <p>Le lien lui-même n'est plus ici depuis la 0.19.0 : il vit sur l'arche, dans
+ * {@link PassageData#ally}. Un joueur pose autant de Passages qu'il a d'amis à
+ * relier, et une carte {@code joueur → allié} ne pouvait en tenir qu'un. La
+ * conséquence pour cette classe est que la demande de connexion doit retenir
+ * <b>de quelle arche</b> elle part : c'est le panneau utilisé qui désigne
+ * l'arche à lier, et la réponse arrive une minute plus tard, devant une
+ * autre.</p>
  */
 public class AllyLinks {
 
@@ -45,8 +48,16 @@ public class AllyLinks {
     private final Map<UUID, Set<UUID>> declared = new HashMap<>();
     /** Demandes de connexion en cours — au plus une par joueur. */
     private final Map<UUID, Request> requests = new HashMap<>();
-    /** Liens ouverts, stockés dans les deux sens. */
-    private final Map<UUID, UUID> links = new HashMap<>();
+
+    /**
+     * Liens lus dans une sauvegarde d'avant la 0.19.0, le temps d'un chargement.
+     *
+     * <p>{@link TardisStateManager#load} les reporte sur l'arche unique de
+     * chaque joueur puis vide cette carte, qui n'est jamais réécrite : la
+     * migration ne se joue qu'une fois, et la sauvegarde suivante n'en garde
+     * aucune trace.</p>
+     */
+    private final Map<UUID, UUID> legacyLinks = new HashMap<>();
 
     /**
      * Panneaux ouverts à l'écran, pour pouvoir rafraîchir l'affichage d'un
@@ -55,8 +66,13 @@ public class AllyLinks {
      */
     private final Map<UUID, BlockPos> viewers = new HashMap<>();
 
-    /** Une demande de connexion : vers qui, et jusqu'à quand. */
-    private record Request(UUID target, long expiresAt) {
+    /**
+     * Une demande de connexion : vers qui, depuis quelle arche, et jusqu'à
+     * quand. L'arche est celle que commandait le panneau utilisé — c'est elle
+     * qui se liera si l'autre accepte, et non « l'arche du joueur », qui n'a
+     * plus de sens depuis qu'il peut en avoir plusieurs.
+     */
+    private record Request(UUID target, BlockPos passage, long expiresAt) {
     }
 
     /** Ce que devient une déclaration de code. */
@@ -138,9 +154,8 @@ public class AllyLinks {
         if (targetOf(to) != null && from.equals(targetOf(to))) {
             requests.remove(to);
         }
-        if (to.equals(links.get(from))) {
-            closeLink(from);
-        }
+        // Le lien lui-même vit sur l'arche : c'est l'appelant qui le dénoue,
+        // parce que lui seul voit les deux fiches de TARDIS.
     }
 
     /** Cible brute d'une demande, sans regarder sa péremption. */
@@ -155,28 +170,44 @@ public class AllyLinks {
     // ------------------------------------------------------------------
 
     /**
-     * Un joueur clique sur le nom d'un ami. Selon l'état : ferme le lien
-     * ouvert, scelle la connexion si l'autre attendait, ou pose une demande.
+     * Ce qu'un clic sur le nom d'un ami produit, et l'arche à lier quand il
+     * aboutit.
+     *
+     * <p>{@code theirPassage} n'est renseigné que sur {@link ConnectResult#OPENED} :
+     * c'est l'arche que l'autre avait sous les yeux au moment de sa demande.
+     * Sans elle, le serveur saurait qu'il faut ouvrir mais pas <b>laquelle</b>
+     * de ses arches lier — une question qui ne se posait pas tant qu'il n'en
+     * avait qu'une.</p>
      */
-    public ConnectResult toggleConnect(UUID from, UUID to, long gameTime) {
-        if (to.equals(linkOf(from))) {
-            closeLink(from);
-            return ConnectResult.CLOSED;
+    public record Connect(ConnectResult result, @Nullable BlockPos theirPassage) {
+    }
+
+    /**
+     * Un joueur clique sur le nom d'un ami, devant le panneau qui commande
+     * l'arche {@code myPassage}. Selon l'état : scelle la connexion si l'autre
+     * attendait, ferme le lien ouvert, ou pose une demande.
+     *
+     * <p>{@code alreadyLinked} vient de l'appelant : le lien est sur les arches,
+     * et cette classe ne les voit pas.</p>
+     */
+    public Connect toggleConnect(UUID from, UUID to, long gameTime, boolean alreadyLinked,
+                                 BlockPos myPassage) {
+        if (alreadyLinked) {
+            requests.remove(from);
+            return new Connect(ConnectResult.CLOSED, null);
         }
         if (!isConfirmed(from, to)) {
-            return ConnectResult.NOT_FRIENDS;
+            return new Connect(ConnectResult.NOT_FRIENDS, null);
         }
         // L'autre a-t-il une demande vivante tournée vers moi ?
         Request theirs = liveRequest(to, gameTime);
         if (theirs != null && theirs.target().equals(from)) {
             requests.remove(to);
             requests.remove(from);
-            lastDisplaced.clear();
-            lastDisplaced.addAll(openLink(from, to));
-            return ConnectResult.OPENED;
+            return new Connect(ConnectResult.OPENED, theirs.passage());
         }
-        requests.put(from, new Request(to, gameTime + REQUEST_TIMEOUT_TICKS));
-        return ConnectResult.REQUESTED;
+        requests.put(from, new Request(to, myPassage, gameTime + REQUEST_TIMEOUT_TICKS));
+        return new Connect(ConnectResult.REQUESTED, null);
     }
 
     /**
@@ -202,60 +233,6 @@ public class AllyLinks {
     public UUID pendingRequestTarget(UUID player, long gameTime) {
         Request request = liveRequest(player, gameTime);
         return request == null ? null : request.target();
-    }
-
-    /** Le joueur avec qui ce passage est ouvert, ou {@code null}. */
-    @Nullable
-    public UUID linkOf(UUID player) {
-        return links.get(player);
-    }
-
-    /**
-     * Un joueur n'a qu'un passage : ouvrir un lien ferme donc le précédent, des
-     * deux côtés. Les pairs ainsi délogés sont rendus à l'appelant, à qui il
-     * revient de refermer leurs arches — sans quoi elles resteraient ouvertes à
-     * l'écran sans mener nulle part.
-     */
-    private List<UUID> openLink(UUID a, UUID b) {
-        List<UUID> displaced = new ArrayList<>(2);
-        UUID freedByA = closeLink(a);
-        UUID freedByB = closeLink(b);
-        if (freedByA != null && !freedByA.equals(b)) {
-            displaced.add(freedByA);
-        }
-        if (freedByB != null && !freedByB.equals(a)) {
-            displaced.add(freedByB);
-        }
-        links.put(a, b);
-        links.put(b, a);
-        return displaced;
-    }
-
-    /** Pairs délogés par la dernière ouverture — vidé à chaque appel. */
-    private final List<UUID> lastDisplaced = new ArrayList<>();
-
-    /**
-     * Les pairs que la dernière connexion ouverte a délogés.
-     *
-     * <p>À n'appeler qu'immédiatement après un {@link ConnectResult#OPENED},
-     * dans le même tick : la liste n'est renseignée que sur ce chemin, et rien
-     * ne la vide ailleurs. Appelée dans un autre contexte, elle rendrait le
-     * résultat d'une ouverture antérieure.</p>
-     */
-    public List<UUID> takeDisplaced() {
-        List<UUID> copy = List.copyOf(lastDisplaced);
-        lastDisplaced.clear();
-        return copy;
-    }
-
-    /** Ferme le lien de ce joueur et rend le pair qui vient d'être libéré. */
-    @Nullable
-    public UUID closeLink(UUID player) {
-        UUID other = links.remove(player);
-        if (other != null) {
-            links.remove(other);
-        }
-        return other;
     }
 
     // ------------------------------------------------------------------
@@ -305,31 +282,17 @@ public class AllyLinks {
         }
         nbt.put("Declared", declarations);
 
-        ListTag openLinks = new ListTag();
-        Set<UUID> written = new HashSet<>();
-        for (Map.Entry<UUID, UUID> entry : links.entrySet()) {
-            // Un lien par paire : on n'écrit que le premier bout rencontré.
-            if (written.contains(entry.getKey()) || written.contains(entry.getValue())) {
-                continue;
-            }
-            written.add(entry.getKey());
-            written.add(entry.getValue());
-            CompoundTag tag = new CompoundTag();
-            tag.putUUID("A", entry.getKey());
-            tag.putUUID("B", entry.getValue());
-            openLinks.add(tag);
-        }
-        nbt.put("Links", openLinks);
-        // Les demandes en cours ne sont pas persistées : deux minutes ne
-        // survivent pas à un redémarrage de serveur, et les faire survivre
-        // ouvrirait un passage que plus personne n'attend.
+        // Ni les liens ni les demandes ne s'écrivent ici. Les liens sont sur les
+        // arches depuis la 0.19.0 ; les demandes ne survivent pas à un
+        // redémarrage, deux minutes n'ayant aucun sens en travers d'un arrêt —
+        // et les faire survivre ouvrirait un passage que plus personne n'attend.
         return nbt;
     }
 
     public void load(CompoundTag nbt) {
         declared.clear();
-        links.clear();
         requests.clear();
+        legacyLinks.clear();
         for (Tag element : nbt.getList("Declared", Tag.TAG_COMPOUND)) {
             CompoundTag tag = (CompoundTag) element;
             Set<UUID> targets = new HashSet<>();
@@ -340,12 +303,26 @@ public class AllyLinks {
                 declared.put(tag.getUUID("From"), targets);
             }
         }
+        // « Links » n'existe que dans les sauvegardes d'avant la 0.19.0.
         for (Tag element : nbt.getList("Links", Tag.TAG_COMPOUND)) {
             CompoundTag tag = (CompoundTag) element;
             UUID a = tag.getUUID("A");
             UUID b = tag.getUUID("B");
-            links.put(a, b);
-            links.put(b, a);
+            legacyLinks.put(a, b);
+            legacyLinks.put(b, a);
         }
+    }
+
+    /**
+     * L'allié auquel ce joueur était lié dans une sauvegarde d'avant la 0.19.0.
+     * Vidé par {@link #forgetLegacyLinks()} sitôt reporté sur les arches.
+     */
+    @Nullable
+    UUID legacyLinkOf(UUID player) {
+        return legacyLinks.get(player);
+    }
+
+    void forgetLegacyLinks() {
+        legacyLinks.clear();
     }
 }

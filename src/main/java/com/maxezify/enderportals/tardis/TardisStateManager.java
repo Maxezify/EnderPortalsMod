@@ -12,7 +12,9 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -161,12 +163,28 @@ public class TardisStateManager extends SavedData {
         return data == null ? "" : data.ownerName;
     }
 
-    /** Lie le Passage des Alliés posé à la parcelle du joueur. */
-    public void setPassage(UUID owner, BlockPos pos, Direction facing) {
+    /**
+     * Inscrit un Passage des Alliés fraîchement posé au registre de son
+     * propriétaire. Un joueur en pose autant qu'il veut : chacun s'ajoute à la
+     * liste au lieu de remplacer le précédent.
+     */
+    public void addPassage(UUID owner, BlockPos pos, Direction facing) {
         TardisData data = findByOwner(owner);
-        if (data != null) {
-            data.passagePos = pos;
-            data.passageFacing = facing;
+        if (data == null) {
+            return;
+        }
+        PassageData existing = passageAt(data, pos);
+        if (existing != null) {
+            existing.facing = facing;
+        } else {
+            data.passages.add(new PassageData(pos, facing));
+        }
+        setDirty();
+    }
+
+    /** Retire une arche du registre. */
+    public void removePassage(TardisData data, BlockPos pos) {
+        if (data.passages.remove(passageAt(data, pos))) {
             setDirty();
         }
     }
@@ -175,11 +193,126 @@ public class TardisStateManager extends SavedData {
     @Nullable
     public TardisData findByPassage(BlockPos pos) {
         for (TardisData data : tardises.values()) {
-            if (pos.equals(data.passagePos)) {
+            if (passageAt(data, pos) != null) {
                 return data;
             }
         }
         return null;
+    }
+
+    /** L'arche de ce joueur posée à cette position, ou {@code null}. */
+    @Nullable
+    public static PassageData passageAt(TardisData data, BlockPos pos) {
+        for (PassageData passage : data.passages) {
+            if (pos.equals(passage.pos)) {
+                return passage;
+            }
+        }
+        return null;
+    }
+
+    /** L'arche de ce joueur liée à cet allié, ou {@code null}. */
+    @Nullable
+    public static PassageData passageTo(@Nullable TardisData data, UUID ally) {
+        if (data == null) {
+            return null;
+        }
+        for (PassageData passage : data.passages) {
+            if (passage.leadsTo(ally)) {
+                return passage;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Le lien avec cet allié est-il noué des deux côtés ?
+     *
+     * <p>Comme l'amitié, il se lit au lieu de se stocker : deux arches liées
+     * l'une vers l'autre. Aucun état ne peut donc prétendre qu'un seul des deux
+     * est connecté — au pire une arche pointe dans le vide, et c'est ce que le
+     * panneau appelle un lien à sens unique.</p>
+     */
+    public boolean isLinked(UUID a, UUID b) {
+        return passageTo(findByOwner(a), b) != null && passageTo(findByOwner(b), a) != null;
+    }
+
+    /**
+     * Dénoue le lien porté par cette arche, des deux côtés, et rend l'allié qui
+     * vient d'être libéré. L'arche de l'allié est déliée elle aussi : un lien
+     * est une paire, et n'en défaire qu'une moitié laisserait l'autre ouverte
+     * sur rien.
+     */
+    @Nullable
+    public UUID unlink(@Nullable TardisData owner, @Nullable PassageData passage) {
+        if (owner == null || passage == null || passage.ally == null || owner.ownerUuid == null) {
+            return null;
+        }
+        UUID ally = passage.ally;
+        passage.ally = null;
+        PassageData theirs = passageTo(findByOwner(ally), owner.ownerUuid);
+        if (theirs != null) {
+            theirs.ally = null;
+        }
+        setDirty();
+        return ally;
+    }
+
+    /**
+     * Noue le lien entre deux arches, en écartant d'abord ce qui s'y opposait.
+     *
+     * <p>Deux exclusions, et elles ne disent pas la même chose : une arche ne
+     * porte qu'un lien, et un allié n'est joignable que par une arche. La
+     * première déloge l'ancien occupant de l'arche ; la seconde évite qu'un même
+     * ami se retrouve au bout de deux couloirs, ce que rien n'interdirait
+     * autrement et que la traversée ne saurait pas départager.</p>
+     *
+     * <p>Les <b>quatre</b> dénouements précèdent les deux nouages, et l'ordre
+     * n'est pas indifférent : dénouer une arche dénoue aussi celle d'en face, si
+     * bien que lier les deux côtés l'un après l'autre défaisait le premier en
+     * posant le second. Une paire se noue d'un seul geste.</p>
+     *
+     * <p>Les alliés ainsi libérés sont rendus à l'appelant, à qui il revient de
+     * refermer leurs arches — sans quoi elles resteraient ouvertes sur rien.</p>
+     */
+    public List<UUID> bind(TardisData a, PassageData pa, TardisData b, PassageData pb) {
+        List<UUID> displaced = new ArrayList<>(4);
+        collectDisplaced(displaced, unlink(a, pa), b.ownerUuid);
+        collectDisplaced(displaced, unlink(b, pb), a.ownerUuid);
+        collectDisplaced(displaced, unlink(a, passageTo(a, b.ownerUuid)), b.ownerUuid);
+        collectDisplaced(displaced, unlink(b, passageTo(b, a.ownerUuid)), a.ownerUuid);
+        pa.ally = b.ownerUuid;
+        pb.ally = a.ownerUuid;
+        setDirty();
+        return displaced;
+    }
+
+    /** Un allié n'est « délogé » que s'il n'est pas celui qu'on est en train de lier. */
+    private static void collectDisplaced(List<UUID> into, @Nullable UUID freed, @Nullable UUID partner) {
+        if (freed != null && !freed.equals(partner)) {
+            into.add(freed);
+        }
+    }
+
+    /**
+     * Reporte sur les arches les liens d'une sauvegarde d'avant la 0.19.0.
+     *
+     * <p>Le lien y vivait dans le carnet, à raison d'un par joueur, et l'arche
+     * y était unique : les deux se retrouvent donc sans ambiguïté. Passé ce
+     * point les liens hérités sont oubliés, et la sauvegarde suivante n'en garde
+     * aucune trace.</p>
+     */
+    private void adoptLegacyLinks() {
+        for (TardisData data : tardises.values()) {
+            if (data.ownerUuid == null || data.passages.size() != 1) {
+                continue;
+            }
+            PassageData passage = data.passages.get(0);
+            if (passage.ally == null) {
+                passage.ally = allyLinks.legacyLinkOf(data.ownerUuid);
+            }
+        }
+        allyLinks.forgetLegacyLinks();
     }
 
     @Nullable
@@ -267,6 +400,7 @@ public class TardisStateManager extends SavedData {
         }
         manager.allyLinks.load(nbt.getCompound("Allies"));
         manager.consoleLog.load(nbt.getCompound("ConsoleLog"));
+        manager.adoptLegacyLinks();
         // Deux cas à rattraper ici, une fois toutes les portes chargées pour que
         // freshCode() voie bien les codes déjà pris : celles éveillées avant
         // l'arrivée du Passage des Alliés n'ont pas de code du tout, et celles

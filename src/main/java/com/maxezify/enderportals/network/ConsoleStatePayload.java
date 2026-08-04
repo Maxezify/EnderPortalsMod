@@ -20,12 +20,18 @@ import java.util.UUID;
  * serveur de rafraîchir l'écran d'un joueur quand c'est l'action d'un
  * <i>autre</i> qui a changé son état.</p>
  *
+ * <p>{@code passageAlly} nomme l'allié auquel mène l'arche de ce panneau — vide
+ * si elle est libre. Avec plusieurs arches par joueur, le seul verdict
+ * « ouvert » ne suffirait plus : il faut dire <b>avec qui</b>, sans quoi deux
+ * panneaux voisins afficheraient la même phrase pour deux couloirs
+ * différents.</p>
+ *
  * <p>Le journal voyage avec le reste, sous forme de clés de traduction et
  * d'arguments : le terminal du panneau se remplit donc dans la langue de celui
  * qui le lit, et non dans celle de celui qui a déclenché le message.</p>
  */
 public record ConsoleStatePayload(BlockPos console, int myCode, int passageState,
-                                  List<Ally> allies, List<ConsoleLog.Entry> log)
+                                  String passageAlly, List<Ally> allies, List<ConsoleLog.Entry> log)
         implements CustomPacketPayload {
 
     /** Aucun passage à moi n'est accolé à ce panneau : il ne commande rien. */
@@ -40,6 +46,9 @@ public record ConsoleStatePayload(BlockPos console, int myCode, int passageState
     public static final int PASSAGE_ONE_SIDED = 2;
     /** Ouvert des deux côtés. */
     public static final int PASSAGE_OPEN = 3;
+
+    /** Longueur maximale d'un pseudo sur le fil. */
+    public static final int NAME_LENGTH = 32;
 
     /** Déclaré de mon côté seulement : l'autre n'a pas encore tapé mon code. */
     public static final int PENDING = 0;
@@ -69,10 +78,11 @@ public record ConsoleStatePayload(BlockPos console, int myCode, int passageState
         buf.writeBlockPos(payload.console());
         buf.writeVarInt(payload.myCode());
         buf.writeVarInt(payload.passageState());
+        buf.writeUtf(payload.passageAlly(), NAME_LENGTH);
         buf.writeVarInt(payload.allies().size());
         for (Ally ally : payload.allies()) {
             buf.writeUUID(ally.uuid());
-            buf.writeUtf(ally.name(), 32);
+            buf.writeUtf(ally.name(), NAME_LENGTH);
             buf.writeVarInt(ally.state());
         }
         buf.writeVarInt(payload.log().size());
@@ -90,10 +100,11 @@ public record ConsoleStatePayload(BlockPos console, int myCode, int passageState
         BlockPos console = buf.readBlockPos();
         int code = buf.readVarInt();
         int passage = buf.readVarInt();
+        String passageAlly = buf.readUtf(NAME_LENGTH);
         int count = buf.readVarInt();
         List<Ally> allies = new ArrayList<>(Math.min(count, 64));
         for (int i = 0; i < count; i++) {
-            allies.add(new Ally(buf.readUUID(), buf.readUtf(32), buf.readVarInt()));
+            allies.add(new Ally(buf.readUUID(), buf.readUtf(NAME_LENGTH), buf.readVarInt()));
         }
         int lines = buf.readVarInt();
         List<ConsoleLog.Entry> log = new ArrayList<>(Math.min(lines, ConsoleLog.CAPACITY));
@@ -107,7 +118,7 @@ public record ConsoleStatePayload(BlockPos console, int myCode, int passageState
             }
             log.add(new ConsoleLog.Entry(key, args, tone));
         }
-        return new ConsoleStatePayload(console, code, passage, allies, log);
+        return new ConsoleStatePayload(console, code, passage, passageAlly, allies, log);
     }
 
     @Override

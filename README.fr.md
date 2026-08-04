@@ -9,7 +9,7 @@ Derrière cette porte, une parcelle entière vous appartient — et vous l'empor
 partout : la porte se dématérialise dans votre poche et se repose où vous
 voulez.
 
-Version courante : **0.18.4**.
+Version courante : **0.19.0**.
 
 ---
 
@@ -204,6 +204,15 @@ l'amitié**, le pavé numérique qui commande tout.
 
 Le panneau doit toucher le passage — collé à lui, à l'un des quatre côtés.
 
+**Posez autant de passages que vous avez d'amis à relier.** Chaque arche porte
+un allié, et c'est le panneau accolé qui la commande : cliquer un nom sur un
+panneau lie *l'*arche qu'il touche. Une base reliée à trois amis a donc trois
+arches, chacune avec son Contrôle. Une arche close porte le pseudo de l'ami où
+elle mène — c'est ainsi qu'on les distingue d'un coup d'œil.
+
+Rien n'oblige à en avoir plusieurs : une arche, un Contrôle, un ami à la fois
+fonctionne exactement comme avant.
+
 ### Le code d'ami
 
 Chaque porte éveillée reçoit un **code de huit chiffres, tous compris entre 1 et
@@ -265,8 +274,13 @@ s'ouvrent, bordure **verte** de chaque côté. Le lien reste ouvert aussi
 longtemps que vous le voulez, et **on le franchit dans les deux sens** : chacun
 va librement chez l'autre.
 
-Pour refermer, cliquez le nom entouré de vert. Pour rouvrir, recommencez
-l'opération : chacun reclique le nom de l'autre.
+Pour refermer, cliquez le nom entouré de vert — depuis n'importe lequel de vos
+panneaux. Pour rouvrir, recommencez l'opération : chacun reclique le nom de
+l'autre.
+
+Deux de vos arches ne se gênent jamais : en ouvrir une laisse les autres
+tranquilles. Le seul délogement qui subsiste est interne à une arche — la lier à
+un nouvel ami libère celui qu'elle portait, et cet ami en est averti.
 
 Une fois le lien établi, les deux bases restent reliées **en permanence**, y
 compris quand l'un des deux joueurs est déconnecté : son passage reste ouvert de

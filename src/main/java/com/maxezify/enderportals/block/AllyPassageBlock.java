@@ -4,7 +4,6 @@ import com.maxezify.enderportals.ModBlockEntities;
 import com.maxezify.enderportals.ModBlocks;
 import com.maxezify.enderportals.block.entity.AllyPassageBlockEntity;
 import com.maxezify.enderportals.tardis.AllyPassageHelper;
-import com.maxezify.enderportals.tardis.TardisData;
 import com.maxezify.enderportals.tardis.TardisStateManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -45,7 +44,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -142,7 +140,7 @@ public class AllyPassageBlock extends Block implements EntityBlock {
             player.displayClientMessage(Component.translatable("enderportals.message.passage_no_door"), true);
             return;
         }
-        manager.setPassage(player.getUUID(), pos, state.getValue(FACING));
+        manager.addPassage(player.getUUID(), pos, state.getValue(FACING));
         player.displayClientMessage(Component.translatable("enderportals.message.passage_placed"), true);
     }
 
@@ -165,22 +163,16 @@ public class AllyPassageBlock extends Block implements EntityBlock {
     }
 
     /**
-     * Casser un passage rompt le lien qu'il portait, des deux côtés. Sans cela
-     * l'allié garderait un passage ouvert vers un néant.
+     * Casser un passage rompt le lien qu'il portait, des deux côtés, et le
+     * retire du registre. Les autres arches du joueur ne sont pas touchées :
+     * chacune porte son propre lien.
      */
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
         if (!level.isClientSide && state.getValue(HALF) == DoubleBlockHalf.LOWER && !newState.is(this)) {
             MinecraftServer server = level.getServer();
             if (server != null) {
-                TardisStateManager manager = TardisStateManager.get(server);
-                TardisData data = manager.findByPassage(pos);
-                if (data != null && data.ownerUuid != null) {
-                    UUID other = manager.allies().closeLink(data.ownerUuid);
-                    AllyPassageHelper.closeBoth(server, data.ownerUuid, other);
-                    data.passagePos = null;
-                    manager.setDirty();
-                }
+                AllyPassageHelper.demolish(server, pos);
             }
         }
         super.onRemove(state, level, pos, newState, movedByPiston);

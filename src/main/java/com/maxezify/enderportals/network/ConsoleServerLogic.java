@@ -6,6 +6,7 @@ import com.maxezify.enderportals.block.AllyPassageBlock;
 import com.maxezify.enderportals.tardis.AllyLinks;
 import com.maxezify.enderportals.tardis.AllyPassageHelper;
 import com.maxezify.enderportals.tardis.ConsoleLog;
+import com.maxezify.enderportals.tardis.PassageData;
 import com.maxezify.enderportals.tardis.TardisData;
 import com.maxezify.enderportals.tardis.TardisStateManager;
 import net.minecraft.ChatFormatting;
@@ -143,13 +144,14 @@ public final class ConsoleServerLogic {
         UUID me = player.getUUID();
         AllyLinks links = manager.allies();
         long gameTime = player.serverLevel().getGameTime();
-        UUID linked = links.linkOf(me);
         UUID myRequest = links.pendingRequestTarget(me, gameTime);
 
         List<ConsoleStatePayload.Ally> allies = new ArrayList<>();
         for (UUID other : links.declaredBy(me)) {
             int state;
-            if (other.equals(linked)) {
+            if (manager.isLinked(me, other)) {
+                // Vert pour tout lien ouvert, par quelque arche que ce soit : le
+                // carnet est celui du joueur, pas celui du panneau.
                 state = ConsoleStatePayload.LINKED;
             } else if (!links.isConfirmed(me, other)) {
                 state = ConsoleStatePayload.PENDING;
@@ -168,8 +170,15 @@ public final class ConsoleServerLogic {
                 ? a.name().compareToIgnoreCase(b.name())
                 : Integer.compare(rank(a.state()), rank(b.state())));
 
+        PassageData adjacent = adjacentPassage(player, manager, console);
         return new ConsoleStatePayload(console, manager.codeOf(me),
-                passageState(player, manager, console), allies, manager.log().of(me));
+                passageState(manager, me, adjacent), boundAllyName(manager, adjacent),
+                allies, manager.log().of(me));
+    }
+
+    /** Le pseudo de l'allié auquel l'arche de ce panneau mène, ou une chaîne vide. */
+    private static String boundAllyName(TardisStateManager manager, @Nullable PassageData adjacent) {
+        return adjacent == null || adjacent.ally == null ? "" : displayName(manager, adjacent.ally);
     }
 
     /**
@@ -186,17 +195,15 @@ public final class ConsoleServerLogic {
      * l'interrompre. Clignoter en rouge à chaque ouverture réussie ferait
      * craindre un défaut là où tout se passe bien.</p>
      */
-    private static int passageState(ServerPlayer player, TardisStateManager manager,
-                                    BlockPos console) {
-        if (!hasOwnPassageNextTo(player, manager, console)) {
+    private static int passageState(TardisStateManager manager, UUID me,
+                                    @Nullable PassageData adjacent) {
+        if (adjacent == null) {
             return ConsoleStatePayload.PASSAGE_NO_PANEL;
         }
-        UUID allyId = manager.allies().linkOf(player.getUUID());
-        if (allyId == null) {
+        if (adjacent.ally == null) {
             return ConsoleStatePayload.PASSAGE_CLOSED;
         }
-        TardisData ally = manager.findByOwner(allyId);
-        return ally != null && ally.passagePos != null
+        return TardisStateManager.passageTo(manager.findByOwner(adjacent.ally), me) != null
                 ? ConsoleStatePayload.PASSAGE_OPEN
                 : ConsoleStatePayload.PASSAGE_ONE_SIDED;
     }
@@ -305,25 +312,38 @@ public final class ConsoleServerLogic {
         refresh(server, target.ownerUuid);
     }
 
+    /**
+     * Un clic sur le nom d'un allié, devant un panneau donné.
+     *
+     * <p>Le panneau ne fait pas que valider : il <b>désigne l'arche</b>. Ouvrir
+     * lie celle qu'il touche, et c'est ainsi qu'un joueur relie plusieurs amis
+     * à la fois — un Contrôle par arche, chacun commandant la sienne.</p>
+     *
+     * <p>Fermer, en revanche, n'a pas besoin de panneau accolé : on doit
+     * toujours pouvoir couper, y compris depuis un autre panneau et y compris si
+     * l'arche a été démontée entre-temps.</p>
+     */
     private static void toggle(ServerPlayer player, TardisStateManager manager,
                                ConsoleActionPayload payload) {
         UUID me = player.getUUID();
         UUID other = payload.target();
         MinecraftServer server = player.server;
         AllyLinks links = manager.allies();
-        boolean wasLinked = other.equals(links.linkOf(me));
+        TardisData myDoor = manager.findByOwner(me);
+        boolean wasLinked = manager.isLinked(me, other);
+        PassageData adjacent = adjacentPassage(player, manager, payload.console());
 
-        // Ouvrir exige le panneau accolé au passage ; refermer, non — on doit
-        // toujours pouvoir couper, même si le passage a été démonté depuis.
-        if (!wasLinked && !hasOwnPassageNextTo(player, manager, payload.console())) {
+        if (!wasLinked && adjacent == null) {
             say(server, me, ConsoleLog.BAD, "enderportals.message.passage_missing");
             return;
         }
 
-        AllyLinks.ConnectResult result = links.toggleConnect(me, other, player.serverLevel().getGameTime());
+        AllyLinks.Connect connect = links.toggleConnect(me, other,
+                player.serverLevel().getGameTime(), wasLinked,
+                adjacent == null ? BlockPos.ZERO : adjacent.pos);
         manager.setDirty();
         String otherName = displayName(manager, other);
-        switch (result) {
+        switch (connect.result()) {
             case NOT_FRIENDS -> say(server, me, ConsoleLog.WARN,
                     "enderportals.message.connect_not_friends", otherName);
             case REQUESTED -> {
@@ -332,26 +352,10 @@ public final class ConsoleServerLogic {
                 say(server, other, ConsoleLog.WARN, "enderportals.message.connect_asked",
                         player.getGameProfile().getName());
             }
-            case OPENED -> {
-                // Ouvrir peut avoir délogé un lien antérieur, d'un côté ou de
-                // l'autre : on referme les arches ainsi laissées sans pair.
-                for (UUID displaced : links.takeDisplaced()) {
-                    AllyPassageHelper.closeOne(server, displaced);
-                    say(server, displaced, ConsoleLog.WARN, "enderportals.message.connect_displaced");
-                    refresh(server, displaced);
-                }
-                AllyPassageHelper.openBoth(server, me, other);
-                ModAdvancements.award(player, ModAdvancements.ALLIES);
-                ServerPlayer ally = server.getPlayerList().getPlayer(other);
-                if (ally != null) {
-                    ModAdvancements.award(ally, ModAdvancements.ALLIES);
-                }
-                say(server, me, ConsoleLog.GOOD, "enderportals.message.connect_opened", otherName);
-                say(server, other, ConsoleLog.GOOD, "enderportals.message.connect_opened",
-                        player.getGameProfile().getName());
-            }
+            case OPENED -> openLink(server, manager, player, myDoor, adjacent, other,
+                    connect.theirPassage(), otherName);
             case CLOSED -> {
-                AllyPassageHelper.closeBoth(server, me, other);
+                closeLink(server, manager, myDoor, other);
                 say(server, me, ConsoleLog.INFO, "enderportals.message.connect_closed", otherName);
                 say(server, other, ConsoleLog.INFO, "enderportals.message.connect_closed",
                         player.getGameProfile().getName());
@@ -362,18 +366,67 @@ public final class ConsoleServerLogic {
         refresh(server, other);
     }
 
+    /**
+     * Noue le lien entre deux arches nommément désignées : la mienne, celle que
+     * touche le panneau où je viens de cliquer ; la sienne, celle qu'il avait
+     * sous les yeux au moment de sa demande.
+     *
+     * <p>Son arche peut avoir disparu dans l'intervalle — deux minutes suffisent
+     * à casser un bloc. Le refus est alors explicite plutôt que d'ouvrir un lien
+     * sur une adresse vide.</p>
+     */
+    private static void openLink(MinecraftServer server, TardisStateManager manager, ServerPlayer player,
+                                 @Nullable TardisData myDoor, @Nullable PassageData mine, UUID other,
+                                 @Nullable BlockPos theirPos, String otherName) {
+        UUID me = player.getUUID();
+        TardisData theirDoor = manager.findByOwner(other);
+        PassageData theirs = theirDoor == null || theirPos == null
+                ? null : TardisStateManager.passageAt(theirDoor, theirPos);
+        if (myDoor == null || mine == null || theirDoor == null || theirs == null) {
+            say(server, me, ConsoleLog.BAD, "enderportals.message.connect_vanished", otherName);
+            return;
+        }
+        // Lier peut avoir délogé un lien antérieur, d'un côté ou de l'autre :
+        // on referme les arches ainsi laissées sans pair.
+        for (UUID freed : manager.bind(myDoor, mine, theirDoor, theirs)) {
+            AllyPassageHelper.reconcileAll(server, freed);
+            say(server, freed, ConsoleLog.WARN, "enderportals.message.connect_displaced");
+            refresh(server, freed);
+        }
+        AllyPassageHelper.openBoth(server, mine, theirs);
+        ModAdvancements.award(player, ModAdvancements.ALLIES);
+        ServerPlayer ally = server.getPlayerList().getPlayer(other);
+        if (ally != null) {
+            ModAdvancements.award(ally, ModAdvancements.ALLIES);
+        }
+        say(server, me, ConsoleLog.GOOD, "enderportals.message.connect_opened", otherName);
+        say(server, other, ConsoleLog.GOOD, "enderportals.message.connect_opened",
+                player.getGameProfile().getName());
+    }
+
+    /** Dénoue le lien avec cet allié, par quelque arche qu'il passe. */
+    private static void closeLink(MinecraftServer server, TardisStateManager manager,
+                                  @Nullable TardisData myDoor, UUID other) {
+        PassageData mine = TardisStateManager.passageTo(myDoor, other);
+        PassageData theirs = myDoor == null || myDoor.ownerUuid == null
+                ? null : TardisStateManager.passageTo(manager.findByOwner(other), myDoor.ownerUuid);
+        manager.unlink(myDoor, mine);
+        AllyPassageHelper.closeBoth(server, mine, theirs);
+    }
+
     private static void forget(ServerPlayer player, TardisStateManager manager,
                                ConsoleActionPayload payload) {
         UUID me = player.getUUID();
         UUID other = payload.target();
         MinecraftServer server = player.server;
-        // Ne refermer que si le lien portait bien sur l'allié oublié.
-        boolean wasLinked = other.equals(manager.allies().linkOf(me));
+        TardisData myDoor = manager.findByOwner(me);
+        // Ne refermer que si un lien portait bien sur l'allié oublié.
+        boolean wasLinked = manager.isLinked(me, other);
         String otherName = displayName(manager, other);
         manager.allies().forget(me, other);
         manager.setDirty();
         if (wasLinked) {
-            AllyPassageHelper.closeBoth(server, me, other);
+            closeLink(server, manager, myDoor, other);
             say(server, other, ConsoleLog.INFO, "enderportals.message.connect_closed",
                     player.getGameProfile().getName());
         }
@@ -386,25 +439,34 @@ public final class ConsoleServerLogic {
     // ------------------------------------------------------------------
 
     /**
-     * Un Passage des Alliés appartenant à ce joueur est-il accolé au panneau ?
-     * On regarde les quatre côtés, à la hauteur du panneau : « collé à elle »
-     * au sens propre.
+     * L'arche que ce panneau commande : celle de ses quatre voisines qui
+     * appartient au joueur.
+     *
+     * <p>C'est la pièce maîtresse depuis que l'on peut en poser plusieurs. Un
+     * panneau ne commande pas « le passage du joueur » — il n'y en a plus un —
+     * mais celui qu'il touche, et c'est donc l'emplacement du panneau qui décide
+     * quelle arche un clic va lier. Poser un Contrôle contre chaque arche est ce
+     * qui rend plusieurs amis simultanés utilisables.</p>
      */
-    private static boolean hasOwnPassageNextTo(ServerPlayer player, TardisStateManager manager,
+    @Nullable
+    private static PassageData adjacentPassage(ServerPlayer player, TardisStateManager manager,
                                                BlockPos console) {
         TardisData mine = manager.findByOwner(player.getUUID());
-        if (mine == null || mine.passagePos == null) {
-            return false;
+        if (mine == null) {
+            return null;
         }
         for (Direction side : Direction.Plane.HORIZONTAL) {
             BlockPos neighbour = console.relative(side);
             BlockState state = player.level().getBlockState(neighbour);
-            if (AllyPassageBlock.isPassage(state)
-                    && AllyPassageBlock.baseOf(state, neighbour).equals(mine.passagePos)) {
-                return true;
+            if (AllyPassageBlock.isPassage(state)) {
+                PassageData passage = TardisStateManager.passageAt(
+                        mine, AllyPassageBlock.baseOf(state, neighbour));
+                if (passage != null) {
+                    return passage;
+                }
             }
         }
-        return false;
+        return null;
     }
 
     /**
