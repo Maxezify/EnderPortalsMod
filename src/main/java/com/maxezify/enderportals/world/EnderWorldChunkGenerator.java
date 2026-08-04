@@ -5,6 +5,8 @@ import com.maxezify.enderportals.tardis.TardisStateManager;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -234,7 +236,6 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
     public CompletableFuture<ChunkAccess> fillFromNoise(Blender blender, RandomState randomState,
                                                         StructureManager structureManager, ChunkAccess chunk) {
         ChunkPos chunkPos = chunk.getPos();
-        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         int bottom = chunk.getMinBuildHeight();
         int top = bottom + chunk.getHeight();
         // Un seul générateur pour tout le chunk, re-graîné bloc par bloc.
@@ -244,20 +245,50 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
         BlockState enderBlock = ModBlocks.ENDER_BLOCK.get().defaultBlockState();
         int originX = chunkPos.getMinBlockX();
         int originZ = chunkPos.getMinBlockZ();
-        for (int dx = 0; dx < 16; dx++) {
-            for (int dz = 0; dz < 16; dz++) {
-                int x = originX + dx;
-                int z = originZ + dz;
-                // isPlotWall ne dépend que de la colonne : l'évaluer une fois
-                // par colonne au lieu d'une fois par bloc économise 383 modulos
-                // sur 384, soit près de 98 000 par chunk.
-                boolean wall = isPlotWall(x, z);
-                for (int y = bottom; y < top; y++) {
-                    chunk.setBlockState(cursor.set(x, y, z),
-                            stateAt(x, y, z, bottom, top, wall, random, enderBlock), false);
+
+        // On écrit dans les sections plutôt que par ChunkAccess#setBlockState,
+        // et c'est le nerf de l'affaire.
+        //
+        // ProtoChunk#setBlockState ne pose pas seulement un bloc : à CHAQUE
+        // appel il parcourt les neuf valeurs de Heightmap.Types, teste pour
+        // chacune son appartenance aux heightmaps du statut, amorce la carte si
+        // besoin, puis met à jour celles qui s'appliquent. Sur une colonne de
+        // 384 blocs et 256 colonnes, cela faisait près de 900 000 recherches
+        // d'ensemble et 300 000 mises à jour de heightmap par chunk — pour un
+        // résultat jeté, puisque primeHeightmaps les recalcule de toute façon à
+        // la fin.
+        //
+        // Vanilla ne paie pas ce prix : son générateur écrit dans la section,
+        // sous acquire(), et amorce les heightmaps une seule fois. On fait
+        // pareil. Les blocs posés, leur ordre et leurs états sont identiques —
+        // c'est le chemin d'écriture qui change, pas le monde produit.
+        for (int index = 0; index < chunk.getSectionsCount(); index++) {
+            LevelChunkSection section = chunk.getSection(index);
+            int sectionBottom = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(index));
+            section.acquire();
+            try {
+                for (int dx = 0; dx < 16; dx++) {
+                    for (int dz = 0; dz < 16; dz++) {
+                        int x = originX + dx;
+                        int z = originZ + dz;
+                        // isPlotWall ne dépend que de la colonne : l'évaluer une
+                        // fois par colonne au lieu d'une fois par bloc économise
+                        // 383 modulos sur 384, soit près de 98 000 par chunk.
+                        boolean wall = isPlotWall(x, z);
+                        for (int dy = 0; dy < 16; dy++) {
+                            int y = sectionBottom + dy;
+                            BlockState state = stateAt(x, y, z, bottom, top, wall, random, enderBlock);
+                            // useLocks = false : la section est déjà acquise.
+                            section.setBlockState(dx, dy, dz, state, false);
+                        }
+                    }
                 }
+            } finally {
+                section.release();
             }
         }
+
+        // Les heightmaps, une fois, à la fin — comme le fait vanilla.
         Heightmap.primeHeightmaps(chunk, EnumSet.of(
                 Heightmap.Types.WORLD_SURFACE_WG, Heightmap.Types.OCEAN_FLOOR_WG));
         return CompletableFuture.completedFuture(chunk);

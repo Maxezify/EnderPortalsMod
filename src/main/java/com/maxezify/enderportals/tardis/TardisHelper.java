@@ -11,12 +11,14 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.TicketType;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -24,6 +26,8 @@ import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.portal.DimensionTransition;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Comparator;
 
 /**
  * Toute la mécanique TARDIS : activation, salle intérieure, matérialisation,
@@ -48,6 +52,7 @@ public final class TardisHelper {
         TardisStateManager manager = TardisStateManager.get(server);
         TardisData data = manager.createTardis(player.getUUID(), player.getGameProfile().getName());
         buildInteriorRoom(enderWorld, data);
+        warmInterior(server, data);
 
         // Remplace la porte inactive par la porte active, sans réactions de voisins.
         int swapFlags = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE;
@@ -68,6 +73,54 @@ public final class TardisHelper {
         level.addFreshEntity(bolt);
         level.playSound(null, base, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 1.5f, 0.6f);
         player.displayClientMessage(Component.translatable("enderportals.message.activated"), false);
+    }
+
+    // ------------------------------------------------------------------
+    // Préchauffage de la parcelle
+    // ------------------------------------------------------------------
+
+    /**
+     * Ticket temporaire posé autour de la salle intérieure, le temps que ses
+     * chunks se génèrent.
+     *
+     * <p>Sans lui, la parcelle ne se génère qu'au moment où quelqu'un la
+     * réclame — et le premier à la réclamer est le fil du serveur lui-même, qui
+     * s'arrête alors jusqu'à ce que la génération finisse. C'est ce gel de
+     * quelques secondes que l'on voyait à la première ouverture, et c'est aussi
+     * ce qui distingue notre porte d'un portail du Nether : là-bas le monde
+     * d'arrivée se taille sur les fils de génération pendant que le jeu
+     * continue de tourner.</p>
+     *
+     * <p>Un ticket remet ce travail à sa place : à l'avance, en fond, pendant
+     * que le joueur est encore dehors. Il expire de lui-même au bout de
+     * {@value #WARMUP_TICKS} ticks — une parcelle que personne n'occupe n'a
+     * aucune raison de rester chargée.</p>
+     */
+    private static final int WARMUP_TICKS = 600;
+
+    private static final TicketType<ChunkPos> WARMUP =
+            TicketType.create("enderportals_warmup", Comparator.comparingLong(ChunkPos::toLong), WARMUP_TICKS);
+
+    /**
+     * Rayon préchauffé, en chunks. Neuf chunks de côté : de quoi couvrir la
+     * salle et ses abords immédiats sans mettre en chantier un carré de
+     * plusieurs centaines de chunks dont on ne verra rien.
+     */
+    private static final int WARMUP_RADIUS = 4;
+
+    /**
+     * Demande la génération des chunks autour de la salle, sans attendre.
+     * Appelée à l'éveil de la porte puis à chaque ouverture : la première fois
+     * le monde se taille, les suivantes le ticket ne fait que retenir ce qui
+     * existe déjà.
+     */
+    private static void warmInterior(MinecraftServer server, TardisData data) {
+        ServerLevel enderWorld = server.getLevel(ModDimensions.ENDER_WORLD);
+        if (enderWorld == null || data.interiorDoorPos == null) {
+            return;
+        }
+        ChunkPos center = new ChunkPos(data.interiorDoorPos);
+        enderWorld.getChunkSource().addRegionTicket(WARMUP, center, WARMUP_RADIUS, center);
     }
 
     // ------------------------------------------------------------------
@@ -335,6 +388,11 @@ public final class TardisHelper {
                         open ? SoundEvents.IRON_DOOR_OPEN : SoundEvents.IRON_DOOR_CLOSE,
                         SoundSource.BLOCKS, 1.0f, 1.0f);
             }
+        }
+        if (open) {
+            // Le joueur va traverser dans un instant : que ses chunks soient
+            // prêts avant lui, et non sous ses pieds.
+            warmInterior(server, data);
         }
         setInteriorOpen(server, data, open);
         TardisStateManager.get(server).setDirty();

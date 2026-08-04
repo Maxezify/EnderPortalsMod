@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.17.0**.
+Current version: **0.17.1**.
 
 ---
 
@@ -390,7 +390,7 @@ Requires **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.17.0.jar
+# → build/libs/enderportals-0.17.1.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are
