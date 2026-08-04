@@ -71,7 +71,19 @@ public final class ConsoleServerLogic {
     // Ouverture et rafraîchissement
     // ------------------------------------------------------------------
 
-    /** Ouvre le panneau chez ce joueur, s'il a bien une porte éveillée. */
+    /**
+     * Ouvre le panneau, si ce Contrôle est bien à ce joueur.
+     *
+     * <p>Un Contrôle appartient à qui appartient l'arche qu'il touche : c'est la
+     * seule définition qui n'invente aucune donnée, et elle suffit. Chez un
+     * allié, atteint par un passage ouvert, les Contrôles commandent ses arches
+     * à lui — ils refusent donc de s'ouvrir, et le carnet reste celui de chacun,
+     * sur ses propres panneaux.</p>
+     *
+     * <p>Un Contrôle qui ne touche aucune arche n'appartient à personne. Il ne
+     * s'ouvre pas non plus : il ne commanderait rien, et le dire tout de suite
+     * vaut mieux qu'un panneau qui s'ouvre pour annoncer son impuissance.</p>
+     */
     public static void open(ServerPlayer player, BlockPos console) {
         MinecraftServer server = player.getServer();
         if (server == null) {
@@ -79,10 +91,16 @@ public final class ConsoleServerLogic {
         }
         TardisStateManager manager = TardisStateManager.get(server);
         if (manager.findByOwner(player.getUUID()) == null) {
-            // Le seul message qui reste hors du terminal : il explique
-            // justement pourquoi le panneau ne s'ouvre pas.
+            // Ces messages restent hors du terminal : ils expliquent justement
+            // pourquoi le panneau ne s'ouvre pas.
             player.displayClientMessage(
                     Component.translatable("enderportals.message.console_no_door"), true);
+            return;
+        }
+        if (adjacentPassage(player, manager, console) == null) {
+            player.displayClientMessage(Component.translatable(touchesAPassage(player, console)
+                    ? "enderportals.message.console_not_yours"
+                    : "enderportals.message.console_unattached"), true);
             return;
         }
         manager.allies().setViewing(player.getUUID(), console);
@@ -172,7 +190,7 @@ public final class ConsoleServerLogic {
 
         PassageData adjacent = adjacentPassage(player, manager, console);
         return new ConsoleStatePayload(console, manager.codeOf(me),
-                passageState(manager, me, adjacent), boundAllyName(manager, adjacent),
+                passageState(adjacent), boundAllyName(manager, adjacent),
                 allies, manager.log().of(me));
     }
 
@@ -195,17 +213,13 @@ public final class ConsoleServerLogic {
      * l'interrompre. Clignoter en rouge à chaque ouverture réussie ferait
      * craindre un défaut là où tout se passe bien.</p>
      */
-    private static int passageState(TardisStateManager manager, UUID me,
-                                    @Nullable PassageData adjacent) {
+    private static int passageState(@Nullable PassageData adjacent) {
         if (adjacent == null) {
             return ConsoleStatePayload.PASSAGE_NO_PANEL;
         }
-        if (adjacent.ally == null) {
-            return ConsoleStatePayload.PASSAGE_CLOSED;
-        }
-        return TardisStateManager.passageTo(manager.findByOwner(adjacent.ally), me) != null
-                ? ConsoleStatePayload.PASSAGE_OPEN
-                : ConsoleStatePayload.PASSAGE_ONE_SIDED;
+        return adjacent.ally == null
+                ? ConsoleStatePayload.PASSAGE_CLOSED
+                : ConsoleStatePayload.PASSAGE_OPEN;
     }
 
     /** Priorité d'affichage : ce qui demande une action du joueur remonte. */
@@ -448,6 +462,20 @@ public final class ConsoleServerLogic {
      * quelle arche un clic va lier. Poser un Contrôle contre chaque arche est ce
      * qui rend plusieurs amis simultanés utilisables.</p>
      */
+    /**
+     * Ce panneau touche-t-il une arche, à qui qu'elle soit ? Ce qui distingue
+     * « ce Contrôle est à quelqu'un d'autre » de « ce Contrôle ne commande
+     * rien » — deux refus qui n'appellent pas le même geste.
+     */
+    private static boolean touchesAPassage(ServerPlayer player, BlockPos console) {
+        for (Direction side : Direction.Plane.HORIZONTAL) {
+            if (AllyPassageBlock.isPassage(player.level().getBlockState(console.relative(side)))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Nullable
     private static PassageData adjacentPassage(ServerPlayer player, TardisStateManager manager,
                                                BlockPos console) {

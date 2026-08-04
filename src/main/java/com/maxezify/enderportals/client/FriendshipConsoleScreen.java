@@ -516,15 +516,14 @@ public class FriendshipConsoleScreen extends Screen {
     }
 
     /**
-     * Deux des quatre phrases nomment l'allié : depuis qu'un joueur pose autant
-     * d'arches qu'il a d'amis, « ouvert » ne dit plus rien sans dire avec qui —
-     * deux panneaux voisins commandent deux couloirs différents.
+     * « Ouvert » nomme l'allié : depuis qu'un joueur pose autant d'arches qu'il
+     * a d'amis, le mot seul ne dit plus rien — deux panneaux voisins commandent
+     * deux couloirs différents.
      */
     private String passageStatusKey() {
         return switch (state.passageState()) {
             case ConsoleStatePayload.PASSAGE_NO_PANEL -> "enderportals.console.status_no_panel";
             case ConsoleStatePayload.PASSAGE_CLOSED -> "enderportals.console.status_closed";
-            case ConsoleStatePayload.PASSAGE_ONE_SIDED -> "enderportals.console.status_one_sided";
             default -> "enderportals.console.status_open";
         };
     }

@@ -20,11 +20,11 @@ import org.jetbrains.annotations.Nullable;
  * Block entity de la moitié basse du Passage des Alliés.
  *
  * <p>Il ne décide de rien, et c'est délibéré : tout l'état de la paire d'arches
- * se calcule dans {@link AllyPassageHelper#reconcile}, à partir du lien noté
- * côté serveur. Ce block entity n'apporte que trois choses, et rien d'autre —
- * un battement de cœur qui appelle la réconciliation une fois par seconde, le
- * pseudo à afficher sur la façade close, et l'ancrage du
- * {@code AllyPassageRenderer} qui dessine le caisson creux.</p>
+ * se calcule dans {@link AllyPassageHelper#reconcile}, à partir du lien porté
+ * par l'arche côté serveur. Ce block entity n'apporte que deux choses, et rien
+ * d'autre — un battement de cœur qui appelle la réconciliation une fois par
+ * seconde, et l'ancrage du {@code AllyPassageRenderer} qui dessine le caisson
+ * creux.</p>
  *
  * <p>Le battement est ce qui rend le passage increvable. La 0.15.0 pilotait
  * l'arche par une transition unique — un tick programmé — et une transition
@@ -39,18 +39,11 @@ public class AllyPassageBlockEntity extends BlockEntity {
     /** Ticks avant la prochaine réconciliation (serveur). */
     private int untilReconcile = 1;
 
-    /** Pseudo du propriétaire, affiché sur la façade close (synchronisé). */
-    private String ownerName = "";
-
     /** Âge, pour l'ondulation du voile côté client. */
     private int age;
 
     public AllyPassageBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.ALLY_PASSAGE.get(), pos, state);
-    }
-
-    public String getOwnerName() {
-        return ownerName;
     }
 
     /** Âge continu pour l'animation du voile, interpolé sur la sous-frame. */
@@ -72,24 +65,12 @@ public class AllyPassageBlockEntity extends BlockEntity {
             return;
         }
         passage.untilReconcile = RECONCILE_PERIOD;
-        passage.setOwnerName(AllyPassageHelper.reconcileAt(serverLevel, pos));
-    }
-
-    private void setOwnerName(String name) {
-        String value = name == null ? "" : name;
-        if (!ownerName.equals(value)) {
-            ownerName = value;
-            setChanged();
-            if (level instanceof ServerLevel serverLevel) {
-                serverLevel.getChunkSource().blockChanged(worldPosition);
-            }
-        }
+        AllyPassageHelper.reconcileAt(serverLevel, pos);
     }
 
     @Override
     protected void loadAdditional(CompoundTag nbt, HolderLookup.Provider registries) {
         super.loadAdditional(nbt, registries);
-        ownerName = nbt.getString("OwnerName");
         // Le compte à rebours n'est pas persisté : au chargement, la première
         // réconciliation doit venir vite — c'est là que l'arche rattrape ce qui
         // a pu changer pendant qu'elle dormait.
@@ -99,7 +80,6 @@ public class AllyPassageBlockEntity extends BlockEntity {
     @Override
     protected void saveAdditional(CompoundTag nbt, HolderLookup.Provider registries) {
         super.saveAdditional(nbt, registries);
-        nbt.putString("OwnerName", ownerName);
     }
 
     @Override

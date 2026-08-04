@@ -9,7 +9,7 @@ Derrière cette porte, une parcelle entière vous appartient — et vous l'empor
 partout : la porte se dématérialise dans votre poche et se repose où vous
 voulez.
 
-Version courante : **0.19.0**.
+Version courante : **0.19.1**.
 
 ---
 
@@ -207,8 +207,16 @@ Le panneau doit toucher le passage — collé à lui, à l'un des quatre côtés
 **Posez autant de passages que vous avez d'amis à relier.** Chaque arche porte
 un allié, et c'est le panneau accolé qui la commande : cliquer un nom sur un
 panneau lie *l'*arche qu'il touche. Une base reliée à trois amis a donc trois
-arches, chacune avec son Contrôle. Une arche close porte le pseudo de l'ami où
-elle mène — c'est ainsi qu'on les distingue d'un coup d'œil.
+arches, chacune avec son Contrôle.
+
+Un Contrôle appartient à qui appartient l'arche qu'il touche. Chez un allié, les
+siens refusent de s'ouvrir : votre carnet vit sur vos propres panneaux. Un
+Contrôle qui ne touche aucune arche n'est à personne et ne s'ouvre pour
+personne — il ne commanderait rien.
+
+Une arche close est une arche liée à personne, et elle ne porte aucun nom. Il
+n'y a pas d'entre-deux : nouer et dénouer se font toujours des deux côtés à la
+fois, donc une arche est soit libre et close, soit liée et ouverte.
 
 Rien n'oblige à en avoir plusieurs : une arche, un Contrôle, un ami à la fois
 fonctionne exactement comme avant.

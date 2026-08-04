@@ -36,16 +36,18 @@ public record ConsoleStatePayload(BlockPos console, int myCode, int passageState
 
     /** Aucun passage à moi n'est accolé à ce panneau : il ne commande rien. */
     public static final int PASSAGE_NO_PANEL = 0;
-    /** Le panneau commande bien mon passage, mais aucun lien n'est ouvert. */
-    public static final int PASSAGE_CLOSED = 1;
     /**
-     * Le lien existe, mais l'allié n'a plus de passage — cassé depuis. Les deux
-     * arches ne peuvent pas s'ouvrir, et c'est exactement le cas qu'un simple
-     * « lien ouvert » aurait affiché en vert à tort.
+     * Le panneau commande bien mon arche, mais elle n'est liée à personne.
+     *
+     * <p>Il n'existe pas de troisième cas. Une arche liée a toujours son
+     * vis-à-vis — nouer et dénouer se font des deux côtés à la fois, et
+     * {@code AllyPassageHelper.reconcile} dénoue tout lien qui pendrait dans le
+     * vide. Close veut donc dire libre, et c'est ce qui permet à une arche close
+     * de ne porter aucun nom sans jamais mentir.</p>
      */
-    public static final int PASSAGE_ONE_SIDED = 2;
+    public static final int PASSAGE_CLOSED = 1;
     /** Ouvert des deux côtés. */
-    public static final int PASSAGE_OPEN = 3;
+    public static final int PASSAGE_OPEN = 2;
 
     /** Longueur maximale d'un pseudo sur le fil. */
     public static final int NAME_LENGTH = 32;

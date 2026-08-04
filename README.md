@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.19.0**.
+Current version: **0.19.1**.
 
 ---
 
@@ -198,8 +198,16 @@ The panel has to touch the passage — flush against it, on any of its four side
 **Place as many passages as you have friends to link.** Each arch carries one
 ally, and the panel next to it is what commands that arch: clicking a name at a
 panel binds *the* passage it touches. So a base with three friends has three
-arches, each with its own Control. A closed arch shows the name of the friend it
-leads to, which is how you tell them apart at a glance.
+arches, each with its own Control.
+
+A Control belongs to whoever owns the arch it touches. Standing in an ally's
+base, theirs will not open for you — your book lives on your own panels. A
+Control touching no arch belongs to nobody and opens for no one; it would
+command nothing.
+
+A closed arch is an arch bound to nobody, and it carries no name. There is no
+in-between state: binding and unbinding always happen on both sides at once, so
+an arch is either free and closed, or bound and open.
 
 Nothing forces you to have several. One arch, one Control, one friend at a time
 works exactly as before.

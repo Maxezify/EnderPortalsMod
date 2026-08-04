@@ -138,25 +138,18 @@ public final class AllyPassageHelper {
         }
     }
 
-    /**
-     * Réconciliation depuis l'arche elle-même, une fois par seconde. Rend le
-     * pseudo à afficher sur la façade close — celui de <b>l'allié</b> auquel
-     * cette arche mène, et non celui du propriétaire : ses arches sont toutes à
-     * lui, c'est leur destination qui les distingue.
-     */
-    public static String reconcileAt(ServerLevel level, BlockPos base) {
+    /** Réconciliation depuis l'arche elle-même, une fois par seconde. */
+    public static void reconcileAt(ServerLevel level, BlockPos base) {
         MinecraftServer server = level.getServer();
         TardisStateManager manager = TardisStateManager.get(server);
         TardisData mine = manager.findByPassage(base);
         if (mine == null) {
-            return "";
+            return;
         }
         PassageData passage = TardisStateManager.passageAt(mine, base);
-        if (passage == null) {
-            return "";
+        if (passage != null) {
+            reconcile(server, passage);
         }
-        reconcile(server, passage);
-        return passage.ally == null ? "" : manager.nameOf(passage.ally);
     }
 
     // ------------------------------------------------------------------
@@ -180,6 +173,12 @@ public final class AllyPassageHelper {
         PassageData theirs = pairOf(manager, owner, mine);
 
         if (theirs == null) {
+            // Invariant : une arche liée a toujours son vis-à-vis, parce que
+            // nouer et dénouer se font des deux côtés à la fois. Si le lien
+            // pend malgré tout dans le vide, on le dénoue plutôt que de le
+            // laisser survivre — une arche close est une arche libre, et c'est
+            // ce qui permet de dire « close = personne » sans jamais mentir.
+            manager.unlink(owner, mine);
             close(server, manager, level, mine, null);
             return;
         }

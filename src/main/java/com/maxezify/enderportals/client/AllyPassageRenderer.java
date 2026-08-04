@@ -8,7 +8,6 @@ import com.maxezify.enderportals.block.entity.AllyPassageBlockEntity;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
-import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -47,23 +46,16 @@ public class AllyPassageRenderer implements BlockEntityRenderer<AllyPassageBlock
     private static final float[] EDGE = {32, 0, 36, 32};
     private static final float[] VEIL_OPENING = {36, 0, 52, 16};
     private static final float[] VEIL_OPEN = {36, 16, 52, 32};
-    private static final float[] PLATE = {48, 48, 64, 64};
 
     private static final int AXIS_X = 0;
     private static final int AXIS_Y = 1;
     private static final int AXIS_Z = 2;
 
     /** Haut du panneau de pseudo, sous la clé de voûte de la façade close. */
-    private static final float NAMEPLATE_Y = 1.44f;
     /** Profondeur du panneau : juste devant les montants latéraux (z = 0,47). */
-    private static final float NAMEPLATE_Z = 0.478f;
-    private static final float NAMEPLATE_MAX_WIDTH = 0.78f;
-    private static final float GLYPH_HEIGHT = 9.0f;
 
-    private final Font font;
 
     public AllyPassageRenderer(BlockEntityRendererProvider.Context context) {
-        this.font = context.getFont();
     }
 
     /** Même portée que la porte : les deux machines se repèrent de loin. */
@@ -106,12 +98,9 @@ public class AllyPassageRenderer implements BlockEntityRenderer<AllyPassageBlock
 
         if (phase == PassagePhase.CLOSED) {
             // Passage clos : la dalle de quartz obture l'embrasure, exactement
-            // comme le battant de la porte.
+            // comme le battant de la porte. Nue : une arche close n'est liée à
+            // personne, il n'y a donc aucun pseudo à y porter.
             drawBox(shell, entry, -0.44f, 0.06f, 0.36f, 0.44f, 1.94f, 0.44f, AXIS_Z, FRONT, BACK, light, overlay);
-            String owner = passage.getOwnerName();
-            if (!owner.isEmpty()) {
-                drawNameplate(owner, poseStack, entry, buffer, overlay);
-            }
         } else if (phase != PassagePhase.THROUGH) {
             // OPENING et OPEN : le voile doré. THROUGH n'en a aucun — le plan du
             // portail est là, et un voile devant lui le masquerait.
@@ -121,42 +110,6 @@ public class AllyPassageRenderer implements BlockEntityRenderer<AllyPassageBlock
                     pulse, LightTexture.FULL_BRIGHT, overlay);
         }
 
-        poseStack.popPose();
-    }
-
-    /**
-     * Le pseudo du propriétaire sur la façade close. Même patron que la porte :
-     * une plaque dessinée à part, puis le texte franchement devant elle — le
-     * fond intégré de {@code drawInBatch} s'écrit à la profondeur des glyphes,
-     * et le test de profondeur en escamote la moitié selon l'angle de vue.
-     */
-    private void drawNameplate(String name, PoseStack poseStack, PoseStack.Pose entry,
-                               MultiBufferSource buffer, int overlay) {
-        int width = font.width(name);
-        float scale = 0.01f;
-        if (width * scale > NAMEPLATE_MAX_WIDTH) {
-            scale = NAMEPLATE_MAX_WIDTH / width;
-        }
-
-        float halfWidth = width * scale / 2.0f;
-        float pad = 0.025f;
-        float top = NAMEPLATE_Y + pad;
-        float bottom = NAMEPLATE_Y - GLYPH_HEIGHT * scale - pad * 0.5f;
-
-        VertexConsumer plate = buffer.getBuffer(RenderType.entityCutoutNoCull(TEXTURE));
-        region(plate, entry,
-                -halfWidth - pad, bottom, NAMEPLATE_Z,
-                halfWidth + pad, bottom, NAMEPLATE_Z,
-                halfWidth + pad, top, NAMEPLATE_Z,
-                -halfWidth - pad, top, NAMEPLATE_Z,
-                PLATE, 1.0f, LightTexture.FULL_BRIGHT, overlay, 0, 0, 1);
-
-        poseStack.pushPose();
-        poseStack.translate(0.0, NAMEPLATE_Y, NAMEPLATE_Z + 0.008);
-        poseStack.scale(scale, -scale, scale);
-        font.drawInBatch(name, -width / 2.0f, 0.0f, 0xFFFFFFFF, false,
-                poseStack.last().pose(), buffer, Font.DisplayMode.NORMAL, 0,
-                LightTexture.FULL_BRIGHT);
         poseStack.popPose();
     }
 
