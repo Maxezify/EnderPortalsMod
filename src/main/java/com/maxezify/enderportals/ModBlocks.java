@@ -9,6 +9,7 @@ import com.maxezify.enderportals.block.TardisDoorBlock;
 import net.minecraft.util.valueproviders.UniformInt;
 import net.minecraft.world.level.block.DropExperienceBlock;
 import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.TransparentBlock;
@@ -35,6 +36,21 @@ public final class ModBlocks {
      * Bloc de l'Ender — gris semi-transparent. On voit au travers, entrevoyant
      * les blocs-reliques. Seule la pioche de l'Ender le récolte.
      */
+    /**
+     * La voix du Bloc de l'Ender : le fond mou d'un bloc de miel, et par-dessus
+     * le carillon d'un cadre de portail de l'End (voir
+     * {@link EnderBlock#playerWillDestroy}).
+     *
+     * <p>Le miel seul sonnait trop organique pour de la matière translucide, et
+     * l'améthyste d'origine trop nette — un cristal qu'on brise, là où cette
+     * masse cède plutôt qu'elle ne casse. Le grave à 0,85 lui donne du poids ;
+     * le carillon, par-dessus, dit d'où elle vient.</p>
+     */
+    private static final SoundType ENDER_BLOCK_SOUND = new SoundType(1.0f, 0.85f,
+            SoundEvents.HONEY_BLOCK_BREAK, SoundEvents.HONEY_BLOCK_STEP,
+            SoundEvents.HONEY_BLOCK_PLACE, SoundEvents.HONEY_BLOCK_HIT,
+            SoundEvents.HONEY_BLOCK_FALL);
+
     public static final DeferredBlock<EnderBlock> ENDER_BLOCK = BLOCKS.register("ender_block",
             () -> new EnderBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_GRAY)
@@ -45,7 +61,7 @@ public final class ModBlocks {
                     .isValidSpawn((state, level, pos, type) -> false)
                     .isRedstoneConductor((state, level, pos) -> false)
                     .isViewBlocking((state, level, pos) -> false)
-                    .sound(SoundType.AMETHYST)));
+                    .sound(ENDER_BLOCK_SOUND)));
 
     /**
      * Briques de l'Ender — taillées dans le Bloc de l'Ender, et translucides

@@ -9,7 +9,7 @@ Derrière cette porte, une parcelle entière vous appartient — et vous l'empor
 partout : la porte se dématérialise dans votre poche et se repose où vous
 voulez.
 
-Version courante : **0.17.4**.
+Version courante : **0.18.0**.
 
 ---
 
@@ -364,6 +364,13 @@ noir ferme la vue avant la limite des chunks — vous ne verrez jamais le bord d
 monde chargé, quel que soit votre réglage de distance de rendu. De loin en loin,
 ce lointain s'embrase une fraction de seconde : de silencieuses lueurs d'orage.
 
+Le mod ne cible aucun shaderpack en particulier : il déclare son type de
+dimension, et c'est Iris qui en déduit le dossier de shaders à appliquer.
+**Photon** rend donc l'Ender avec sa passe du Nether comme le fait
+Complementary, sans le moindre réglage — il n'embarque pas de
+`dimension.properties` qui pourrait dire le contraire, et son dossier `world-1`
+est un jeu de programmes complet.
+
 ### Une pause au premier passage, avec shaders
 
 À la toute première ouverture de la porte dans une session de jeu, l'écran se
@@ -416,7 +423,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.17.4.jar
+# → build/libs/enderportals-0.18.0.jar
 ```
 
 Le build est géré par **ModDevGradle** ; NeoForge et les mappings officiels sont

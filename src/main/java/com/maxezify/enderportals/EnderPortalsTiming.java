@@ -44,7 +44,7 @@ public final class EnderPortalsTiming {
         return System.nanoTime();
     }
 
-    public static void report(String label, long nanos) {
+    private static void report(String label, long nanos) {
         long millis = nanos / 1_000_000L;
         if (millis >= THRESHOLD_MS) {
             EnderPortalsMod.LOGGER.info("[chrono] {} : {} ms", label, millis);

@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.17.4**.
+Current version: **0.18.0**.
 
 ---
 
@@ -352,6 +352,12 @@ to black closes the view before the chunk limit — you will never see the edge 
 the loaded world, whatever your render distance. Now and then that far distance
 flares for a fraction of a second: silent storm light.
 
+The mod targets no shaderpack in particular: it declares its dimension type, and
+Iris derives the shader folder from that. **Photon** therefore renders the Ender
+with its Nether pass just as Complementary does, with nothing to configure — it
+ships no `dimension.properties` that could say otherwise, and its `world-1`
+folder is a complete program set.
+
 ### A pause on the first crossing, with shaders
 
 The very first time you open the door in a play session, the screen freezes for
@@ -404,7 +410,7 @@ Requires **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.17.4.jar
+# → build/libs/enderportals-0.18.0.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are
