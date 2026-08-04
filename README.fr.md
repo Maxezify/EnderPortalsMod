@@ -366,10 +366,32 @@ ce lointain s'embrase une fraction de seconde : de silencieuses lueurs d'orage.
 
 Le mod ne cible aucun shaderpack en particulier : il déclare son type de
 dimension, et c'est Iris qui en déduit le dossier de shaders à appliquer.
-**Photon** rend donc l'Ender avec sa passe du Nether comme le fait
-Complementary, sans le moindre réglage — il n'embarque pas de
-`dimension.properties` qui pourrait dire le contraire, et son dossier `world-1`
-est un jeu de programmes complet.
+**Photon** rend donc l'Ender avec sa passe du Nether, comme Complementary et
+sans le moindre réglage — il n'embarque pas de `dimension.properties` qui
+pourrait dire le contraire, et son dossier `world-1` est un jeu de programmes
+complet.
+
+Un réglage de Photon décide cependant de la **couleur** du brouillard, et il
+vaut d'être connu : *Light Sources → **NETHER_USE_BIOME_COLOR***. Activé — c'est
+son défaut — Photon prend la couleur que le monde lui donne, donc la nôtre.
+Désactivé, il retombe sur sa teinte du Nether, un orange vif : l'Ender virerait
+au feu. Laissez-le tel quel.
+
+### Forcer une autre passe de rendu
+
+Rien ne vous oblige à garder celle du Nether. Une ligne dans le fichier
+`dimension.properties` du shaderpack (dans son dossier `shaders/`, à créer s'il
+n'existe pas) redirige le monde où vous voulez — Photon a par exemple un
+brouillard volumétrique dédié à l'End :
+
+```
+dimension.world1=minecraft:the_end enderportals:ender_world
+dimension.world0=*
+```
+
+Cette correspondance explicite l'emporte sur tout le reste. C'est le seul
+endroit d'où l'on puisse changer d'avis : un mod ne peut pas écrire dans un
+shaderpack.
 
 ### Une pause au premier passage, avec shaders
 

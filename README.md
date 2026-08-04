@@ -358,6 +358,26 @@ with its Nether pass just as Complementary does, with nothing to configure — i
 ships no `dimension.properties` that could say otherwise, and its `world-1`
 folder is a complete program set.
 
+One Photon setting does decide the fog's **colour**, and it is worth knowing:
+*Light Sources → **NETHER_USE_BIOME_COLOR***. Enabled — its default — Photon
+takes whatever colour the world hands it, so ours. Disabled, it falls back to
+its own Nether tint, a vivid orange: the Ender would turn to fire. Leave it on.
+
+### Forcing a different pass
+
+Nothing obliges you to keep the Nether one. A single line in the shaderpack's
+`dimension.properties` (inside its `shaders/` folder, create it if absent)
+redirects the world wherever you like — Photon, for one, has a volumetric fog
+written for the End:
+
+```
+dimension.world1=minecraft:the_end enderportals:ender_world
+dimension.world0=*
+```
+
+An explicit mapping wins over everything else. It is the only place this can be
+changed: a mod cannot write inside a shaderpack.
+
 ### A pause on the first crossing, with shaders
 
 The very first time you open the door in a play session, the screen freezes for
