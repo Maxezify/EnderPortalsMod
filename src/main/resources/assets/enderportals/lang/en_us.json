@@ -82,6 +82,8 @@
   "enderportals.message.passage_crossed": "You are at %s's.",
   "enderportals.message.console_no_door": "Awaken an Ender Door first.",
   "enderportals.message.console_unattached": "Set this Control against one of your passages.",
+  "enderportals.message.console_ambiguous": "This Control touches two passages: move them a block apart.",
+  "enderportals.message.passage_crowded": "A Control commands one passage only: leave a block between groups.",
   "enderportals.message.console_not_yours": "That Friendship Control is not yours.",
   "enderportals.message.ally_unknown": "No such code.",
   "enderportals.message.ally_self": "That is your own code.",
@@ -134,7 +136,7 @@
   "enderportals.book.page22": "§5The Price§0\n\nEach stored slot costs a little §aXP§0.\n\nNetwork full, or too little XP: nothing leaves, and you are told so.",
   "enderportals.book.page23": "§5The Great Network§0\n\nThe Transmitter speaks the common tongue of storage.\n\nBarrels, backpacks, Sophisticated, Tom's: all answer, and filters sort on their own.",
   "enderportals.book.page24": "§5The Passage§0\n\nCraft (bench):\n§7Q §bC §7Q§0\n§bC §5E §bC§0\n§7Q §bC §7Q§0\n\n§7Q§0 = Quartz Block\n§bC§0 = Crystal\n§5E§0 = Ender Chest",
-  "enderportals.book.page25": "§5The Passage§0\n\nPlace it in the Ender, with a §6Friendship Control§0 flush against it.\n\n§lOne passage per friend§r: place as many as you like, each with its own panel.",
+  "enderportals.book.page25": "§5The Passage§0\n\nPlace it in the Ender, a §6Friendship Control§0 against it.\n\n§lOne passage per friend§r: place as many as you like, each with its own panel.\n\nLeave a block between groups.",
   "enderportals.book.page26": "§5The Friend Code§0\n\nYour key carries an eight-digit code.\n\nRead it out. Type the other's on the panel, and let them type yours: you are friends.",
   "enderportals.book.page27": "§5Opening§0\n\nClick your ally's name, and let them click yours.\n\nBoth passages open, and each walks freely into the other's base.",
   "enderportals.book.page28": "§5Always open§0\n\nThe link holds as long as you want, even while the other is offline.\n\nTo break it, click their name again.\n\nSafe travels."

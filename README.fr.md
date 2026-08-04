@@ -9,7 +9,7 @@ Derrière cette porte, une parcelle entière vous appartient — et vous l'empor
 partout : la porte se dématérialise dans votre poche et se repose où vous
 voulez.
 
-Version courante : **0.19.1**.
+Version courante : **0.19.2**.
 
 ---
 
@@ -213,6 +213,14 @@ Un Contrôle appartient à qui appartient l'arche qu'il touche. Chez un allié, 
 siens refusent de s'ouvrir : votre carnet vit sur vos propres panneaux. Un
 Contrôle qui ne touche aucune arche n'est à personne et ne s'ouvre pour
 personne — il ne commanderait rien.
+
+**Un Contrôle ne commande qu'une arche, et une seule.** Le poser là où il en
+toucherait deux est refusé, et poser une arche qui mettrait un Contrôle
+existant à cheval l'est aussi. Laisser un bloc vide entre chaque groupe
+Contrôle-et-arche est la façon simple de toujours y satisfaire. Deux arches
+côte à côte ne gênent pas en elles-mêmes — ce qui ne doit jamais arriver, c'est
+un Contrôle qui pourrait désigner l'une ou l'autre, car rien à l'écran ne dirait
+laquelle il a choisie.
 
 Une arche close est une arche liée à personne, et elle ne porte aucun nom. Il
 n'y a pas d'entre-deux : nouer et dénouer se font toujours des deux côtés à la

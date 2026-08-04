@@ -11,12 +11,10 @@ import com.maxezify.enderportals.tardis.TardisData;
 import com.maxezify.enderportals.tardis.TardisStateManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -98,9 +97,7 @@ public final class ConsoleServerLogic {
             return;
         }
         if (adjacentPassage(player, manager, console) == null) {
-            player.displayClientMessage(Component.translatable(touchesAPassage(player, console)
-                    ? "enderportals.message.console_not_yours"
-                    : "enderportals.message.console_unattached"), true);
+            player.displayClientMessage(Component.translatable(refusalFor(player, console)), true);
             return;
         }
         manager.allies().setViewing(player.getUUID(), console);
@@ -463,19 +460,30 @@ public final class ConsoleServerLogic {
      * qui rend plusieurs amis simultanés utilisables.</p>
      */
     /**
-     * Ce panneau touche-t-il une arche, à qui qu'elle soit ? Ce qui distingue
-     * « ce Contrôle est à quelqu'un d'autre » de « ce Contrôle ne commande
-     * rien » — deux refus qui n'appellent pas le même geste.
+     * Pourquoi ce Contrôle ne s'ouvre pas. Trois refus, trois gestes différents :
+     * l'écarter d'une arche, l'accoler à l'une des siennes, ou comprendre qu'il
+     * est à quelqu'un d'autre. N'est appelé que lorsqu'il n'en commande pas
+     * exactement une, ce qui rend les trois cas exhaustifs.
      */
-    private static boolean touchesAPassage(ServerPlayer player, BlockPos console) {
-        for (Direction side : Direction.Plane.HORIZONTAL) {
-            if (AllyPassageBlock.isPassage(player.level().getBlockState(console.relative(side)))) {
-                return true;
-            }
+    private static String refusalFor(ServerPlayer player, BlockPos console) {
+        int touching = AllyPassageBlock.passagesTouching(player.level(), console, null).size();
+        if (touching > 1) {
+            return "enderportals.message.console_ambiguous";
         }
-        return false;
+        return touching == 0
+                ? "enderportals.message.console_unattached"
+                : "enderportals.message.console_not_yours";
     }
 
+    /**
+     * L'arche que ce Contrôle commande, ou {@code null} s'il n'en commande pas
+     * exactement une.
+     *
+     * <p>Zéro, et il n'est pas à ce joueur. Deux, et il faudrait en choisir une :
+     * la pose l'interdit depuis la 0.19.2, mais une base bâtie avant elle peut
+     * encore présenter le cas — on refuse alors plutôt que de trancher au
+     * hasard, ce qui aurait rendu une arche sourde à son propre panneau.</p>
+     */
     @Nullable
     private static PassageData adjacentPassage(ServerPlayer player, TardisStateManager manager,
                                                BlockPos console) {
@@ -483,18 +491,11 @@ public final class ConsoleServerLogic {
         if (mine == null) {
             return null;
         }
-        for (Direction side : Direction.Plane.HORIZONTAL) {
-            BlockPos neighbour = console.relative(side);
-            BlockState state = player.level().getBlockState(neighbour);
-            if (AllyPassageBlock.isPassage(state)) {
-                PassageData passage = TardisStateManager.passageAt(
-                        mine, AllyPassageBlock.baseOf(state, neighbour));
-                if (passage != null) {
-                    return passage;
-                }
-            }
+        Set<BlockPos> touching = AllyPassageBlock.passagesTouching(player.level(), console, null);
+        if (touching.size() != 1) {
+            return null;
         }
-        return null;
+        return TardisStateManager.passageAt(mine, touching.iterator().next());
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.maxezify.enderportals.item;
 
 import com.maxezify.enderportals.ModDimensions;
+import com.maxezify.enderportals.block.AllyPassageBlock;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
@@ -50,12 +51,22 @@ public class EnderWorldBlockItem extends BlockItem {
     @Override
     public InteractionResult place(BlockPlaceContext context) {
         if (!context.getLevel().dimension().equals(ModDimensions.ENDER_WORLD)) {
-            Player player = context.getPlayer();
-            if (player != null && !context.getLevel().isClientSide) {
-                player.displayClientMessage(Component.translatable(refusalKey), true);
-            }
-            return InteractionResult.FAIL;
+            return refuse(context, refusalKey);
+        }
+        // Un Contrôle à cheval sur deux arches en commanderait une, choisie par
+        // l'ordre d'énumération des directions : le refus arrive donc à la pose,
+        // pendant qu'il reste un geste évident à corriger.
+        if (AllyPassageBlock.pairingConflict(context.getLevel(), context.getClickedPos(), getBlock())) {
+            return refuse(context, "enderportals.message.passage_crowded");
         }
         return super.place(context);
+    }
+
+    private static InteractionResult refuse(BlockPlaceContext context, String key) {
+        Player player = context.getPlayer();
+        if (player != null && !context.getLevel().isClientSide) {
+            player.displayClientMessage(Component.translatable(key), true);
+        }
+        return InteractionResult.FAIL;
     }
 }

@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.19.1**.
+Current version: **0.19.2**.
 
 ---
 
@@ -204,6 +204,13 @@ A Control belongs to whoever owns the arch it touches. Standing in an ally's
 base, theirs will not open for you — your book lives on your own panels. A
 Control touching no arch belongs to nobody and opens for no one; it would
 command nothing.
+
+**A Control commands one arch and one only.** Placing it where it would touch
+two is refused, and so is placing an arch that would put an existing Control
+astride two. Leaving one empty block between each Control-and-arch group is the
+simple way to always satisfy that. Two arches side by side are fine in
+themselves — what must never happen is a Control that could mean either one,
+because nothing on screen would say which it chose.
 
 A closed arch is an arch bound to nobody, and it carries no name. There is no
 in-between state: binding and unbinding always happen on both sides at once, so

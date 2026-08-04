@@ -82,6 +82,8 @@
   "enderportals.message.passage_crossed": "Vous êtes chez %s.",
   "enderportals.message.console_no_door": "Éveillez d'abord une Porte de l'Ender.",
   "enderportals.message.console_unattached": "Accolez ce Contrôle à l'un de vos Passages.",
+  "enderportals.message.console_ambiguous": "Ce Contrôle touche deux Passages : écartez-les d'un bloc.",
+  "enderportals.message.passage_crowded": "Un Contrôle ne commande qu'un Passage : laissez un bloc entre les groupes.",
   "enderportals.message.console_not_yours": "Ce Contrôle de l'amitié n'est pas le vôtre.",
   "enderportals.message.ally_unknown": "Aucun code ne correspond.",
   "enderportals.message.ally_self": "C'est votre propre code.",
@@ -134,7 +136,7 @@
   "enderportals.book.page22": "§5Le Prix§0\n\nChaque case rangée coûte un peu d'§aexpérience§0.\n\nRéseau plein, ou trop peu d'XP : rien ne part, et on vous le dit.",
   "enderportals.book.page23": "§5Le Grand Réseau§0\n\nLe Transmetteur parle la langue commune du rangement.\n\nTonneaux, sacs à dos, Sophisticated, Tom's : tous répondent, et les filtres trient seuls.",
   "enderportals.book.page24": "§5Le Passage§0\n\nCraft (établi) :\n§7Q §bC §7Q§0\n§bC §5E §bC§0\n§7Q §bC §7Q§0\n\n§7Q§0 = Bloc de quartz\n§bC§0 = Cristal\n§5E§0 = Coffre de l'Ender",
-  "enderportals.book.page25": "§5Le Passage§0\n\nÀ poser dans l'Ender, un §6Contrôle de l'amitié§0 collé contre lui.\n\n§lUn passage par ami§r : posez-en autant que vous voulez, chacun avec son panneau.",
+  "enderportals.book.page25": "§5Le Passage§0\n\nÀ poser dans l'Ender, un §6Contrôle de l'amitié§0 collé contre lui.\n\n§lUn passage par ami§r : posez-en autant que vous voulez, chacun avec son panneau.\n\nLaissez un bloc entre chaque groupe.",
   "enderportals.book.page26": "§5Le Code d'ami§0\n\nVotre clé porte un code de huit chiffres.\n\nDictez-le. Tapez celui de l'autre au panneau, et qu'il tape le vôtre : vous voilà amis.",
   "enderportals.book.page27": "§5Ouvrir§0\n\nCliquez le nom de votre allié, qu'il clique le vôtre.\n\nLes deux passages s'ouvrent, et l'on va librement chez l'autre.",
   "enderportals.book.page28": "§5Toujours ouvert§0\n\nLe lien tient tant que vous le voulez, même quand l'autre est déconnecté.\n\nPour le rompre, recliquez son nom.\n\nBon voyage."

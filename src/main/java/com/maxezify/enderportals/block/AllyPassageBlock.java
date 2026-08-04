@@ -43,7 +43,10 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -324,5 +327,70 @@ public class AllyPassageBlock extends Block implements EntityBlock {
     /** Ce bloc est-il un Passage des Alliés ? Raccourci pour le panneau. */
     public static boolean isPassage(BlockState state) {
         return state.is(ModBlocks.ALLY_PASSAGE.get());
+    }
+
+    // ------------------------------------------------------------------
+    // La règle d'appariement
+    // ------------------------------------------------------------------
+
+    /**
+     * Les arches qu'un Contrôle posé ici commanderait, par leur bloc de base.
+     *
+     * <p>Les deux moitiés comptent : un Contrôle à hauteur du bloc du haut
+     * commande la même arche que s'il était en bas, et {@link #baseOf} ramène
+     * les deux à la même adresse. Un ensemble, donc, et non un compte : deux
+     * voisins qui sont les deux moitiés d'une même arche ne font qu'une.</p>
+     */
+    public static Set<BlockPos> passagesTouching(BlockGetter level, BlockPos console,
+                                                 @Nullable BlockPos alsoPlanned) {
+        Set<BlockPos> bases = new HashSet<>();
+        for (Direction side : Direction.Plane.HORIZONTAL) {
+            BlockPos neighbour = console.relative(side);
+            BlockState state = level.getBlockState(neighbour);
+            if (isPassage(state)) {
+                bases.add(baseOf(state, neighbour));
+            }
+            // L'arche que l'on est en train de poser n'est pas encore dans le
+            // monde : sans elle, la vérification arriverait toujours trop tard.
+            if (alsoPlanned != null
+                    && (neighbour.equals(alsoPlanned) || neighbour.equals(alsoPlanned.above()))) {
+                bases.add(alsoPlanned);
+            }
+        }
+        return bases;
+    }
+
+    /**
+     * Cette pose créerait-elle un Contrôle à cheval sur deux arches ?
+     *
+     * <p>C'est le seul voisinage réellement dangereux, et il l'est en silence :
+     * un Contrôle qui en touche deux en commanderait une, choisie par l'ordre
+     * d'énumération des directions. Rien à l'écran ne dirait laquelle, et
+     * l'autre arche paraîtrait sourde à son propre panneau.</p>
+     *
+     * <p>Deux arches côte à côte ne posent en revanche aucun problème tant que
+     * chaque Contrôle n'en touche qu'une : la règle porte sur l'appariement, pas
+     * sur la distance. Laisser un bloc entre chaque groupe est la façon simple
+     * de la respecter à coup sûr.</p>
+     */
+    public static boolean pairingConflict(BlockGetter level, BlockPos pos, Block placing) {
+        if (placing == ModBlocks.FRIENDSHIP_CONSOLE.get()) {
+            return passagesTouching(level, pos, null).size() > 1;
+        }
+        if (placing != ModBlocks.ALLY_PASSAGE.get()) {
+            return false;
+        }
+        // Vu depuis l'arche : un Contrôle voisin de l'une de ses deux moitiés
+        // se retrouverait-il à cheval ?
+        for (BlockPos half : List.of(pos, pos.above())) {
+            for (Direction side : Direction.Plane.HORIZONTAL) {
+                BlockPos neighbour = half.relative(side);
+                if (level.getBlockState(neighbour).is(ModBlocks.FRIENDSHIP_CONSOLE.get())
+                        && passagesTouching(level, neighbour, pos).size() > 1) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

@@ -128,7 +128,8 @@ FR = [
     "§5Le Passage§0\n\nÀ poser dans l'Ender, un "
     "§6Contrôle de l'amitié§0 collé contre lui.\n\n"
     "§lUn passage par ami§r : posez-en autant que vous "
-    "voulez, chacun avec son panneau.",
+    "voulez, chacun avec son panneau.\n\n"
+    "Laissez un bloc entre chaque groupe.",
     # 26
     "§5Le Code d'ami§0\n\nVotre clé porte un code de "
     "huit chiffres.\n\nDictez-le. Tapez celui de "
@@ -253,10 +254,11 @@ EN = [
     "§7Q§0 = Quartz Block\n§bC§0 = Crystal\n"
     "§5E§0 = Ender Chest",
 
-    "§5The Passage§0\n\nPlace it in the Ender, with "
-    "a §6Friendship Control§0 flush against it.\n\n"
+    "§5The Passage§0\n\nPlace it in the Ender, a "
+    "§6Friendship Control§0 against it.\n\n"
     "§lOne passage per friend§r: place as many as you "
-    "like, each with its own panel.",
+    "like, each with its own panel.\n\n"
+    "Leave a block between groups.",
 
     "§5The Friend Code§0\n\nYour key carries an "
     "eight-digit code.\n\nRead it out. Type the "
