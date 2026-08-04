@@ -172,12 +172,18 @@ public final class ModBlocks {
      * raison qui lui est propre : la pose refuse un Contrôle qui toucherait deux
      * arches, et un piston aurait pu l'y amener après coup. Ce qu'une règle
      * interdit à la main ne doit pas être atteignable par la mécanique.</p>
+     *
+     * <p>À l'épreuve des explosions comme l'arche qu'il commande. Les deux
+     * forment une paire, et qu'une moitié survive à ce qui emporte l'autre
+     * n'avait pas de sens — d'autant qu'un passage reste ouvert quand son
+     * Contrôle disparaît, sans plus rien pour le refermer. Sa dureté, elle, ne
+     * bouge pas : il se récupère à la pioche aussi vite qu'avant.</p>
      */
     public static final DeferredBlock<FriendshipConsoleBlock> FRIENDSHIP_CONSOLE = BLOCKS.register(
             "friendship_console",
             () -> new FriendshipConsoleBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.QUARTZ)
-                    .strength(3.5f, 9.0f)
+                    .strength(3.5f, 1200.0f)
                     .requiresCorrectToolForDrops()
                     .lightLevel(state -> 7)
                     .pushReaction(PushReaction.BLOCK)
