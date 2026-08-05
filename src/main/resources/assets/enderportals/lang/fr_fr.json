@@ -68,9 +68,12 @@
   "enderportals.message.teleporter_arrived": "Arrivé sur l'Atterrisseur.",
   "enderportals.message.teleporter_no_lander": "L'Atterrisseur a disparu. Reliez le téléporteur.",
   "enderportals.message.teleporter_failed": "Le téléporteur n'a pas pu partir.",
+  "enderportals.message.teleporter_no_xp": "Pas assez d'expérience : %s points pour ce voyage.",
   "enderportals.tooltip.entity_teleporter_1": "Posez-le, laissez une créature monter, clic droit pour l'envoyer",
   "enderportals.tooltip.entity_teleporter_2": "Clic droit sur un Atterrisseur pour le lier ; à vide, il retourne en main",
   "enderportals.tooltip.entity_teleporter_3": "Accroupi, le clic droit le reprend et libère ce qu'il transporte",
+  "enderportals.tooltip.entity_teleporter_lamp": "Témoin vert : prêt à partir. Rouge : sans lien ou sans passager",
+  "enderportals.tooltip.entity_teleporter_xp": "%s points d'expérience par créature transportée",
   "enderportals.tooltip.entity_teleporter_free": "Lié à aucun Atterrisseur",
   "enderportals.tooltip.entity_teleporter_bound": "Lié à %s %s %s",
   "enderportals.tooltip.entity_lander_1": "Là où se pose un Téléporteur d'entité qui lui est lié",
@@ -157,8 +160,8 @@
   "enderportals.book.page26": "§5Le Code d'ami§0\n\nVotre clé porte un code de huit chiffres.\n\nDictez-le. Tapez celui de l'autre au panneau, et qu'il tape le vôtre : vous voilà amis.",
   "enderportals.book.page27": "§5Ouvrir§0\n\nCliquez le nom de votre allié, qu'il clique le vôtre.\n\nLes deux passages s'ouvrent, et l'on va librement chez l'autre.",
   "enderportals.book.page28": "§5Toujours ouvert§0\n\nLe lien tient tant que vous le voulez, même quand l'autre est déconnecté.\n\nPour le rompre, recliquez son nom.\n\nBon voyage.",
-  "enderportals.book.page29": "§5Le Téléporteur§0\n\nCraft (établi) :\n§8O . O§0\n§8O §bC §8O§0\n§7F F F§0\n\n§8O§0 = Obsidienne\n§bC§0 = Cristal\n§7F§0 = Lingot de fer",
-  "enderportals.book.page30": "§5L'Atterrisseur§0\n\nCraft (établi) :\n§7F §8O §7F§0\n§8O §bC §8O§0\n§7F §8O §7F§0\n\nIl en sort §ldeux§r§0. À poser dans l'Ender, à l'endroit de l'arrivée.",
-  "enderportals.book.page31": "§5Le Voyage§0\n\nLe téléporteur en main, cliquez un Atterrisseur : la coque retient ce point.\n\nPosez-la, puis attirez-y la bête comme dans une barque : le témoin de proue passe au §avert§0.",
-  "enderportals.book.page32": "§5Le Retour§0\n\nClic droit sur la coque chargée : elle part avec ce qu'elle porte.\n\nÀ vide, il la reprend en main.\n\n§lAccroupi§r§0, il la reprend §aet libère§0 la bête."
+  "enderportals.book.page29": "§5Le Téléporteur§0\n\nCraft (établi) :\n§bC C C§0\n§5O §aP §5O§0\n§5O O O§0\n\n§bC§0 = Cristal\n§5O§0 = Obsidienne pleureuse\n§aP§0 = Perle de l'Ender",
+  "enderportals.book.page30": "§5L'Atterrisseur§0\n\nCraft (établi) :\n§5O §aS §5O§0\n§5O §bC §5O§0\n§5O §bC §5O§0\n\n§aS§0 = Bloc de slime\n\nIl en sort §ldeux§r§0, à poser dans l'Ender.",
+  "enderportals.book.page31": "§5Le Voyage§0\n\nLe téléporteur en main, cliquez un Atterrisseur : la coque retient ce point.\n\nAttirez-y la bête : le témoin passe au §avert§0. §cRouge§0, il manque un lien ou un passager.",
+  "enderportals.book.page32": "§5Le Prix§0\n\nClic droit : la coque part, contre un peu d'§aexpérience§0 par bête.\n\nÀ vide, le clic la reprend en main.\n\n§lAccroupi§r§0, il la reprend et libère la bête."
 }

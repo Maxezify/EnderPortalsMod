@@ -2,19 +2,19 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    "IOI",
+    "OSO",
     "OCO",
-    "IOI"
+    "OCO"
   ],
   "key": {
     "O": {
-      "item": "minecraft:obsidian"
+      "item": "minecraft:crying_obsidian"
+    },
+    "S": {
+      "item": "minecraft:slime_block"
     },
     "C": {
       "item": "enderportals:ender_crystal"
-    },
-    "I": {
-      "item": "minecraft:iron_ingot"
     }
   },
   "result": {

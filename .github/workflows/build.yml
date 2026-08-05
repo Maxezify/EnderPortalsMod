@@ -29,6 +29,11 @@ jobs:
       - name: Vérifier les fichiers de données
         run: python3 tools/check_data.py
 
+      # Deux caisses alignées scintillent en jeu et nulle part ailleurs : ni la
+      # compilation ni les textures ne peuvent le dire.
+      - name: Vérifier la coque du téléporteur
+        run: python3 tools/check_hull.py
+
       - name: Build
         run: ./gradlew build --stacktrace --no-daemon
 

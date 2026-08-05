@@ -5,6 +5,7 @@ import com.maxezify.enderportals.ModComponents;
 import com.maxezify.enderportals.ModDimensions;
 import com.maxezify.enderportals.ModItems;
 import com.maxezify.enderportals.tardis.EnderChunks;
+import com.maxezify.enderportals.tardis.EnderXp;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -39,6 +40,20 @@ import java.util.List;
  * l'éloignement du joueur.</p>
  */
 public final class EntityTeleporterLogic {
+
+    /**
+     * Prix d'un voyage, en points d'expérience, <b>par passager</b>.
+     *
+     * <p>Le Sac de l'Ender fait payer 3 points par case expédiée ; une créature
+     * vivante n'est pas une case, et deux bêtes coûtent deux fois. Quarante
+     * points pour une coque pleine, c'est à peu près ce que rapporte une soirée
+     * de minage — assez pour que le voyage se décide, trop peu pour qu'il se
+     * refuse.</p>
+     *
+     * <p>Le prélèvement n'a lieu qu'<b>après</b> l'arrivée : une machine qui
+     * échoue ne coûte rien.</p>
+     */
+    public static final int XP_PER_PASSENGER = 20;
 
     /** Chunks mis en chantier autour de l'Atterrisseur. */
     private static final int WARM_RADIUS = 2;
@@ -96,11 +111,23 @@ public final class EntityTeleporterLogic {
         machine.discard();
     }
 
+    /** Le prix du voyage que cette coque s'apprête à faire. */
+    private static int price(EntityTeleporterEntity machine) {
+        return XP_PER_PASSENGER * machine.getPassengers().size();
+    }
+
     /** Le départ : vérifications, puis attente des chunks d'arrivée. */
     private static void depart(ServerPlayer player, EntityTeleporterEntity machine) {
         BlockPos lander = machine.getLander();
         if (lander == null) {
             say(player, "enderportals.message.teleporter_unlinked", ChatFormatting.RED);
+            return;
+        }
+        int cost = price(machine);
+        if (!EnderXp.has(player, cost)) {
+            // Refus immédiat : inutile de faire générer des chunks pour un
+            // voyage qu'on ne pourra pas payer.
+            say(player, ChatFormatting.RED, "enderportals.message.teleporter_no_xp", cost);
             return;
         }
         MinecraftServer server = player.server;
@@ -132,11 +159,24 @@ public final class EntityTeleporterLogic {
             machine.setLander(null);
             return;
         }
+        // Le prix est revérifié ici : le joueur a pu dépenser son expérience
+        // pendant que les chunks se généraient. Un joueur déconnecté entre-temps
+        // ne peut plus rien payer ni rien apprendre — sa bête part quand même,
+        // parce qu'elle est déjà embarquée et qu'un demi-voyage la perdrait.
+        boolean payer = !player.isRemoved();
+        int cost = price(machine);
+        if (payer && !EnderXp.has(player, cost)) {
+            say(player, ChatFormatting.RED, "enderportals.message.teleporter_no_xp", cost);
+            return;
+        }
         Vec3 arrival = Vec3.atBottomCenterOf(lander.above());
         EntityTeleporterEntity arrived = move(machine, enderWorld, arrival);
         if (arrived == null) {
             say(player, "enderportals.message.teleporter_failed", ChatFormatting.RED);
             return;
+        }
+        if (payer) {
+            EnderXp.charge(player, cost);
         }
         enderWorld.playSound(null, arrival.x, arrival.y, arrival.z,
                 SoundEvents.END_PORTAL_SPAWN, SoundSource.BLOCKS, 0.6f, 1.7f);
@@ -188,7 +228,11 @@ public final class EntityTeleporterLogic {
     }
 
     private static void say(ServerPlayer player, String key, ChatFormatting color) {
-        player.displayClientMessage(Component.translatable(key).withStyle(color), true);
+        say(player, color, key);
+    }
+
+    private static void say(ServerPlayer player, ChatFormatting color, String key, Object... args) {
+        player.displayClientMessage(Component.translatable(key, args).withStyle(color), true);
     }
 
     private EntityTeleporterLogic() {

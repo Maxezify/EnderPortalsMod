@@ -1135,19 +1135,21 @@ TELE_HULL = (46, 42, 62, 255)
 TELE_HULL_HI = (78, 74, 98, 255)
 TELE_STEEL = (128, 126, 142, 255)
 TELE_GOLD = (196, 158, 74, 255)
-TELE_LAMP_OFF = (54, 60, 56, 255)
+# Le témoin de proue ne s'éteint jamais : il dit si le départ est possible.
+# Rouge, il manque une destination ou un passager ; vert, la coque peut partir.
+TELE_LAMP_RED = (236, 84, 76, 255)
 TELE_LAMP_ON = (96, 236, 128, 255)
 
 
 def tex_entity_teleporter():
     """Planche 32x32 de la coque, découpée comme l'attend
-    EntityTeleporterRenderer : bordé, plancher, rail d'or, témoin éteint, témoin
-    allumé, montant d'acier. Les six régions doivent rester à leur place — le
+    EntityTeleporterRenderer : bordé, plancher, rail d'or, témoin rouge, témoin
+    vert, montant d'acier. Les six régions doivent rester à leur place — le
     renderer les y lit par coordonnées.
 
-    Sombre et métallique, sans un pixel rouge : le rouge de la 0.20.0 ne venait
-    pas d'ici mais de l'overlay de vertex, laissé à zéro — c'est-à-dire sur la
-    ligne du flash de dégâts."""
+    Le seul rouge de la planche est celui du témoin, et il tient dans huit
+    pixels : la coque rouge de la 0.20.0 ne venait pas d'ici mais de l'overlay
+    de vertex, laissé à zéro — c'est-à-dire sur la ligne du flash de dégâts."""
     px = canvas(32, 32)
 
     # Bordé (0,0)-(16,8) : plaques d'obsidienne rivetées d'acier, arête claire
@@ -1163,9 +1165,12 @@ def tex_entity_teleporter():
         put(px, x, 1, TELE_STEEL)
         put(px, x, 5, TELE_STEEL)
 
-    # Plancher (16,0)-(32,8) : obsidienne mate, quelques éclats.
+    # Plancher et quille (16,0)-(32,8) : obsidienne mate cerclée d'un jonc, qui
+    # encadre le pont vu de dessus et souligne l'arête de la quille vue de côté.
     rect(px, 16, 0, 31, 7, TELE_DARK)
-    for x in range(17, 31, 3):
+    outline(px, 16, 0, 31, 7, TELE_HULL)
+    rect(px, 16, 0, 31, 0, TELE_HULL_HI)
+    for x in range(18, 31, 3):
         put(px, x, (x % 5) + 1, TELE_HULL)
     rect(px, 20, 3, 27, 4, TELE_HULL)
     rect(px, 21, 3, 26, 3, (58, 54, 74, 255))
@@ -1178,7 +1183,7 @@ def tex_entity_teleporter():
         put(px, x, 9, (250, 230, 170, 255))
 
     # Témoin éteint (16,8)-(24,12), allumé (24,8)-(32,12).
-    for x0, glass, spark in ((16, TELE_LAMP_OFF, (74, 82, 78, 255)),
+    for x0, glass, spark in ((16, TELE_LAMP_RED, (255, 176, 160, 255)),
                              (24, TELE_LAMP_ON, (190, 255, 210, 255))):
         rect(px, x0, 8, x0 + 7, 11, TELE_DARK)
         rect(px, x0 + 1, 9, x0 + 6, 10, glass)

@@ -18,23 +18,36 @@ import net.minecraft.resources.ResourceLocation;
  *
  * <p>Dessinée à la main plutôt qu'avec le modèle de bateau de vanilla : celui-ci
  * est fait de rames, de planches et d'une coque bombée dont rien ne convient à
- * une machine, et le reprendre aurait imposé de suivre ses couches de modèle
- * d'une version à l'autre.</p>
+ * une machine.</p>
+ *
+ * <p><b>Deux faces dans le même plan, c'est du clipping.</b> Quand deux caisses
+ * se touchent pile — le rail posé sur la paroi, la paroi posée sur la quille,
+ * deux parois qui se rejoignent à l'angle — leurs faces occupent exactement la
+ * même profondeur, et la carte graphique n'a aucun moyen de choisir laquelle
+ * afficher : le résultat scintille et bave d'une texture à l'autre selon
+ * l'angle de vue. La 0.20.1 empilait ses caisses bord à bord et comptait
+ * <b>116 paires de faces coplanaires</b> ; c'est ce que montrait la capture.</p>
+ *
+ * <p>La règle appliquée ici est donc explicite : <b>deux caisses ne se touchent
+ * jamais, elles s'ignorent ou elles s'enfoncent l'une dans l'autre</b> d'un
+ * demi-centimètre, jamais alignées. Chaque pièce qui en recouvre une autre est
+ * un cheveu plus large ou plus haute qu'elle, si bien que la face cachée reste
+ * strictement à l'intérieur du volume voisin — invisible, donc muette. Les
+ * décrochements font 5 mm, soit un douzième de pixel de texture : indécelables
+ * à l'œil, décisifs pour le tampon de profondeur.</p>
+ *
+ * <p>La géométrie est écrite en toutes lettres dans {@link #PARTS} plutôt que
+ * calculée par des boucles, et {@code tools/check_hull.py} relit ce tableau à
+ * chaque build pour vérifier la règle. Une symétrie calculée aurait été plus
+ * courte à écrire et impossible à vérifier de l'extérieur ; ici la CI refuse la
+ * moindre face coplanaire réintroduite.</p>
  *
  * <p><b>L'overlay n'est pas zéro.</b> La 0.20.0 passait {@code 0} à chaque
  * sommet, croyant dire « aucun » : {@code 0} vaut {@code pack(0, 0)}, c'est-à-dire
- * la ligne du <b>flash de dégâts</b> de la planche d'overlay. Toute la coque
- * sortait rouge vif, quelle que soit sa texture — le défaut ne se voyait
- * évidemment pas dans le fichier PNG. La constante est {@link
- * OverlayTexture#NO_OVERLAY}, et elle n'est plus un paramètre ici : rien de ce
- * que dessine cette classe ne clignote, il n'y avait donc aucune raison de
- * laisser le choix ouvert.</p>
- *
- * <p>La silhouette est celle d'une nacelle et non d'une caisse : deux ceintures
- * de bordé, la basse en retrait, quatre montants d'acier aux angles et un rail
- * d'or sur l'arête haute. C'est ce décrochement qui donne une échelle à l'objet
- * — un pavé lisse de cette taille se lit comme un bloc, pas comme une
- * machine.</p>
+ * la ligne du <b>flash de dégâts</b> de la planche d'overlay, d'où une coque
+ * rouge vif quelle que soit sa texture. La constante est {@link
+ * OverlayTexture#NO_OVERLAY}, et elle n'est plus un paramètre : rien ici ne
+ * clignote.</p>
  */
 public class EntityTeleporterRenderer extends EntityRenderer<EntityTeleporterEntity> {
 
@@ -45,21 +58,60 @@ public class EntityTeleporterRenderer extends EntityRenderer<EntityTeleporterEnt
     private static final float TEX = 32.0f;
 
     // Régions {u0, v0, u1, v1} de la planche.
-    private static final float[] HULL = {0, 0, 16, 8};
-    private static final float[] DECK = {16, 0, 32, 8};
-    private static final float[] TRIM = {0, 8, 16, 12};
-    private static final float[] LAMP_OFF = {16, 8, 24, 12};
-    private static final float[] LAMP_ON = {24, 8, 32, 12};
-    private static final float[] POST = {0, 12, 16, 16};
+    private static final float[] R_HULL = {0, 0, 16, 8};
+    private static final float[] R_DECK = {16, 0, 32, 8};
+    private static final float[] R_TRIM = {0, 8, 16, 12};
+    private static final float[] R_LAMP_RED = {16, 8, 24, 12};
+    private static final float[] R_LAMP_GREEN = {24, 8, 32, 12};
+    private static final float[] R_POST = {0, 12, 16, 16};
 
-    // Deux ceintures : la basse en retrait, la haute au gabarit de la coque.
-    private static final float LOW_W = 0.50f, LOW_L = 0.62f;
-    private static final float TOP_W = 0.60f, TOP_L = 0.72f;
-    private static final float FLOOR = 0.06f;
-    private static final float WAIST = 0.21f;
-    private static final float RIM = 0.42f;
-    /** Épaisseur du bordé. Assez pour se voir, assez fin pour rester creux. */
-    private static final float SKIN = 0.08f;
+    private static final int HULL = 0;
+    private static final int DECK = 1;
+    private static final int TRIM = 2;
+    private static final int POST = 3;
+    /** Le témoin : sa région et sa lumière dépendent de l'état, pas du tableau. */
+    private static final int LAMP = 4;
+
+    private static final float[][] REGIONS = {R_HULL, R_DECK, R_TRIM, R_POST, R_LAMP_RED};
+
+    /**
+     * Les caisses de la coque : {@code {x0, y0, z0, x1, y1, z1, région}}.
+     *
+     * <p>Aucune de ces valeurs n'est décorative : chacune est décalée de 5 mm de
+     * sa voisine pour qu'aucune face ne partage un plan avec une autre. Modifier
+     * un seul de ces nombres sans repasser {@code tools/check_hull.py} peut
+     * réintroduire le scintillement.</p>
+     */
+    private static final float[][] PARTS = {
+            // Quille : légèrement débordante, si bien que les parois s'y
+            // enfoncent au lieu de s'y poser.
+            {-0.565f, 0.000f, -0.715f, 0.565f, 0.080f, 0.715f, DECK},
+
+            // Les quatre parois. Avant et arrière tiennent toute la largeur ;
+            // celles des côtés sont 5 mm plus étroites et plus basses, et
+            // mordent dans les premières aux angles.
+            {-0.550f, 0.075f, -0.700f, 0.550f, 0.440f, -0.610f, HULL},
+            {-0.550f, 0.075f, 0.610f, 0.550f, 0.440f, 0.700f, HULL},
+            {-0.545f, 0.070f, -0.665f, -0.460f, 0.435f, 0.665f, HULL},
+            {0.460f, 0.070f, -0.665f, 0.545f, 0.435f, 0.665f, HULL},
+
+            // Le rail d'or, en surplomb de 2 cm et plongeant de 1 cm dans les
+            // parois : c'est ce surplomb qui donne son ombre à l'arête haute.
+            {-0.570f, 0.425f, -0.720f, 0.570f, 0.485f, -0.630f, TRIM},
+            {-0.570f, 0.425f, 0.630f, 0.570f, 0.485f, 0.720f, TRIM},
+            {-0.565f, 0.430f, -0.680f, -0.475f, 0.480f, 0.680f, TRIM},
+            {0.475f, 0.430f, -0.680f, 0.565f, 0.480f, 0.680f, TRIM},
+
+            // Quatre montants d'acier, saillants de tout le reste et dépassant
+            // du rail : ce sont eux qui donnent son échelle à la machine.
+            {-0.585f, 0.050f, -0.725f, -0.490f, 0.500f, -0.635f, POST},
+            {-0.585f, 0.050f, 0.635f, -0.490f, 0.500f, 0.725f, POST},
+            {0.490f, 0.050f, -0.725f, 0.585f, 0.500f, -0.635f, POST},
+            {0.490f, 0.050f, 0.635f, 0.585f, 0.500f, 0.725f, POST},
+
+            // Le témoin de proue.
+            {-0.150f, 0.215f, -0.745f, 0.150f, 0.355f, -0.680f, LAMP},
+    };
 
     public EntityTeleporterRenderer(EntityRendererProvider.Context context) {
         super(context);
@@ -79,59 +131,24 @@ public class EntityTeleporterRenderer extends EntityRenderer<EntityTeleporterEnt
 
         PoseStack.Pose entry = poseStack.last();
         VertexConsumer hull = buffer.getBuffer(RenderType.entityCutoutNoCull(TEXTURE));
+        boolean ready = entity.isReady();
 
-        // Le plancher, puis les deux ceintures — creuses, pour que les créatures
-        // s'y voient assises comme dans un bateau.
-        box(hull, entry, -LOW_W, 0.0f, -LOW_L, LOW_W, FLOOR, LOW_L, DECK, light);
-        belt(hull, entry, LOW_W, LOW_L, 0.0f, WAIST, light);
-        belt(hull, entry, TOP_W, TOP_L, WAIST, RIM, light);
-
-        // Le rail d'or sur l'arête haute : quatre barres, pas un couvercle.
-        rail(hull, entry, TOP_W, TOP_L, RIM, RIM + 0.045f, light);
-
-        // Quatre montants d'acier aux angles, de la quille au rail.
-        for (int sx = -1; sx <= 1; sx += 2) {
-            for (int sz = -1; sz <= 1; sz += 2) {
-                float x = sx * TOP_W;
-                float z = sz * TOP_L;
-                box(hull, entry, Math.min(x, x - sx * 0.10f), 0.0f, Math.min(z, z - sz * 0.10f),
-                        Math.max(x, x - sx * 0.10f), RIM + 0.045f, Math.max(z, z - sz * 0.10f),
-                        POST, light);
-            }
+        for (float[] part : PARTS) {
+            int region = (int) part[6];
+            // Le témoin dit si le départ est possible, et se voit de nuit comme
+            // au fond d'une galerie : il ignore la lumière ambiante.
+            float[] uv = region == LAMP ? (ready ? R_LAMP_GREEN : R_LAMP_RED) : REGIONS[region];
+            int lit = region == LAMP ? LightTexture.FULL_BRIGHT : light;
+            box(hull, entry, part, uv, lit);
         }
-
-        // Le témoin, sur la proue. Allumé, il ignore la lumière ambiante — il
-        // doit se voir de nuit comme au fond d'une galerie.
-        boolean loaded = entity.isLoaded();
-        box(hull, entry, -0.15f, 0.24f, -TOP_L - 0.035f, 0.15f, 0.38f, -TOP_L + 0.02f,
-                loaded ? LAMP_ON : LAMP_OFF, loaded ? LightTexture.FULL_BRIGHT : light);
 
         poseStack.popPose();
         super.render(entity, yRot, partialTick, poseStack, buffer, light);
     }
 
-    /** Une ceinture de bordé : quatre parois, creuse au milieu. */
-    private static void belt(VertexConsumer buffer, PoseStack.Pose entry,
-                             float halfW, float halfL, float y0, float y1, int light) {
-        box(buffer, entry, -halfW, y0, -halfL, -halfW + SKIN, y1, halfL, HULL, light);
-        box(buffer, entry, halfW - SKIN, y0, -halfL, halfW, y1, halfL, HULL, light);
-        box(buffer, entry, -halfW, y0, -halfL, halfW, y1, -halfL + SKIN, HULL, light);
-        box(buffer, entry, -halfW, y0, halfL - SKIN, halfW, y1, halfL, HULL, light);
-    }
-
-    /** Le rail d'or : quatre barres suivant l'arête, sans fermer le dessus. */
-    private static void rail(VertexConsumer buffer, PoseStack.Pose entry,
-                             float halfW, float halfL, float y0, float y1, int light) {
-        box(buffer, entry, -halfW, y0, -halfL, -halfW + SKIN, y1, halfL, TRIM, light);
-        box(buffer, entry, halfW - SKIN, y0, -halfL, halfW, y1, halfL, TRIM, light);
-        box(buffer, entry, -halfW, y0, -halfL, halfW, y1, -halfL + SKIN, TRIM, light);
-        box(buffer, entry, -halfW, y0, halfL - SKIN, halfW, y1, halfL, TRIM, light);
-    }
-
     /** Une caisse pleine, ses six faces peintes de la même région. */
-    private static void box(VertexConsumer buffer, PoseStack.Pose entry,
-                            float x0, float y0, float z0, float x1, float y1, float z1,
-                            float[] uv, int light) {
+    private static void box(VertexConsumer buffer, PoseStack.Pose entry, float[] p, float[] uv, int light) {
+        float x0 = p[0], y0 = p[1], z0 = p[2], x1 = p[3], y1 = p[4], z1 = p[5];
         region(buffer, entry, x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1, uv, light, 0, 0, 1);
         region(buffer, entry, x1, y0, z0, x0, y0, z0, x0, y1, z0, x1, y1, z0, uv, light, 0, 0, -1);
         region(buffer, entry, x1, y0, z1, x1, y0, z0, x1, y1, z0, x1, y1, z1, uv, light, 1, 0, 0);

@@ -9,7 +9,7 @@ Derrière cette porte, une parcelle entière vous appartient — et vous l'empor
 partout : la porte se dématérialise dans votre poche et se repose où vous
 voulez.
 
-Version courante : **0.20.1**.
+Version courante : **0.21.0**.
 
 ---
 
@@ -355,22 +355,40 @@ automatique de ce que vous déversez.
 La clé ne prend que vous. Pour emmener une bête dans l'Ender, il faut deux
 pièces :
 
-* **L'Atterrisseur d'entité** (4 lingots de fer, 4 obsidiennes, 1 cristal — il en
-  sort deux) se pose **dans l'Ender**, à l'endroit où vous voulez que la bête
-  arrive.
-* **Le Téléporteur d'entité** (3 lingots de fer, 3 obsidiennes, 1 cristal) est une
-  coque d'acier et d'obsidienne noire, qui se pose et se charge **comme une
-  barque**.
+* **L'Atterrisseur d'entité** (6 obsidiennes pleureuses, 2 cristaux, 1 bloc de
+  slime — il en sort deux) se pose **dans l'Ender**, à l'endroit où vous voulez
+  que la bête arrive.
+* **Le Téléporteur d'entité** (5 obsidiennes pleureuses, 3 cristaux, 1 perle de
+  l'Ender) est une coque d'acier et d'obsidienne noire, qui se pose et se charge
+  **comme une barque**.
 
 Le geste tient en trois temps. **Le téléporteur en main, clic droit sur un
 Atterrisseur** : la coque retient ce point, et son infobulle affiche désormais les
 coordonnées en vert. **Posez-la** où vous voulez, puis **attirez la bête dessus**
-comme dans une barque — un son de validation et le témoin de proue passe au vert
-quand elle est à bord. **Clic droit sur la coque** : elle part avec ce qu'elle
-transporte.
+comme dans une barque — un son de validation, et le témoin de proue passe au
+vert. **Clic droit sur la coque** : elle part avec ce qu'elle transporte.
 
 Posez-en autant que vous voulez, des uns comme des autres ; chaque coque garde
 son propre lien.
+
+### Le témoin de proue
+
+Il ne s'éteint jamais : il dit si le départ est possible.
+
+* **Vert** — la coque a une destination *et* un passager : elle peut partir.
+* **Rouge** — il lui manque l'un ou l'autre.
+
+Il parle de la machine, pas du terrain : savoir si l'Atterrisseur est toujours en
+place demanderait de charger son chunk à chaque instant, et c'est justement ce
+qu'on évite. Cette vérification-là se fait au départ, et vous êtes prévenu si
+l'Atterrisseur a disparu.
+
+### Le prix du voyage
+
+Comme le Sac de l'Ender, la machine se paie en **expérience** : **20 points par
+créature transportée**. Le prélèvement n'a lieu qu'**à l'arrivée** — un voyage
+qui échoue ne coûte rien — et le départ est refusé d'emblée si vous n'avez pas de
+quoi le payer.
 
 ### Reprendre la coque
 
@@ -422,9 +440,9 @@ C E C                r C r                  C L C
 Q C Q                q q q                  C C C
 
 Téléporteur d'entité   Atterrisseur d'entité (×2)
-b . b                  f b f
-b C b                  b C b
-f f f                  f b f
+C C C                  O S O
+O p O                  O C O
+O O O                  O C O
 
 Sac de l'Ender (sans forme) : Bundle + Coffre de l'Ender
 Bloc de l'Ender : 4 cristaux    Briques : 4 Blocs de l'Ender → 4 briques
@@ -433,7 +451,7 @@ O = Obsidienne pleureuse   C = Cristal de l'Ender    N = Nether Star
 P = Perle d'Ender          G = Lingot d'or           S = Bâton
 I = Bloc de fer            E = Coffre de l'Ender     R = Bloc de redstone
 Q = Bloc de quartz         q = Quartz                r = Redstone
-L = Livre                  b = Obsidienne            f = Lingot de fer
+L = Livre                  S = Bloc de slime         p = Perle de l'Ender
 ```
 
 Le rituel d'éveil demande en plus une **Mace** vanilla, qui n'est pas consommée.
@@ -549,7 +567,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.20.1.jar
+# → build/libs/enderportals-0.21.0.jar
 ```
 
 Le build est géré par **ModDevGradle** ; NeoForge et les mappings officiels sont

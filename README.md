@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.20.1**.
+Current version: **0.21.0**.
 
 ---
 
@@ -339,18 +339,35 @@ whatever you pour in.
 
 The key only takes you. To bring an animal into the Ender you need two pieces:
 
-* **The Entity Lander** (4 iron ingots, 4 obsidian, 1 crystal — you get two) is
-  placed **inside the Ender**, wherever you want the animal to arrive.
-* **The Entity Teleporter** (3 iron ingots, 3 obsidian, 1 crystal) is a hull of
-  steel and black obsidian, placed and boarded **like a boat**.
+* **The Entity Lander** (6 crying obsidian, 2 crystals, 1 slime block — you get
+  two) is placed **inside the Ender**, wherever you want the animal to arrive.
+* **The Entity Teleporter** (5 crying obsidian, 3 crystals, 1 ender pearl) is a
+  hull of steel and black obsidian, placed and boarded **like a boat**.
 
 Three steps. **Holding the teleporter, right-click a Lander**: the hull remembers
 that spot, and its tooltip now shows the coordinates in green. **Set it down**
 where you like, then **lure the animal aboard** as you would into a boat — a
-confirmation sound plays and the prow lamp turns green once it is in. **Right-click
-the hull**: it leaves with whatever it carries.
+confirmation sound plays and the prow lamp turns green. **Right-click the hull**:
+it leaves with whatever it carries.
 
 Place as many of either as you want; each hull keeps its own link.
+
+### The prow lamp
+
+It never goes out; it tells you whether the trip is possible.
+
+* **Green** — the hull has a destination *and* a passenger: it can leave.
+* **Red** — one of the two is missing.
+
+It speaks of the machine, not of the ground: knowing whether the Lander is still
+there would mean keeping its chunk loaded at all times, which is exactly what we
+avoid. That check happens at departure, and you are told if the Lander is gone.
+
+### What a trip costs
+
+Like the Ender Bag, the machine is paid for in **experience**: **20 points per
+creature carried**. It is only taken **on arrival** — a failed trip costs nothing
+— and departure is refused up front if you cannot pay for it.
 
 ### Getting the hull back
 
@@ -401,9 +418,9 @@ C E C                r C r                  C L C
 Q C Q                q q q                  C C C
 
 Entity Teleporter      Entity Lander (×2)
-b . b                  f b f
-b C b                  b C b
-f f f                  f b f
+C C C                  O S O
+O p O                  O C O
+O O O                  O C O
 
 Ender Bag (shapeless): Bundle + Ender Chest
 Ender Block: 4 crystals     Bricks: 4 Ender Blocks → 4 bricks
@@ -412,7 +429,7 @@ O = Crying obsidian     C = Ender Crystal      N = Nether Star
 P = Ender Pearl         G = Gold ingot         S = Stick
 I = Iron block          E = Ender Chest        R = Redstone block
 Q = Quartz block        q = Quartz             r = Redstone dust
-L = Book                b = Obsidian           f = Iron ingot
+L = Book                S = Slime block        p = Ender pearl
 ```
 
 The waking ritual also needs a vanilla **Mace**, which is not consumed.
@@ -524,7 +541,7 @@ Requires **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.20.1.jar
+# → build/libs/enderportals-0.21.0.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are

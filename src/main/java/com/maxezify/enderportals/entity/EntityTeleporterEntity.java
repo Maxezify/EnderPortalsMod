@@ -32,16 +32,27 @@ import org.jetbrains.annotations.Nullable;
  * mécanique que le jeu tient déjà.</p>
  *
  * <p>Ce que cette classe ajoute tient en trois choses : la destination, le
- * témoin vert quand une créature est à bord, et le clic droit qui remplace la
- * monte par le départ. On ne s'assoit pas dans un téléporteur.</p>
+ * témoin de proue — vert si le départ est possible, rouge sinon — et le clic
+ * droit qui remplace la monte par le départ. On ne s'assoit pas dans un
+ * téléporteur.</p>
  */
 public class EntityTeleporterEntity extends Boat {
 
     /**
-     * Une créature est-elle à bord ? Synchronisé parce que c'est le rendu qui
-     * s'en sert — le témoin vert de la coque.
+     * Le départ est-il possible ? Synchronisé parce que c'est le rendu qui s'en
+     * sert — le témoin de proue, vert ou rouge.
+     *
+     * <p>Deux conditions, et deux seulement : une destination et un passager.
+     * On aurait pu y ajouter « l'Atterrisseur est-il toujours là ? », mais lire
+     * un bloc de l'Ender depuis l'Overworld obligerait à charger son chunk à
+     * chaque tick — exactement le gel que la 0.17 a mis trois versions à
+     * supprimer. Le témoin dit donc l'état de la machine, pas celui du terrain,
+     * et le terrain se vérifie au départ.</p>
+     *
+     * <p>Il ne dit rien non plus de l'expérience du joueur : le prix se paie à
+     * l'usage, et la coque ne sait pas qui viendra la cliquer.</p>
      */
-    private static final EntityDataAccessor<Boolean> LOADED =
+    private static final EntityDataAccessor<Boolean> READY =
             SynchedEntityData.defineId(EntityTeleporterEntity.class, EntityDataSerializers.BOOLEAN);
 
     /**
@@ -54,6 +65,11 @@ public class EntityTeleporterEntity extends Boat {
     @Nullable
     private BlockPos lander;
 
+    /** État du chargement au tick précédent, pour n'en sonner que les changements. */
+    private boolean carried;
+    /** Faux tant que le premier tick n'a pas eu lieu : au chargement, on ne sonne pas. */
+    private boolean carriedKnown;
+
     public EntityTeleporterEntity(EntityType<? extends EntityTeleporterEntity> type, Level level) {
         super(type, level);
     }
@@ -61,12 +77,12 @@ public class EntityTeleporterEntity extends Boat {
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
-        builder.define(LOADED, false);
+        builder.define(READY, false);
     }
 
-    /** Le témoin vert, lu par le rendu. */
-    public boolean isLoaded() {
-        return this.entityData.get(LOADED);
+    /** Le témoin, lu par le rendu : vert si la coque peut partir, rouge sinon. */
+    public boolean isReady() {
+        return this.entityData.get(READY);
     }
 
     @Nullable
@@ -88,11 +104,13 @@ public class EntityTeleporterEntity extends Boat {
     // ------------------------------------------------------------------
 
     /**
-     * Le passage de « vide » à « occupé » sonne et allume le témoin.
+     * Le passage de « vide » à « occupé » sonne, et le témoin suit l'état.
      *
      * <p>C'est bien une <b>transition</b> qui est guettée, pas un état : une
      * créature à bord le reste, et rejouer le son à chaque tick serait
-     * insupportable.</p>
+     * insupportable. {@link #carriedKnown} évite le cas tordu du chargement de
+     * chunk, où une coque déjà pleine « embarquerait » à nouveau son passager
+     * aux oreilles du joueur qui passe par là.</p>
      */
     @Override
     public void tick() {
@@ -101,12 +119,18 @@ public class EntityTeleporterEntity extends Boat {
             return;
         }
         boolean carrying = !this.getPassengers().isEmpty();
-        if (carrying != this.isLoaded()) {
-            this.entityData.set(LOADED, carrying);
-            if (carrying) {
+        if (carrying != this.carried) {
+            if (carrying && this.carriedKnown) {
                 this.level().playSound(null, this.getX(), this.getY(), this.getZ(),
                         SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 0.7f, 1.9f);
             }
+            this.carried = carrying;
+        }
+        this.carriedKnown = true;
+
+        boolean ready = carrying && this.lander != null;
+        if (ready != this.isReady()) {
+            this.entityData.set(READY, ready);
         }
     }
 

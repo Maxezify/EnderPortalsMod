@@ -4,6 +4,7 @@ import com.maxezify.enderportals.ModBlocks;
 import com.maxezify.enderportals.ModComponents;
 import com.maxezify.enderportals.ModEntities;
 import com.maxezify.enderportals.entity.EntityTeleporterEntity;
+import com.maxezify.enderportals.entity.EntityTeleporterLogic;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -88,6 +89,13 @@ public class EntityTeleporterItem extends Item {
                 .withStyle(ChatFormatting.DARK_GRAY));
         tooltip.add(Component.translatable("enderportals.tooltip.entity_teleporter_3")
                 .withStyle(ChatFormatting.DARK_GRAY));
+        tooltip.add(Component.translatable("enderportals.tooltip.entity_teleporter_lamp")
+                .withStyle(ChatFormatting.DARK_GRAY));
+        // Le prix vient de la logique, pas d'un nombre recopié dans les trois
+        // fichiers de langue : une infobulle qui ment sur un coût est pire que
+        // pas d'infobulle du tout.
+        tooltip.add(Component.translatable("enderportals.tooltip.entity_teleporter_xp",
+                EntityTeleporterLogic.XP_PER_PASSENGER).withStyle(ChatFormatting.DARK_GRAY));
         BlockPos lander = stack.get(ModComponents.LANDER_POS.get());
         tooltip.add(lander == null
                 ? Component.translatable("enderportals.tooltip.entity_teleporter_free")

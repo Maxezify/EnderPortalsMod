@@ -11,7 +11,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.capabilities.Capabilities;
@@ -87,7 +86,7 @@ public final class CentralizerLogic {
             full(player);
             return;
         }
-        if (getXpPoints(player) < XP_COST_PER_SLOT * candidates) {
+        if (!EnderXp.has(player, XP_COST_PER_SLOT * candidates)) {
             fail(player, "enderportals.message.not_enough_xp");
             return;
         }
@@ -114,7 +113,7 @@ public final class CentralizerLogic {
         }
         // Force la synchronisation de l'inventaire modifié vers le client.
         player.containerMenu.broadcastChanges();
-        player.giveExperiencePoints(-XP_COST_PER_SLOT * moved);
+        EnderXp.charge(player, XP_COST_PER_SLOT * moved);
         success(player);
     }
 
@@ -208,30 +207,6 @@ public final class CentralizerLogic {
             }
         }
         return false;
-    }
-
-    // ------------------------------------------------------------------
-    // Expérience
-    // ------------------------------------------------------------------
-
-    /** Total des points d'expérience actuellement détenus par le joueur. */
-    private static int getXpPoints(Player player) {
-        return xpForLevel(player.experienceLevel)
-                + Math.round(player.experienceProgress * player.getXpNeededForNextLevel());
-    }
-
-    /** Points cumulés nécessaires pour atteindre un niveau (formule vanilla). */
-    private static int xpForLevel(int level) {
-        if (level <= 0) {
-            return 0;
-        }
-        if (level <= 16) {
-            return level * level + 6 * level;
-        }
-        if (level <= 31) {
-            return (int) (2.5 * level * level - 40.5 * level + 360.0);
-        }
-        return (int) (4.5 * level * level - 162.5 * level + 2220.0);
     }
 
     // ------------------------------------------------------------------

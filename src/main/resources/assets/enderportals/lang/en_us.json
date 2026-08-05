@@ -68,9 +68,12 @@
   "enderportals.message.teleporter_arrived": "Arrived at the Lander.",
   "enderportals.message.teleporter_no_lander": "The Lander is gone. Bind the teleporter again.",
   "enderportals.message.teleporter_failed": "The teleporter could not leave.",
+  "enderportals.message.teleporter_no_xp": "Not enough experience: %s points for this trip.",
   "enderportals.tooltip.entity_teleporter_1": "Set it down, let a creature aboard, right-click to send it",
   "enderportals.tooltip.entity_teleporter_2": "Right-click a Lander to bind it; right-click it empty to pick it back up",
   "enderportals.tooltip.entity_teleporter_3": "Sneak + right-click picks it up and lets its passenger out",
+  "enderportals.tooltip.entity_teleporter_lamp": "Green lamp: ready to go. Red: no link, or no passenger",
+  "enderportals.tooltip.entity_teleporter_xp": "%s experience points per creature carried",
   "enderportals.tooltip.entity_teleporter_free": "Not bound to any Lander",
   "enderportals.tooltip.entity_teleporter_bound": "Bound to %s %s %s",
   "enderportals.tooltip.entity_lander_1": "Where a bound Entity Teleporter comes down",
@@ -157,8 +160,8 @@
   "enderportals.book.page26": "§5The Friend Code§0\n\nYour key carries an eight-digit code.\n\nRead it out. Type the other's on the panel, and let them type yours: you are friends.",
   "enderportals.book.page27": "§5Opening§0\n\nClick your ally's name, and let them click yours.\n\nBoth passages open, and each walks freely into the other's base.",
   "enderportals.book.page28": "§5Always open§0\n\nThe link holds as long as you want, even while the other is offline.\n\nTo break it, click their name again.\n\nSafe travels.",
-  "enderportals.book.page29": "§5The Teleporter§0\n\nCrafting table:\n§8O . O§0\n§8O §bC §8O§0\n§7F F F§0\n\n§8O§0 = Obsidian\n§bC§0 = Crystal\n§7F§0 = Iron ingot",
-  "enderportals.book.page30": "§5The Lander§0\n\nCrafting table:\n§7F §8O §7F§0\n§8O §bC §8O§0\n§7F §8O §7F§0\n\nYou get §ltwo§r§0. Place one in the Ender, where the arrival should be.",
-  "enderportals.book.page31": "§5The Trip§0\n\nHolding the teleporter, click a Lander: the hull remembers that spot.\n\nSet it down, then lure the animal aboard like a boat: the prow lamp turns §agreen§0.",
-  "enderportals.book.page32": "§5Coming Back§0\n\nRight-click the loaded hull: it leaves with what it carries.\n\nEmpty, it goes back to your hand.\n\n§lSneaking§r§0, it comes back §aand lets out§0 the animal."
+  "enderportals.book.page29": "§5The Teleporter§0\n\nCrafting table:\n§bC C C§0\n§5O §aP §5O§0\n§5O O O§0\n\n§bC§0 = Crystal\n§5O§0 = Crying obsidian\n§aP§0 = Ender pearl",
+  "enderportals.book.page30": "§5The Lander§0\n\nCrafting table:\n§5O §aS §5O§0\n§5O §bC §5O§0\n§5O §bC §5O§0\n\n§aS§0 = Slime block\n\nYou get §ltwo§r§0. Place one in the Ender.",
+  "enderportals.book.page31": "§5The Trip§0\n\nHolding the teleporter, click a Lander: the hull remembers that spot.\n\nLure the animal aboard: the lamp turns §agreen§0. §cRed§0 means no link, or no passenger.",
+  "enderportals.book.page32": "§5The Price§0\n\nRight-click: the hull leaves, for a little §aexperience§0 per animal.\n\nEmpty, the click takes it back.\n\n§lSneaking§r§0, it takes it back and lets the animal out."
 }
