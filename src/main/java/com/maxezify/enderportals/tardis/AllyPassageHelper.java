@@ -132,9 +132,10 @@ public final class AllyPassageHelper {
         if (data == null) {
             return;
         }
+        TardisStateManager manager = TardisStateManager.get(server);
         // Copie : la réconciliation peut retirer une arche dont le bloc a disparu.
         for (PassageData passage : List.copyOf(data.passages)) {
-            reconcile(server, passage);
+            reconcile(server, manager, data, passage);
         }
     }
 
@@ -148,7 +149,7 @@ public final class AllyPassageHelper {
         }
         PassageData passage = TardisStateManager.passageAt(mine, base);
         if (passage != null) {
-            reconcile(server, passage);
+            reconcile(server, manager, mine, passage);
         }
     }
 
@@ -165,11 +166,24 @@ public final class AllyPassageHelper {
      */
     public static void reconcile(MinecraftServer server, PassageData mine) {
         TardisStateManager manager = TardisStateManager.get(server);
+        reconcile(server, manager, manager.findByPassage(mine.pos), mine);
+    }
+
+    /**
+     * Même travail, quand l'appelant sait déjà à qui est l'arche.
+     *
+     * <p>Retrouver le propriétaire coûte un balayage de toutes les portes et de
+     * leurs arches. Les deux appelants réguliers — la relecture d'une arche
+     * chaque seconde, et le passage sur toutes les arches d'un joueur — venaient
+     * précisément de le faire : le refaire ici doublait ce balayage, et le
+     * multipliait par le nombre d'arches dans le second cas.</p>
+     */
+    public static void reconcile(MinecraftServer server, TardisStateManager manager,
+                                 @Nullable TardisData owner, PassageData mine) {
         ServerLevel level = server.getLevel(ModDimensions.ENDER_WORLD);
         if (level == null) {
             return;
         }
-        TardisData owner = manager.findByPassage(mine.pos);
         PassageData theirs = pairOf(manager, owner, mine);
 
         if (theirs == null) {

@@ -1,5 +1,6 @@
 package com.maxezify.enderportals.tardis;
 
+import com.maxezify.enderportals.EnderPortalsMod;
 import com.maxezify.enderportals.EnderPortalsTiming;
 import com.maxezify.enderportals.ModDimensions;
 import net.minecraft.core.BlockPos;
@@ -92,7 +93,18 @@ public final class EnderChunks {
                     EnderPortalsTiming.since("attente des chunks — " + label, chrono);
                     EnderPortalsTiming.measure("travaux sur le fil du serveur — " + label,
                             () -> task.accept(enderWorld));
-                }, server);
+                }, server)
+                // Un CompletableFuture avale ce qu'on lui jette : sans cette
+                // ligne, une salle qui ne se creuse pas ou une créature qui
+                // n'arrive jamais ne laissent aucune trace — ni exception
+                // remontée, ni ligne au journal, juste un geste sans effet.
+                // C'est le seul endroit du mod où du travail part hors du fil
+                // du serveur, donc le seul où ce silence soit possible.
+                .exceptionally(error -> {
+                    EnderPortalsMod.LOGGER.error("Chunks de l'Ender indisponibles — {} abandonné.",
+                            label, error);
+                    return null;
+                });
     }
 
     private EnderChunks() {
