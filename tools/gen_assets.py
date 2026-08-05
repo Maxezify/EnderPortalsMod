@@ -1346,15 +1346,21 @@ def tex_entity_teleporter():
         put(px, x, 1, TELE_STEEL)
         put(px, x, 5, TELE_STEEL)
 
-    # Plancher et quille (16,0)-(32,8) : obsidienne mate cerclée d'un jonc, qui
-    # encadre le pont vu de dessus et souligne l'arête de la quille vue de côté.
-    rect(px, 16, 0, 31, 7, TELE_DARK)
-    outline(px, 16, 0, 31, 7, TELE_HULL)
+    # Plancher et quille (16,0)-(32,8) : tôle rivetée, pas un trou noir.
+    #
+    # La version précédente était de l'obsidienne mate presque noire : vue de
+    # dessus — c'est-à-dire la vue qu'on a d'une machine posée par terre — la
+    # coque s'ouvrait sur un vide. Une tôle claire donne un fond au bateau, et
+    # fait ressortir la plaque de départ qui s'y incruste.
+    rect(px, 16, 0, 31, 7, TELE_HULL)
     rect(px, 16, 0, 31, 0, TELE_HULL_HI)
-    for x in range(18, 31, 3):
-        put(px, x, (x % 5) + 1, TELE_HULL)
-    rect(px, 20, 3, 27, 4, TELE_HULL)
-    rect(px, 21, 3, 26, 3, (58, 54, 74, 255))
+    rect(px, 16, 7, 31, 7, TELE_DARK)
+    for x in (19, 24, 29):
+        rect(px, x, 1, x, 6, TELE_DARK)
+    for y in (2, 5):
+        rect(px, 16, y, 31, y, (54, 50, 70, 255))
+    for x, y in ((17, 1), (22, 1), (27, 1), (17, 6), (22, 6), (27, 6)):
+        put(px, x, y, TELE_STEEL)
 
     # Rail (0,8)-(16,12) : or brossé, lumière en haut.
     rect(px, 0, 8, 15, 11, TELE_GOLD)
@@ -1377,6 +1383,30 @@ def tex_entity_teleporter():
     rect(px, 0, 15, 15, 15, (74, 72, 88, 255))
     for x in range(1, 15, 3):
         rect(px, x, 13, x, 14, (96, 94, 110, 255))
+
+    # Cristal d'émetteur (0,16)-(16,24) : la gemme du mod, taillée à facettes,
+    # posée en haut des quatre montants. C'est elle qui dit « téléporteur »
+    # plutôt que « caisse » — quatre pylônes coiffés de la même pierre que la
+    # clé et le sac.
+    rect(px, 0, 16, 15, 23, GEM_DARK)
+    rect(px, 0, 16, 15, 16, GEM_HI)
+    rect(px, 0, 17, 15, 19, GEM_MID)
+    for x in range(1, 15, 4):
+        rect(px, x, 17, x + 1, 18, GEM_HI)
+        put(px, x, 17, GEM_CORE)
+    rect(px, 0, 22, 15, 23, GEM_DEEP)
+
+    # Plaque de départ (16,16)-(32,24) : le disque violet incrusté dans le
+    # plancher, sur lequel la bête se tient. Vu de dessus, c'est la pièce la
+    # plus visible de la machine, et la seule qui explique ce qu'elle fait.
+    rect(px, 16, 16, 31, 23, GEM_DEEP)
+    outline(px, 16, 16, 31, 23, TELE_DARK)
+    rect(px, 18, 17, 29, 22, GEM_DARK)
+    outline(px, 19, 18, 28, 21, GEM_MID)
+    rect(px, 21, 19, 26, 20, GEM_HI)
+    rect(px, 23, 19, 24, 20, GEM_CORE)
+    for x, y in ((17, 17), (30, 17), (17, 22), (30, 22)):
+        put(px, x, y, GEM_HI)
 
     write_png(f"{ASSETS}/textures/entity/entity_teleporter.png", 32, 32, px)
 
@@ -1406,33 +1436,45 @@ def tex_entity_lander():
     write_png(f"{ASSETS}/textures/block/entity_lander_side.png", 16, 16, side)
 
 
+TELEPORTER_ITEM_LETTERS = {
+    "o": (12, 9, 18, 255),
+    "d": TELE_DARK, "m": TELE_HULL, "h": TELE_HULL_HI, "s": TELE_STEEL,
+    "G": (238, 206, 124, 255), "g": (196, 158, 74, 255), "k": (132, 100, 40, 255),
+    "V": GEM_DARK, "H": GEM_HI, "C": GEM_CORE,
+    "L": (96, 236, 128, 255), "l": (36, 128, 64, 255),
+}
+
+# Le Téléporteur en main : la machine vue de face, un rien de haut.
+#
+# Quatre marques suffisent à la reconnaître, et ce sont celles qu'on voit en
+# jeu : les cristaux des pylônes, le rail d'or, la lueur violette de la plaque
+# de départ dans l'ouverture, et le témoin vert du tableau de proue. Le reste
+# n'est que coque.
+TELEPORTER_ITEM = [
+    "................",
+    "................",
+    "....oooooooo....",
+    "....okggggko....",
+    "...odVVVVVVdo...",
+    "..odVHHHHHHVdo..",
+    "..oCggggggggCo..",
+    "..odmmhhhhmmdo..",
+    "..odmhLLLLhmdo..",
+    "..odmmhhhhmmdo..",
+    "..oddmmmmmmddo..",
+    "..osssssssssso..",
+    "..oooooooooooo..",
+    "................",
+    "................",
+    "................",
+]
+
+
 def tex_entity_teleporter_item():
-    """L'objet en main : la nacelle vue de trois quarts — deux ceintures, rail
-    d'or, montants d'acier et témoin de proue. Le même vocabulaire que l'entité,
-    pour qu'on reconnaisse l'un dans l'autre."""
+    """L'objet en main : la machine de face — cristaux, rail d'or, plaque
+    violette dans l'ouverture, témoin vert."""
     px = canvas(16, 16)
-
-    # Ceinture haute, puis ceinture basse en retrait d'un pixel de chaque côté.
-    rect(px, 2, 7, 13, 9, TELE_HULL)
-    rect(px, 3, 10, 12, 12, TELE_HULL)
-    rect(px, 3, 12, 12, 12, TELE_DARK)
-    # Creux du pont.
-    rect(px, 4, 7, 11, 8, TELE_DARK)
-    rect(px, 5, 8, 10, 8, (40, 36, 54, 255))
-    # Rail d'or sur l'arête haute.
-    rect(px, 2, 6, 13, 6, TELE_GOLD)
-    rect(px, 4, 6, 5, 6, (244, 216, 140, 255))
-    # Montants d'acier aux quatre angles visibles.
-    for x in (2, 13):
-        rect(px, x, 6, x, 11, TELE_STEEL)
-    for x in (3, 12):
-        put(px, x, 12, TELE_STEEL)
-    # Témoin de proue, allumé : c'est lui qui identifie l'objet dans une barre
-    # d'inventaire où tout est sombre.
-    rect(px, 6, 2, 9, 5, TELE_DARK)
-    rect(px, 7, 3, 8, 4, TELE_LAMP_ON)
-    put(px, 7, 3, (200, 255, 220, 255))
-
+    stamp(px, 0, 0, TELEPORTER_ITEM, TELEPORTER_ITEM_LETTERS)
     write_png(f"{ASSETS}/textures/item/entity_teleporter.png", 16, 16, px)
 
 

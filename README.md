@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.23.2**.
+Current version: **0.24.0**.
 
 ---
 
@@ -137,6 +137,14 @@ So **the recall cannot fail**. It tries, in order:
 3. failing that, your respawn point.
 
 If it had to move the door, it tells you the new coordinates.
+
+**And without the key?** The inner door still opens, for its owner. It is the
+same requirement taken one step further: dying outside leaves the key on the
+ground with everything else, and if your bed is in the Ender you respawn inside
+without it. Forging another key needs an ender pearl — and no creature spawns in
+the Ender. Without that way out, the base and everything in it would be lost for
+good. The key keeps everything else: materialising the door where you like,
+opening it from outside, putting it back in your pocket.
 
 **Placing** the door from outside, on the other hand, is allowed to refuse. There
 you chose the spot yourself, "not enough room" is an honest answer, and you are
@@ -374,6 +382,14 @@ It speaks of the machine, not of the ground: knowing whether the Lander is still
 there would mean keeping its chunk loaded at all times, which is exactly what we
 avoid. That check happens at departure, and you are told if the Lander is gone.
 
+### The lamp, the crystals and the pad
+
+The machine carries four **crystal-topped pylons**, a **gold rail** along its
+top edge, a **prow console** holding the lamp, and above all a **violet
+departure pad** set into its floor — that is where the animal stands, and what
+you see from above. Crystals and pad glow on their own: the machine is easy to
+find at night.
+
 ### What a trip costs
 
 Like the Ender Bag, the machine is paid for in **experience**: **20 points per
@@ -556,7 +572,7 @@ Requires **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.23.2.jar
+# → build/libs/enderportals-0.24.0.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are

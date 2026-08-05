@@ -64,6 +64,8 @@ public class EntityTeleporterRenderer extends EntityRenderer<EntityTeleporterEnt
     private static final float[] R_LAMP_RED = {16, 8, 24, 12};
     private static final float[] R_LAMP_GREEN = {24, 8, 32, 12};
     private static final float[] R_POST = {0, 12, 16, 16};
+    private static final float[] R_CRYSTAL = {0, 16, 16, 24};
+    private static final float[] R_PAD = {16, 16, 32, 24};
 
     private static final int HULL = 0;
     private static final int DECK = 1;
@@ -71,8 +73,12 @@ public class EntityTeleporterRenderer extends EntityRenderer<EntityTeleporterEnt
     private static final int POST = 3;
     /** Le témoin : sa région et sa lumière dépendent de l'état, pas du tableau. */
     private static final int LAMP = 4;
+    /** Cristaux et plaque : ils brillent de leur propre lumière. */
+    private static final int CRYSTAL = 5;
+    private static final int PAD = 6;
 
-    private static final float[][] REGIONS = {R_HULL, R_DECK, R_TRIM, R_POST, R_LAMP_RED};
+    private static final float[][] REGIONS =
+            {R_HULL, R_DECK, R_TRIM, R_POST, R_LAMP_RED, R_CRYSTAL, R_PAD};
 
     /**
      * Les caisses de la coque : {@code {x0, y0, z0, x1, y1, z1, région}}.
@@ -86,6 +92,11 @@ public class EntityTeleporterRenderer extends EntityRenderer<EntityTeleporterEnt
             // Quille : légèrement débordante, si bien que les parois s'y
             // enfoncent au lieu de s'y poser.
             {-0.565f, 0.000f, -0.715f, 0.565f, 0.080f, 0.715f, DECK},
+
+            // La plaque de départ, incrustée dans le plancher et débordant de
+            // deux centimètres : c'est elle qu'on voit d'en haut, et la seule
+            // pièce qui dise à quoi sert la machine.
+            {-0.360f, 0.075f, -0.430f, 0.360f, 0.098f, 0.430f, PAD},
 
             // Les quatre parois. Avant et arrière tiennent toute la largeur ;
             // celles des côtés sont 5 mm plus étroites et plus basses, et
@@ -102,15 +113,27 @@ public class EntityTeleporterRenderer extends EntityRenderer<EntityTeleporterEnt
             {-0.565f, 0.430f, -0.680f, -0.475f, 0.480f, 0.680f, TRIM},
             {0.475f, 0.430f, -0.680f, 0.565f, 0.480f, 0.680f, TRIM},
 
-            // Quatre montants d'acier, saillants de tout le reste et dépassant
-            // du rail : ce sont eux qui donnent son échelle à la machine.
+            // Quatre montants d'acier, saillants de tout le reste.
             {-0.585f, 0.050f, -0.725f, -0.490f, 0.500f, -0.635f, POST},
             {-0.585f, 0.050f, 0.635f, -0.490f, 0.500f, 0.725f, POST},
             {0.490f, 0.050f, -0.725f, 0.585f, 0.500f, -0.635f, POST},
             {0.490f, 0.050f, 0.635f, 0.585f, 0.500f, 0.725f, POST},
 
-            // Le témoin de proue.
-            {-0.150f, 0.215f, -0.745f, 0.150f, 0.355f, -0.680f, LAMP},
+            // Et leurs cristaux : plus étroits que le montant, enfoncés d'un
+            // demi-centimètre dedans. Ce sont eux qui font lire quatre pylônes
+            // au lieu de quatre piquets de caisse.
+            {-0.575f, 0.495f, -0.715f, -0.500f, 0.590f, -0.645f, CRYSTAL},
+            {-0.575f, 0.495f, 0.645f, -0.500f, 0.590f, 0.715f, CRYSTAL},
+            {0.500f, 0.495f, -0.715f, 0.575f, 0.590f, -0.645f, CRYSTAL},
+            {0.500f, 0.495f, 0.645f, 0.575f, 0.590f, 0.715f, CRYSTAL},
+
+            // Le tableau de proue, posé sur le rail avant. C'est lui qui donne
+            // un avant et un arrière à la coque — sans quoi elle se lit comme
+            // une caisse, quel que soit le soin mis au reste.
+            {-0.220f, 0.430f, -0.735f, 0.220f, 0.560f, -0.640f, POST},
+
+            // Le témoin, à hauteur de regard sur ce tableau.
+            {-0.130f, 0.455f, -0.750f, 0.130f, 0.545f, -0.700f, LAMP},
     };
 
     public EntityTeleporterRenderer(EntityRendererProvider.Context context) {
@@ -138,7 +161,11 @@ public class EntityTeleporterRenderer extends EntityRenderer<EntityTeleporterEnt
             // Le témoin dit si le départ est possible, et se voit de nuit comme
             // au fond d'une galerie : il ignore la lumière ambiante.
             float[] uv = region == LAMP ? (ready ? R_LAMP_GREEN : R_LAMP_RED) : REGIONS[region];
-            int lit = region == LAMP ? LightTexture.FULL_BRIGHT : light;
+            // Trois pièces éclairent d'elles-mêmes : le témoin, les cristaux
+            // des pylônes et la plaque de départ. Le reste subit la lumière du
+            // lieu, sans quoi la machine flotterait au-dessus de la nuit.
+            boolean glowing = region == LAMP || region == CRYSTAL || region == PAD;
+            int lit = glowing ? LightTexture.FULL_BRIGHT : light;
             box(hull, entry, part, uv, lit);
         }
 

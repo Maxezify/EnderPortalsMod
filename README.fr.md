@@ -9,7 +9,7 @@ Derrière cette porte, une parcelle entière vous appartient — et vous l'empor
 partout : la porte se dématérialise dans votre poche et se repose où vous
 voulez.
 
-Version courante : **0.23.2**.
+Version courante : **0.24.0**.
 
 ---
 
@@ -142,6 +142,14 @@ parcelle est entourée de bedrock, et cette porte est la seule sortie.
 3. sinon, votre point de réapparition.
 
 S'il a dû déplacer la porte, il vous en donne les coordonnées.
+
+**Et sans la clé ?** La porte intérieure ouvre quand même, pour son
+propriétaire. C'est la même exigence poussée un cran plus loin : mourir dehors
+laisse la clé au sol avec le reste, et si votre lit est dans l'Ender vous
+réapparaissez à l'intérieur, sans elle. Reforger une clé demande une perle de
+l'Ender — or aucune créature n'y apparaît. Sans cette issue, la base et tout ce
+qu'elle contient seraient perdus. La clé garde tout le reste : matérialiser la
+porte où l'on veut, l'ouvrir du dehors, la ranger dans sa poche.
 
 **Poser** la porte au sol depuis l'extérieur, en revanche, peut être refusé :
 là, c'est vous qui avez désigné l'endroit, « pas assez de place » est une
@@ -395,6 +403,14 @@ place demanderait de charger son chunk à chaque instant, et c'est justement ce
 qu'on évite. Cette vérification-là se fait au départ, et vous êtes prévenu si
 l'Atterrisseur a disparu.
 
+### Le témoin, les cristaux et la plaque
+
+La machine porte quatre **pylônes coiffés de cristal**, un **rail d'or** sur
+l'arête, un **tableau de proue** où loge le témoin, et surtout une **plaque de
+départ violette** incrustée dans le plancher — c'est sur elle que la bête se
+tient, et c'est elle qu'on voit d'en haut. Cristaux et plaque brillent de leur
+propre lumière : la machine se repère de nuit.
+
 ### Le prix du voyage
 
 Comme le Sac de l'Ender, la machine se paie en **expérience** : **20 points par
@@ -583,7 +599,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.23.2.jar
+# → build/libs/enderportals-0.24.0.jar
 ```
 
 Le build est géré par **ModDevGradle** ; NeoForge et les mappings officiels sont

@@ -138,10 +138,58 @@ public class TardisDoorBlock extends Block implements EntityBlock {
         if (player.getMainHandItem().is(ModItems.TARDIS_KEY.get())) {
             return InteractionResult.PASS;
         }
-        if (!level.isClientSide) {
+        if (!level.isClientSide && !emergencyExit(state, level, pos, player)) {
             player.displayClientMessage(Component.translatable("enderportals.message.locked"), true);
         }
         return InteractionResult.SUCCESS;
+    }
+
+    /**
+     * La sortie de secours : la porte <b>intérieure</b> obéit à son propriétaire
+     * même sans clé.
+     *
+     * <p>Sans elle, une partie pouvait finir murée. Il suffisait d'avoir son lit
+     * dans l'Ender et de mourir dehors : les affaires — la clé avec — restent au
+     * lieu de la mort, on réapparaît à l'intérieur, et la porte close ne répond
+     * plus. Reforger une clé demande une perle de l'Ender, or <b>aucune créature
+     * n'apparaît dans l'Ender</b> : sans perle en réserve, la base et tout ce
+     * qu'elle contient étaient perdus pour de bon.</p>
+     *
+     * <p>C'est le même principe que le rappel qui ne peut pas échouer : une
+     * parcelle cloisonnée de bedrock n'a qu'une issue, et rien ne doit pouvoir
+     * la condamner. La clé garde tout le reste — matérialiser la porte où l'on
+     * veut, l'ouvrir et la refermer du dehors, la ranger dans sa poche.</p>
+     *
+     * <p>Deux restrictions. <b>Le propriétaire seul</b> : un allié venu par un
+     * Passage repart par où il est entré, et n'a pas à pouvoir faire apparaître
+     * la porte d'autrui. Et <b>ouvrir seulement</b> : jamais dématérialiser,
+     * sinon ce geste de secours servirait à se murer.</p>
+     */
+    private static boolean emergencyExit(BlockState state, Level level, BlockPos pos, Player player) {
+        BlockPos base = state.getValue(HALF) == DoubleBlockHalf.UPPER ? pos.below() : pos;
+        if (!(level.getBlockEntity(base) instanceof TardisDoorBlockEntity door)
+                || !door.isInterior() || door.getTardisId() == null) {
+            return false;
+        }
+        MinecraftServer server = level.getServer();
+        if (server == null) {
+            return false;
+        }
+        TardisData data = TardisStateManager.get(server).getTardis(door.getTardisId());
+        if (data == null || !player.getUUID().equals(data.ownerUuid)) {
+            return false;
+        }
+        if (data.deployed) {
+            // La porte est déjà quelque part : on ne la déplace pas, on
+            // l'ouvre. La rappeler la ferait sauter d'un bloc — son
+            // emplacement est occupé par elle-même.
+            TardisHelper.setDoorsOpen(server, data, true);
+            player.displayClientMessage(
+                    Component.translatable("enderportals.message.exit_opened"), true);
+        } else {
+            TardisHelper.recallExterior(server, data, player);
+        }
+        return true;
     }
 
     @Override
