@@ -141,6 +141,38 @@ EYE_CORE = (208, 184, 240, 255)
 HANDLE = (82, 205, 184, 255)
 HANDLE_D = (30, 108, 95, 255)
 
+# ------------------------------------------------------- le Cristal de l'Ender
+#
+# La 0.21 le peignait en sarcelle : à seize pixels, un caillou sarcelle clair
+# est un diamant, quoi qu'en dise le nom. Le mod avait donc sa pierre fondatrice
+# déguisée en matériau vanilla.
+#
+# Le violet règle deux choses à la fois. C'est la couleur de l'End — enderman,
+# chorus, cadres de portail — donc celle que le joueur associe déjà au monde
+# d'où vient la pierre ; et c'est celle de la porte, de l'obsidienne et des
+# machines du mod, si bien que le cristal a enfin l'air d'appartenir à la
+# famille qu'il sert à construire.
+#
+# Reste l'améthyste, seule gemme violette de vanilla. On s'en écarte par le
+# contraste plutôt que par la teinte : l'améthyste est un lavande mat, presque
+# sans ombre ; celui-ci est une pierre de verre, ombres indigo froides d'un
+# côté, arêtes magenta chaudes de l'autre, et un cœur presque blanc. Sept
+# nuances au lieu de trois — c'est ce que font les gemmes de vanilla, et ce qui
+# leur donne leur éclat.
+#
+# La lumière vient d'en haut à gauche, partout, comme dans tout Minecraft.
+GEM_OUT = (26, 10, 44, 255)    # contour : lisible sur n'importe quel fond
+GEM_DEEP = (58, 24, 96, 255)   # creux, ombre portée dans la pierre
+GEM_DARK = (94, 38, 152, 255)  # facette à l'ombre
+GEM_MID = (138, 58, 198, 255)  # corps
+GEM_LIT = (180, 94, 230, 255)  # facette éclairée
+GEM_HI = (220, 148, 246, 255)  # arête vive
+GEM_CORE = (248, 216, 255, 255)  # cœur, et l'éclat unique du dessus
+
+# Du plus sombre au plus clair : les fonctions de dessin travaillent par indice
+# pour pouvoir assombrir une facette d'un cran sans réécrire une couleur.
+GEM_RAMP = [GEM_OUT, GEM_DEEP, GEM_DARK, GEM_MID, GEM_LIT, GEM_HI, GEM_CORE]
+
 
 # ---------------------------------------------------------------- blocs
 
@@ -200,23 +232,54 @@ def tex_inactive_door_sides():
     write_png(f"{ASSETS}/textures/block/inactive_door_top.png", 16, 16, top)
 
 
+# Les gemmes du minerai : la même taille que l'objet, en miniature, comme le
+# minerai de diamant montre des diamants. Deux tailles, pour qu'aucun amas ne
+# soit le jumeau d'un autre.
+ORE_GEM_BIG = [
+    ".hh..",
+    "chhmm",
+    "chmmd",
+    "kmmdd",
+    ".kkd.",
+]
+ORE_GEM_MID = [
+    ".hh.",
+    "chmm",
+    "kmmd",
+    ".kd.",
+]
+ORE_GEM_SMALL = [
+    ".h.",
+    "cmd",
+    ".k.",
+]
+ORE_GEM_TINY = [
+    "ch",
+    "kd",
+]
+
+# Placement des amas. Trois règles, toutes tirées des minerais de vanilla :
+# une trentaine de pixels de gemme en tout — au-delà, le bloc devient une grappe
+# et non une pierre où dort un filon ; au moins un pixel de pierre entre deux
+# liserés, sinon les amas se soudent en chaîne ; et quatre tailles différentes
+# jetées hors d'axe, faute de quoi un mur de minerai dessine une grille.
+ORE_CLUSTERS = [
+    (ORE_GEM_BIG, 2, 2),
+    (ORE_GEM_SMALL, 11, 2),
+    (ORE_GEM_MID, 10, 8),
+    (ORE_GEM_TINY, 4, 11),
+]
+
+
 def tex_ender_ore():
-    """Surcouche seule : cristaux sarcelle façon ores vanilla, fond transparent.
-    La base du bloc est la texture end_stone vanilla, référencée par le modèle."""
-    crystal = (64, 224, 205, 255)
-    light = (170, 248, 238, 255)
-    dark = (23, 130, 120, 255)
-    edge = (14, 78, 70, 255)
+    """Surcouche du minerai : gemmes violettes sur fond transparent.
+
+    Le bloc lui-même est du grès de l'End vanilla, référencé par le modèle : on
+    ne peint ici que ce qui pousse dedans."""
     px = canvas(16, 16)
-    # amas en croix, ombrés bas-droite comme les minerais 1.17+
-    for cx, cy in ((3, 4), (11, 3), (6, 10), (12, 12), (8, 6)):
-        put(px, cx, cy, crystal)
-        put(px, cx - 1, cy, dark)
-        put(px, cx, cy - 1, light)
-        put(px, cx + 1, cy, crystal)
-        put(px, cx, cy + 1, dark)
-        put(px, cx + 1, cy + 1, edge)
-        put(px, cx - 1, cy - 1, edge)
+    for rows, ox, oy in ORE_CLUSTERS:
+        stamp(px, ox, oy, rows, GEM_LETTERS)
+    outline_around(px, GEM_OUT)
     write_png(f"{ASSETS}/textures/block/ender_ore_overlay.png", 16, 16, px)
 
 
@@ -328,48 +391,85 @@ def tex_door_entity_sheet():
 
 # ---------------------------------------------------------------- objets
 
-def tex_ender_crystal():
-    px = canvas(16, 16)
-    dark = (20, 120, 112, 255)
-    mid = (64, 224, 205, 255)
-    light = (180, 250, 240, 255)
-    shard = [
-        "......X.........",
-        ".....XMX........",
-        "....XMLMX.......",
-        "....XMLLMX......",
-        "...XMLLLMX......",
-        "...XMLLMMX......",
-        "..XMLLMMX.......",
-        "..XMLMMX........",
-        ".XMLMMX.........",
-        ".XMMMX..........",
-        ".XMMX...........",
-        ".XMX............",
-        ".XX.............",
-        "................",
-        "................",
-        "................",
-    ]
-    colors = {"X": dark, "M": mid, "L": light}
-    for y, row in enumerate(shard):
+GEM_LETTERS = {"o": GEM_OUT, "d": GEM_DEEP, "k": GEM_DARK, "m": GEM_MID,
+               "l": GEM_LIT, "h": GEM_HI, "c": GEM_CORE}
+
+
+def outline_around(px, color):
+    """Ajoute un liseré sur les pixels vides qui touchent la forme.
+
+    Dessiner le contour dans la carte elle-même oblige à le recompter à chaque
+    retouche ; le laisser au code garantit qu'il reste fermé quoi qu'on change
+    à la silhouette."""
+    ring = []
+    for y in range(len(px)):
+        for x in range(len(px[0])):
+            if px[y][x][3] != 0:
+                continue
+            if any(0 <= x + dx < len(px[0]) and 0 <= y + dy < len(px)
+                   and px[y + dy][x + dx][3] != 0
+                   for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                ring.append((x, y))
+    for x, y in ring:
+        put(px, x, y, color)
+
+
+def stamp(px, ox, oy, rows, letters):
+    """Peint une carte de caractères. Le point est transparent.
+
+    Les formes anguleuses se dessinent au pixel près, pas par formule : une
+    gemme sortie d'une équation a des bords ronds et l'air d'un galet. C'est
+    ainsi que sont faites les textures de vanilla, et ça se voit."""
+    for y, row in enumerate(rows):
         for x, ch in enumerate(row):
-            if ch in colors:
-                put(px, x + 2, y + 1, colors[ch])
-    put(px, 12, 3, light)
-    put(px, 13, 12, mid)
-    put(px, 4, 13, light)
+            if ch != ".":
+                put(px, ox + x, oy + y, letters[ch])
+
+
+# Le cristal : une taille en gemme — table plate en haut, pointe en bas, la
+# coupe que l'œil lit comme « pierre précieuse » avant d'avoir lu le nom.
+#
+# Ce qui fait la taille, ce sont les bords francs entre facettes : la colonne
+# claire qui court le long de l'arête gauche, la table vive en haut, et la
+# diagonale qui sépare le corps de son ombre en descendant vers la pointe. Un
+# dégradé, même bien fait, donne un galet.
+CRYSTAL = [
+    "................",
+    "................",
+    ".....oooooo.....",
+    "...olccchhkko...",
+    "..ollccchhmkko..",
+    "..ollcchhmmkko..",
+    "..ollchhmmmkko..",
+    "..olmmmmmkkkdo..",
+    "..oddddddddddo..",
+    "...olmmkkkddo...",
+    "....olmkkddo....",
+    ".....olkkdo.....",
+    "......okdo......",
+    ".......oo.......",
+    "................",
+    "................",
+]
+
+
+def tex_ender_crystal():
+    """Le Cristal de l'Ender : une gemme de verre violet, taillée à facettes."""
+    px = canvas(16, 16)
+    stamp(px, 0, 0, CRYSTAL, GEM_LETTERS)
     write_png(f"{ASSETS}/textures/item/ender_crystal.png", 16, 16, px)
 
 
 def tex_tardis_key():
-    """Clé dorée vanilla-style, à 45°, gemme sarcelle sertie dans l'anneau."""
+    """Clé dorée vanilla-style, à 45°, cristal serti dans l'anneau."""
     GOLD_L = (252, 225, 112, 255)
     GOLD = (233, 177, 45, 255)
     GOLD_D = (180, 126, 20, 255)
     GOLD_DD = (122, 83, 12, 255)
-    GEM = (93, 206, 186, 255)
-    GEM_D = (27, 124, 108, 255)
+    # La gemme de l'anneau est un éclat du Cristal : même palette, sans quoi
+    # la clé raconterait qu'elle est faite d'autre chose.
+    GEM = GEM_HI
+    GEM_D = GEM_DARK
     OUT = (43, 32, 12, 255)
 
     fill = {}
@@ -421,24 +521,42 @@ def tex_tardis_key():
     write_png(f"{ASSETS}/textures/item/tardis_key.png", 16, 16, px)
 
 
+# Bois du manche : les trois valeurs d'un bâton vanilla.
+WOOD_LIT = (150, 106, 62, 255)
+WOOD = (117, 79, 42, 255)
+WOOD_DARK = (82, 54, 28, 255)
+
+PICK_LETTERS = dict(GEM_LETTERS, W=WOOD_LIT, w=WOOD, v=WOOD_DARK)
+
+# La pioche : tête en barre à deux dents et bossage central, manche en diagonale
+# vers le bas-gauche. C'est la silhouette de toutes les pioches du jeu, et il n'y
+# avait aucune raison d'en inventer une autre : ce qui doit distinguer celle-ci,
+# c'est la matière, pas la forme.
+PICKAXE = [
+    "................",
+    "...hhh....hhh...",
+    "..chhhhhhmmmkk..",
+    "..chm..mm..mkd..",
+    "..mk...mk...kd..",
+    ".......Ww.......",
+    "......Ww........",
+    ".....Ww.........",
+    "....Ww..........",
+    "...Ww...........",
+    "..Ww............",
+    ".Ww.............",
+    ".vv.............",
+    "................",
+    "................",
+    "................",
+]
+
+
 def tex_ender_pickaxe():
+    """La Pioche de l'Ender : tête de cristal, manche de bois."""
     px = canvas(16, 16)
-    handle = (124, 84, 44, 255)
-    handle_d = (86, 56, 28, 255)
-    mid = (64, 224, 205, 255)
-    dark = (23, 130, 120, 255)
-    light = (180, 250, 240, 255)
-    for i in range(9):  # manche
-        put(px, 3 + i, 13 - i, handle)
-        put(px, 4 + i, 13 - i, handle_d)
-    head = [(2, 4), (3, 3), (4, 2), (5, 2), (6, 1), (7, 1), (8, 1), (9, 1),
-            (10, 2), (11, 2), (12, 3), (13, 4), (2, 5), (13, 5)]
-    for (x, y) in head:
-        put(px, x, y, mid)
-    for (x, y) in ((2, 6), (13, 6), (2, 4), (13, 4)):
-        put(px, x, y, dark)
-    for (x, y) in ((6, 2), (7, 2), (8, 2)):
-        put(px, x, y, light)
+    stamp(px, 0, 0, PICKAXE, PICK_LETTERS)
+    outline_around(px, GEM_OUT)
     write_png(f"{ASSETS}/textures/item/ender_pickaxe.png", 16, 16, px)
 
 

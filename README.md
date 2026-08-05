@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.21.0**.
+Current version: **0.22.0**.
 
 ---
 
@@ -50,6 +50,10 @@ clusters. It grows nowhere else, so the mod opens with a trip to the End.
 
 An **iron pickaxe** is enough to break it, and it yields **Ender Crystals**.
 Fortune increases the yield; Silk Touch collects the ore block intact.
+
+The crystal is **violet**, cut like a gem — the colour of the End, of the door
+and of the machines. It is what tells you, at a glance in a chest, what belongs
+to the mod.
 
 Everything else in the mod is built from those crystals.
 
@@ -341,8 +345,8 @@ The key only takes you. To bring an animal into the Ender you need two pieces:
 
 * **The Entity Lander** (6 crying obsidian, 2 crystals, 1 slime block — you get
   two) is placed **inside the Ender**, wherever you want the animal to arrive.
-* **The Entity Teleporter** (5 crying obsidian, 3 crystals, 1 ender pearl) is a
-  hull of steel and black obsidian, placed and boarded **like a boat**.
+* **The Entity Teleporter** (5 crying obsidian, 1 ender pearl) is a hull of steel
+  and black obsidian, placed and boarded **like a boat**.
 
 Three steps. **Holding the teleporter, right-click a Lander**: the hull remembers
 that spot, and its tooltip now shows the coordinates in green. **Set it down**
@@ -418,7 +422,7 @@ C E C                r C r                  C L C
 Q C Q                q q q                  C C C
 
 Entity Teleporter      Entity Lander (×2)
-C C C                  O S O
+.                      O S O
 O p O                  O C O
 O O O                  O C O
 
@@ -541,7 +545,7 @@ Requires **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.21.0.jar
+# → build/libs/enderportals-0.22.0.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are

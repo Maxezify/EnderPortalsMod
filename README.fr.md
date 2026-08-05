@@ -9,7 +9,7 @@ Derrière cette porte, une parcelle entière vous appartient — et vous l'empor
 partout : la porte se dématérialise dans votre poche et se repose où vous
 voulez.
 
-Version courante : **0.21.0**.
+Version courante : **0.22.0**.
 
 ---
 
@@ -53,6 +53,10 @@ par un voyage dans l'End.
 Une **pioche en fer** suffit à le casser, et il rend des **Cristaux de
 l'Ender**. Fortune augmente le rendement, Silk Touch ramasse le bloc de minerai
 intact.
+
+Le cristal est **violet**, taillé en gemme — la couleur de l'End, celle de la
+porte et des machines. C'est à elle qu'on reconnaît, d'un coup d'œil dans un
+coffre, ce qui appartient au mod.
 
 Tout le reste du mod se construit à partir de ces cristaux.
 
@@ -358,9 +362,9 @@ pièces :
 * **L'Atterrisseur d'entité** (6 obsidiennes pleureuses, 2 cristaux, 1 bloc de
   slime — il en sort deux) se pose **dans l'Ender**, à l'endroit où vous voulez
   que la bête arrive.
-* **Le Téléporteur d'entité** (5 obsidiennes pleureuses, 3 cristaux, 1 perle de
-  l'Ender) est une coque d'acier et d'obsidienne noire, qui se pose et se charge
-  **comme une barque**.
+* **Le Téléporteur d'entité** (5 obsidiennes pleureuses, 1 perle de l'Ender) est
+  une coque d'acier et d'obsidienne noire, qui se pose et se charge **comme une
+  barque**.
 
 Le geste tient en trois temps. **Le téléporteur en main, clic droit sur un
 Atterrisseur** : la coque retient ce point, et son infobulle affiche désormais les
@@ -440,7 +444,7 @@ C E C                r C r                  C L C
 Q C Q                q q q                  C C C
 
 Téléporteur d'entité   Atterrisseur d'entité (×2)
-C C C                  O S O
+.                      O S O
 O p O                  O C O
 O O O                  O C O
 
@@ -567,7 +571,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.21.0.jar
+# → build/libs/enderportals-0.22.0.jar
 ```
 
 Le build est géré par **ModDevGradle** ; NeoForge et les mappings officiels sont
