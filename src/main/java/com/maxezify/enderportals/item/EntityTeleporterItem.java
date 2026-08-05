@@ -86,6 +86,8 @@ public class EntityTeleporterItem extends Item {
                 .withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("enderportals.tooltip.entity_teleporter_2")
                 .withStyle(ChatFormatting.DARK_GRAY));
+        tooltip.add(Component.translatable("enderportals.tooltip.entity_teleporter_3")
+                .withStyle(ChatFormatting.DARK_GRAY));
         BlockPos lander = stack.get(ModComponents.LANDER_POS.get());
         tooltip.add(lander == null
                 ? Component.translatable("enderportals.tooltip.entity_teleporter_free")

@@ -9,7 +9,7 @@ Derrière cette porte, une parcelle entière vous appartient — et vous l'empor
 partout : la porte se dématérialise dans votre poche et se repose où vous
 voulez.
 
-Version courante : **0.20.0**.
+Version courante : **0.20.1**.
 
 ---
 
@@ -350,6 +350,48 @@ automatique de ce que vous déversez.
 
 ---
 
+## Le Téléporteur d'entité
+
+La clé ne prend que vous. Pour emmener une bête dans l'Ender, il faut deux
+pièces :
+
+* **L'Atterrisseur d'entité** (4 lingots de fer, 4 obsidiennes, 1 cristal — il en
+  sort deux) se pose **dans l'Ender**, à l'endroit où vous voulez que la bête
+  arrive.
+* **Le Téléporteur d'entité** (3 lingots de fer, 3 obsidiennes, 1 cristal) est une
+  coque d'acier et d'obsidienne noire, qui se pose et se charge **comme une
+  barque**.
+
+Le geste tient en trois temps. **Le téléporteur en main, clic droit sur un
+Atterrisseur** : la coque retient ce point, et son infobulle affiche désormais les
+coordonnées en vert. **Posez-la** où vous voulez, puis **attirez la bête dessus**
+comme dans une barque — un son de validation et le témoin de proue passe au vert
+quand elle est à bord. **Clic droit sur la coque** : elle part avec ce qu'elle
+transporte.
+
+Posez-en autant que vous voulez, des uns comme des autres ; chaque coque garde
+son propre lien.
+
+### Reprendre la coque
+
+* **À vide, un clic droit** la reprend en main — avec son lien, pour ne pas avoir
+  à la relier à chaque voyage.
+* **Accroupi, le clic droit** la reprend aussi et **libère ce qu'elle
+  transporte** : c'est le geste de l'arrivée, quand la bête est à destination.
+
+Casser la coque marche également, mais lui fait perdre son Atterrisseur.
+
+### Le chunk d'arrivée
+
+L'Ender ne charge pas les recoins où personne ne se trouve. Au clic, le voyage ne
+part donc pas tout de suite : les chunks autour de l'Atterrisseur sont
+**demandés, puis attendus**, et la coque ne bouge qu'une fois qu'ils existent
+vraiment. Une fois posée, la coque et sa passagère ne font qu'**une seule fiche**
+dans la sauvegarde — le chunk peut se décharger derrière elles sans que rien ne
+se perde, exactement comme un cochon en barque à l'autre bout du monde.
+
+---
+
 ## Bâtir : la famille des briques
 
 **4 cristaux** donnent un **Bloc de l'Ender**, et **4 Blocs de l'Ender** donnent
@@ -379,6 +421,11 @@ Q C Q                q q q                  C C C
 C E C                r C r                  C L C
 Q C Q                q q q                  C C C
 
+Téléporteur d'entité   Atterrisseur d'entité (×2)
+b . b                  f b f
+b C b                  b C b
+f f f                  f b f
+
 Sac de l'Ender (sans forme) : Bundle + Coffre de l'Ender
 Bloc de l'Ender : 4 cristaux    Briques : 4 Blocs de l'Ender → 4 briques
 
@@ -386,15 +433,15 @@ O = Obsidienne pleureuse   C = Cristal de l'Ender    N = Nether Star
 P = Perle d'Ender          G = Lingot d'or           S = Bâton
 I = Bloc de fer            E = Coffre de l'Ender     R = Bloc de redstone
 Q = Bloc de quartz         q = Quartz                r = Redstone
-L = Livre
+L = Livre                  b = Obsidienne            f = Lingot de fer
 ```
 
 Le rituel d'éveil demande en plus une **Mace** vanilla, qui n'est pas consommée.
 
 **Le Guide de World of Ender** (8 cristaux autour d'un livre) est un livre écrit
-de vingt-huit pages : le lore, chaque machine et chaque craft — la porte, la pioche,
-les briques, le Transmetteur, le Sac et le Passage des Alliés — dans la langue
-du jeu (français ou anglais).
+de trente-deux pages : le lore, chaque machine et chaque craft — la porte, la
+pioche, les briques, le Transmetteur, le Sac, le Passage des Alliés et le
+Téléporteur d'entité — dans la langue du jeu (français ou anglais).
 
 ---
 
@@ -502,7 +549,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.18.0.jar
+# → build/libs/enderportals-0.20.1.jar
 ```
 
 Le build est géré par **ModDevGradle** ; NeoForge et les mappings officiels sont

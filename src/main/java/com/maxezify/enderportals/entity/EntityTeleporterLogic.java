@@ -49,10 +49,25 @@ public final class EntityTeleporterLogic {
     private static final int WAIT_RADIUS = 1;
 
     /**
-     * Un clic droit : la machine part si elle transporte quelque chose, sinon
-     * elle retourne en main.
+     * Un clic droit, et ce qu'il fait selon la posture.
+     *
+     * <p><b>Accroupi, on récupère</b> : la coque débarque ce qu'elle transporte
+     * et retourne en main. C'est le geste qui manquait à la 0.20.0 — une machine
+     * arrivée pleine ne pouvait plus rien faire, puisque son clic droit
+     * relançait un départ. Il fallait la casser, donc perdre son lien, pour
+     * libérer la créature et récupérer la machine.</p>
+     *
+     * <p>Debout, la machine part si elle transporte quelque chose, et retourne
+     * en main si elle est vide.</p>
      */
     public static void click(ServerPlayer player, EntityTeleporterEntity machine) {
+        if (player.isShiftKeyDown()) {
+            // ejectPassengers laisse vanilla choisir où chacun se pose : c'est
+            // lui qui sait éviter un mur ou un vide, pas nous.
+            machine.ejectPassengers();
+            pickUp(player, machine);
+            return;
+        }
         if (machine.getPassengers().isEmpty()) {
             pickUp(player, machine);
         } else {

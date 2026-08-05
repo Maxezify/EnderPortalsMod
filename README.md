@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.20.0**.
+Current version: **0.20.1**.
 
 ---
 
@@ -335,6 +335,43 @@ whatever you pour in.
 
 ---
 
+## The Entity Teleporter
+
+The key only takes you. To bring an animal into the Ender you need two pieces:
+
+* **The Entity Lander** (4 iron ingots, 4 obsidian, 1 crystal — you get two) is
+  placed **inside the Ender**, wherever you want the animal to arrive.
+* **The Entity Teleporter** (3 iron ingots, 3 obsidian, 1 crystal) is a hull of
+  steel and black obsidian, placed and boarded **like a boat**.
+
+Three steps. **Holding the teleporter, right-click a Lander**: the hull remembers
+that spot, and its tooltip now shows the coordinates in green. **Set it down**
+where you like, then **lure the animal aboard** as you would into a boat — a
+confirmation sound plays and the prow lamp turns green once it is in. **Right-click
+the hull**: it leaves with whatever it carries.
+
+Place as many of either as you want; each hull keeps its own link.
+
+### Getting the hull back
+
+* **Empty, a right-click** puts it back in your hand — with its link, so you do
+  not have to re-bind it for every trip.
+* **Sneak + right-click** also picks it up and **lets its passenger out**: that is
+  the arrival gesture, once the animal is where you wanted it.
+
+Breaking the hull works too, but loses its Lander.
+
+### The arrival chunk
+
+The Ender does not keep corners loaded where nobody is standing. So the trip does
+not start on the click: the chunks around the Lander are **requested, then waited
+for**, and the hull only moves once they really exist. Once it has landed, hull
+and passenger are **a single record** in the save — the chunk can unload behind
+them without anything being lost, exactly like a pig in a boat on the far side of
+the world.
+
+---
+
 ## Building: the brick family
 
 **4 crystals** make an **Ender Block**, and **4 Ender Blocks** make **4 Ender
@@ -363,6 +400,11 @@ Q C Q                q q q                  C C C
 C E C                r C r                  C L C
 Q C Q                q q q                  C C C
 
+Entity Teleporter      Entity Lander (×2)
+b . b                  f b f
+b C b                  b C b
+f f f                  f b f
+
 Ender Bag (shapeless): Bundle + Ender Chest
 Ender Block: 4 crystals     Bricks: 4 Ender Blocks → 4 bricks
 
@@ -370,15 +412,15 @@ O = Crying obsidian     C = Ender Crystal      N = Nether Star
 P = Ender Pearl         G = Gold ingot         S = Stick
 I = Iron block          E = Ender Chest        R = Redstone block
 Q = Quartz block        q = Quartz             r = Redstone dust
-L = Book
+L = Book                b = Obsidian           f = Iron ingot
 ```
 
 The waking ritual also needs a vanilla **Mace**, which is not consumed.
 
-**The World of Ender Guide** (8 crystals around a book) is a twenty-eight page
+**The World of Ender Guide** (8 crystals around a book) is a thirty-two page
 written book: the lore, every machine and every recipe — the door, the pickaxe,
-the bricks, the Transmitter, the Bag and the Allies' Passage — in the game's
-language (English or French).
+the bricks, the Transmitter, the Bag, the Allies' Passage and the Entity
+Teleporter — in the game's language (English or French).
 
 ---
 
@@ -482,7 +524,7 @@ Requires **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.18.0.jar
+# → build/libs/enderportals-0.20.1.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are
