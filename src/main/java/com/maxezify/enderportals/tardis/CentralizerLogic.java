@@ -12,6 +12,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.SlotAccess;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.capabilities.Capabilities;
@@ -23,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 /**
  * La mécanique du Sac de l'Ender : retrouver le Transmetteur du joueur dans le
@@ -50,21 +52,44 @@ public final class CentralizerLogic {
     private static final int MAX_STORAGES = 256;
 
     /**
-     * Expédie la pile portée au curseur, et remplace ce qui reste au curseur
-     * par le reliquat.
+     * Expédie la pile portée au curseur ; le reliquat y retourne.
+     *
+     * <p>Le geste : une pile prise au curseur, un clic droit sur le sac posé
+     * dans une case.</p>
+     */
+    public static void sendCarried(ServerPlayer player, ItemStack carried, SlotAccess carriedAccess) {
+        send(player, carried, carriedAccess::set);
+    }
+
+    /**
+     * Expédie la pile qui dort dans une case ; le reliquat y reste.
+     *
+     * <p>Le geste inverse : le sac au curseur, un clic droit sur la pile. Les
+     * deux sens font le même travail — d'où {@link #send}, qui les porte tous
+     * les deux et ne diffère que par l'endroit où revient le reliquat.</p>
+     */
+    public static void sendSlot(ServerPlayer player, Slot slot) {
+        send(player, slot.getItem(), slot::set);
+    }
+
+    /**
+     * Le voyage, quel que soit le geste qui l'a demandé.
      *
      * <p>L'ordre des vérifications n'est pas indifférent : le réseau d'abord,
      * l'expérience ensuite, l'insertion en dernier. On ne prélève donc jamais
      * pour un voyage qui n'a pas eu lieu, et une pile qui ne rentre nulle part
-     * revient au curseur intacte, sans avoir rien coûté.</p>
+     * revient intacte, sans avoir rien coûté.</p>
      *
      * <p>Rien ici n'appelle {@code broadcastChanges} : ce serait sans effet. Le
      * serveur suspend les mises à jour du menu pendant qu'il rejoue le clic, et
-     * les reprend juste après pour envoyer d'un coup ce qui a changé — dont ce
-     * curseur, que le client croyait encore plein.</p>
+     * les reprend juste après pour envoyer d'un coup ce qui a changé — dont
+     * cette case, ou ce curseur, que le client croyait encore pleins.</p>
+     *
+     * @param writeBack où déposer ce qui n'est pas parti : le curseur pour un
+     *                  geste, la case cliquée pour l'autre
      */
-    public static void sendCarried(ServerPlayer player, ItemStack carried, SlotAccess carriedAccess) {
-        if (carried.isEmpty()) {
+    private static void send(ServerPlayer player, ItemStack stack, Consumer<ItemStack> writeBack) {
+        if (stack.isEmpty()) {
             return;
         }
         MinecraftServer server = player.getServer();
@@ -95,14 +120,14 @@ public final class CentralizerLogic {
             return;
         }
 
-        ItemStack remainder = insert(storages, carried, false);
-        if (remainder.getCount() == carried.getCount()) {
+        ItemStack remainder = insert(storages, stack, false);
+        if (remainder.getCount() == stack.getCount()) {
             // Pas une seule unité n'est passée : le réseau est plein pour cet
             // objet-là. Rien n'est prélevé.
             refuse(player, "enderportals.message.chests_full");
             return;
         }
-        carriedAccess.set(remainder);
+        writeBack.accept(remainder);
         EnderXp.charge(player, XP_COST_PER_STACK);
         success(player);
     }

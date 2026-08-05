@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.23.0**.
+Current version: **0.23.1**.
 
 ---
 
@@ -316,7 +316,11 @@ Two items turn your pocket base into a warehouse you can reach from anywhere:
   stack onto the cursor** — left-click it — then **right-click the bag**: it goes
   into that network, wherever you are in the world.
 
-It is the vanilla bundle gesture, and it no longer takes up your off hand. Every
+The gesture works **both ways**: the bag in a slot and the stack on the cursor,
+or the bag on the cursor and the stack in the slot. It is the vanilla bundle
+gesture, and it no longer takes up your off hand. Mind the second direction: you
+move a bag around your inventory more often than you store things, and during
+that move a right-click on a stack sends it away. Every
 stack sent costs **3 experience points** — the price of the trip, not of the
 weight: a stack of sixty-four blocks costs the same as a single item. If the
 network is full or you are short on XP, nothing leaves, the stack stays on your
@@ -552,7 +556,7 @@ Requires **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.23.0.jar
+# → build/libs/enderportals-0.23.1.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are

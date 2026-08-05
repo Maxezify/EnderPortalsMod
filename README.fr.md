@@ -9,7 +9,7 @@ Derrière cette porte, une parcelle entière vous appartient — et vous l'empor
 partout : la porte se dématérialise dans votre poche et se repose où vous
 voulez.
 
-Version courante : **0.23.0**.
+Version courante : **0.23.1**.
 
 ---
 
@@ -332,7 +332,11 @@ où :
   **clic droit sur le sac** : elle part dans ce réseau, où que vous soyez dans
   le monde.
 
-C'est le geste des bourses de vanilla, et il n'occupe plus votre seconde main.
+Le geste marche **dans les deux sens** : le sac dans une case et la pile au
+curseur, ou le sac au curseur et la pile dans la case. C'est celui des bourses
+de vanilla, et il n'occupe plus votre seconde main. Attention au second sens :
+on déplace un sac dans son inventaire plus souvent qu'on ne range, et pendant ce
+déplacement un clic droit sur une pile l'expédie.
 Chaque pile expédiée coûte **3 points d'expérience** — le prix du voyage, pas du
 poids : une pile de soixante-quatre blocs coûte autant qu'un objet seul. Réseau
 plein ou XP insuffisante : rien ne part, la pile reste au curseur, un son sec le
@@ -579,7 +583,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.23.0.jar
+# → build/libs/enderportals-0.23.1.jar
 ```
 
 Le build est géré par **ModDevGradle** ; NeoForge et les mappings officiels sont

@@ -15,16 +15,14 @@ import net.minecraft.world.item.TooltipFlag;
 import java.util.List;
 
 /**
- * Le Sac de l'Ender : une pile prise au curseur, un clic droit sur le sac, et
- * elle part dans les rangements de la base. Toute la logique vit dans
- * {@link CentralizerLogic}.
+ * Le Sac de l'Ender : une pile et le sac se rencontrent sous le curseur, clic
+ * droit, et la pile part dans les rangements de la base. Toute la logique vit
+ * dans {@link CentralizerLogic}.
  *
- * <p>Le geste est celui des bourses de vanilla, et il passe par le même
- * mécanisme : {@code overrideOtherStackedOnMe} est appelé quand on lâche une
- * pile sur un objet posé dans une case. Le joueur n'a donc rien de nouveau à
- * apprendre, et le sac n'a plus besoin d'occuper la seconde main pour servir —
- * c'était le prix de l'ancienne version, qui envoyait la rangée entière d'un
- * clic droit hors inventaire.</p>
+ * <p>Le geste est celui des bourses de vanilla, et il passe par les mêmes
+ * crochets. Le joueur n'a donc rien de nouveau à apprendre, et le sac n'a plus
+ * besoin d'occuper la seconde main pour servir — c'était le prix de l'ancienne
+ * version, qui envoyait la rangée entière d'un clic droit hors inventaire.</p>
  *
  * <p><b>Ce crochet tourne des deux côtés.</b> Le menu du client rejoue le clic
  * pour prédire ce qu'il va afficher, puis le serveur le rejoue pour de bon. Le
@@ -34,11 +32,12 @@ import java.util.List;
  * retour, ce qui se verrait. Le serveur fait le travail et corrige l'écran au
  * paquet suivant : la pile s'efface du curseur un aller-retour plus tard.</p>
  *
- * <p>Le geste inverse — porter le sac au curseur et cliquer une pile pour
- * l'aspirer — n'est délibérément pas implémenté, bien que les bourses le
- * fassent. On déplace un sac dans son inventaire plus souvent qu'on ne range :
- * un clic droit malheureux pendant ce rangement enverrait une pile à l'autre
- * bout du monde, et coûterait de l'expérience pour la peine.</p>
+ * <p>Les <b>deux sens</b> existent, comme pour les bourses : le sac dans une
+ * case et la pile au curseur, ou le sac au curseur et la pile dans la case. Le
+ * second a un piège qu'il vaut mieux connaître — on déplace un sac dans son
+ * inventaire plus souvent qu'on ne range, et pendant ce déplacement un clic
+ * droit sur une pile l'expédie. C'est le prix d'un geste symétrique, et le
+ * même que paient les bourses de vanilla.</p>
  */
 public class EnderBagItem extends Item {
 
@@ -46,6 +45,29 @@ public class EnderBagItem extends Item {
         super(properties);
     }
 
+    /**
+     * Le sac est au curseur, on clique une pile : elle part.
+     *
+     * <p>Vanilla appelle ce crochet sur la pile <b>portée</b> ; l'autre, sur
+     * celle qui dort dans la case. C'est toute la différence entre les deux
+     * sens, et c'est pourquoi il en faut deux.</p>
+     */
+    @Override
+    public boolean overrideStackedOnOther(ItemStack bag, Slot slot, ClickAction action, Player player) {
+        if (action != ClickAction.SECONDARY || slot.getItem().isEmpty()) {
+            // Case vide : c'est un dépôt de sac ordinaire, laissons faire.
+            return false;
+        }
+        if (!slot.allowModification(player)) {
+            return false;
+        }
+        if (player instanceof ServerPlayer server) {
+            CentralizerLogic.sendSlot(server, slot);
+        }
+        return true;
+    }
+
+    /** Le sac est dans une case, on lui apporte une pile au curseur. */
     @Override
     public boolean overrideOtherStackedOnMe(ItemStack bag, ItemStack carried, Slot slot,
                                             ClickAction action, Player player, SlotAccess carriedAccess) {
@@ -69,6 +91,8 @@ public class EnderBagItem extends Item {
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
                                 TooltipFlag flag) {
         tooltip.add(Component.translatable("enderportals.tooltip.ender_bag")
+                .withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable("enderportals.tooltip.ender_bag_reverse")
                 .withStyle(ChatFormatting.GRAY));
         // Le prix vient de la logique : une infobulle qui ment sur un coût est
         // pire que pas d'infobulle du tout.
