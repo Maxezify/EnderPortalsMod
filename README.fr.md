@@ -9,7 +9,7 @@ Derrière cette porte, une parcelle entière vous appartient — et vous l'empor
 partout : la porte se dématérialise dans votre poche et se repose où vous
 voulez.
 
-Version courante : **0.22.0**.
+Version courante : **0.22.1**.
 
 ---
 
@@ -424,6 +424,10 @@ un mur de briques laisse deviner ce qu'il y a derrière, comme la masse dans
 laquelle vous le bâtissez. Et un mur épais ne s'assombrit pas couche après
 couche — il reste une seule vitre.
 
+En main et dans l'inventaire, en revanche, briques et blocs sont **pleins** :
+un objet qu'on transporte n'est pas une vitre, et voir le paysage lointain au
+travers du cube qu'on tient ne ressemblait à rien.
+
 La famille se décline en **escaliers, dalles, muret** et une variante
 **ciselée**, gravée de l'œil des cadres de portail de l'End. Tout se taille
 aussi au **tailleur de pierre**.
@@ -571,7 +575,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.22.0.jar
+# → build/libs/enderportals-0.22.1.jar
 ```
 
 Le build est géré par **ModDevGradle** ; NeoForge et les mappings officiels sont

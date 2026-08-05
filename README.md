@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.22.0**.
+Current version: **0.22.1**.
 
 ---
 
@@ -402,6 +402,10 @@ The bricks are **translucent exactly like the block they come from**: a brick
 wall lets you make out what is behind it, just like the mass you build it in.
 And a thick wall does not darken layer by layer — it stays a single pane.
 
+In your hand and in the inventory, though, blocks and bricks are **solid**: a
+thing you carry is not a window, and seeing distant terrain through the cube you
+are holding looked like nothing at all.
+
 The family comes with **stairs, slabs, a wall** and a **chiselled** variant
 engraved with the eye of the End portal frames. Everything can also be cut on
 the **stonecutter**.
@@ -545,7 +549,7 @@ Requires **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.22.0.jar
+# → build/libs/enderportals-0.22.1.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are

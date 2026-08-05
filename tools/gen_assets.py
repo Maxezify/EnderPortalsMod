@@ -35,6 +35,33 @@ def write_png(path, w, h, px):
     print("png ", path)
 
 
+OPAQUE_SUFFIX = "_opaque"
+
+
+def opaque_tex(name):
+    """Le nom, côté modèle, du jumeau opaque d'une texture de bloc."""
+    return f"enderportals:block/{name}{OPAQUE_SUFFIX}"
+
+
+def write_png_pair(path, w, h, px):
+    """Écrit la texture translucide, et son double opaque à côté.
+
+    Le Bloc de l'Ender se voit au travers une fois posé : c'est tout le propos
+    du monde, et il n'est pas question d'y toucher. Mais le modèle de l'objet
+    hérite de la texture du bloc, si bien qu'on tient dans la main une vitre —
+    et qu'on voit le paysage lointain à travers le cube qu'on transporte. Ce
+    n'est pas un mur qu'on regarde, c'est un objet ; il doit être plein.
+
+    D'où ce jumeau, identique au pixel près sauf son canal alpha. Les modèles
+    d'objet le désignent, les modèles de bloc gardent l'original. On aurait pu
+    changer la passe de rendu de l'objet plutôt que sa texture ; l'opacité tient
+    alors à la façon dont le moteur traite une passe « solide » sur un objet, là
+    où un alpha plein est vrai quelle que soit la passe."""
+    write_png(path, w, h, px)
+    solid = [[(p[0], p[1], p[2], 255) for p in row] for row in px]
+    write_png(path.replace(".png", f"{OPAQUE_SUFFIX}.png"), w, h, solid)
+
+
 def canvas(w, h, color=(0, 0, 0, 0)):
     return [[tuple(color) for _ in range(w)] for _ in range(h)]
 
@@ -185,7 +212,7 @@ def tex_ender_block():
             v = noise[y][x] - 0.10 * (y / 15.0)  # fondu léger, plus sombre en bas
             v = min(0.999, max(0.0, v))
             put(px, x, y, shade(P_ENDER, v))
-    write_png(f"{ASSETS}/textures/block/ender_block.png", 16, 16, px)
+    write_png_pair(f"{ASSETS}/textures/block/ender_block.png", 16, 16, px)
 
 
 def tex_ender_bricks():
@@ -211,7 +238,7 @@ def tex_ender_bricks():
         for x in range(bx0, bx1 + 1):
             put(px, x, by0, highlight if noise[by0][x] > 0.35 else palette[2])
             put(px, x, by1, palette[0])
-    write_png(f"{ASSETS}/textures/block/ender_bricks.png", 16, 16, px)
+    write_png_pair(f"{ASSETS}/textures/block/ender_bricks.png", 16, 16, px)
 
 
 def tex_inactive_door_sides():
@@ -779,13 +806,14 @@ def tex_chiseled_ender_bricks():
         "################",
     ]
     px = from_map(rows, palette, ENDER_ALPHA)
-    write_png(f"{ASSETS}/textures/block/chiseled_ender_bricks.png", 16, 16, px)
+    write_png_pair(f"{ASSETS}/textures/block/chiseled_ender_bricks.png", 16, 16, px)
 
 
 # ------------------------------------------------- famille des briques
 
 TRANSLUCENT = "minecraft:translucent"
 BRICK_TEX = "enderportals:block/ender_bricks"
+BRICK_TEX_OPAQUE = opaque_tex("ender_bricks")
 
 
 def _model(name, parent, textures):
@@ -798,11 +826,18 @@ def _model(name, parent, textures):
     print("json", path)
 
 
-def _item_model(name, parent):
+def _item_model(name, parent, textures=None):
+    """Modèle d'objet : la forme du bloc, éventuellement repeinte.
+
+    Les familles translucides passent ici leurs textures opaques : même
+    géométrie, même dessin, mais un objet qu'on ne traverse pas du regard."""
     path = f"{ASSETS}/models/item/{name}.json"
+    body = {"parent": parent}
+    if textures:
+        body["textures"] = textures
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
-        json.dump({"parent": parent}, f, indent=2)
+        json.dump(body, f, indent=2)
         f.write("\n")
     print("json", path)
 
@@ -834,11 +869,17 @@ def brick_family_models():
            {"wall": BRICK_TEX})
     _model("ender_brick_wall_inventory", "minecraft:block/wall_inventory", {"wall": BRICK_TEX})
 
-    _item_model("ender_bricks", "enderportals:block/ender_bricks")
-    _item_model("chiseled_ender_bricks", "enderportals:block/chiseled_ender_bricks")
-    _item_model("ender_brick_stairs", "enderportals:block/ender_brick_stairs")
-    _item_model("ender_brick_slab", "enderportals:block/ender_brick_slab")
-    _item_model("ender_brick_wall", "enderportals:block/ender_brick_wall_inventory")
+    solid = {k: BRICK_TEX_OPAQUE for k in ("bottom", "top", "side")}
+    _item_model("ender_block", "enderportals:block/ender_block",
+                {"all": opaque_tex("ender_block")})
+    _item_model("ender_bricks", "enderportals:block/ender_bricks",
+                {"all": BRICK_TEX_OPAQUE})
+    _item_model("chiseled_ender_bricks", "enderportals:block/chiseled_ender_bricks",
+                {"all": opaque_tex("chiseled_ender_bricks")})
+    _item_model("ender_brick_stairs", "enderportals:block/ender_brick_stairs", solid)
+    _item_model("ender_brick_slab", "enderportals:block/ender_brick_slab", solid)
+    _item_model("ender_brick_wall", "enderportals:block/ender_brick_wall_inventory",
+                {"wall": BRICK_TEX_OPAQUE})
 
 
 # Rotation de base des escaliers, par orientation.

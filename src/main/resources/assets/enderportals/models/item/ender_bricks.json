@@ -1,3 +1,6 @@
 {
-  "parent": "enderportals:block/ender_bricks"
+  "parent": "enderportals:block/ender_bricks",
+  "textures": {
+    "all": "enderportals:block/ender_bricks_opaque"
+  }
 }

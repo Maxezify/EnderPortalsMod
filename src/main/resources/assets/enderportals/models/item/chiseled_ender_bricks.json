@@ -1,3 +1,6 @@
 {
-  "parent": "enderportals:block/chiseled_ender_bricks"
+  "parent": "enderportals:block/chiseled_ender_bricks",
+  "textures": {
+    "all": "enderportals:block/chiseled_ender_bricks_opaque"
+  }
 }
