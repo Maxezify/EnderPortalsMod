@@ -1,6 +1,7 @@
 package com.maxezify.enderportals.tardis;
 
 import com.maxezify.enderportals.ModBlocks;
+import net.minecraft.ChatFormatting;
 import com.maxezify.enderportals.ModDimensions;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -10,7 +11,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.SlotAccess;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.capabilities.Capabilities;
@@ -24,9 +25,9 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * La mécanique du Sac de l'Ender : retrouver le Centraliseur du joueur dans le
+ * La mécanique du Sac de l'Ender : retrouver le Transmetteur du joueur dans le
  * monde de l'Ender, parcourir le réseau de rangements qui lui est accolé, et y
- * ranger la ligne du haut de l'inventaire contre un peu d'expérience.
+ * ranger la pile prise au curseur contre un peu d'expérience.
  *
  * <p>Le réseau est collecté via la capability {@link IItemHandler} de NeoForge
  * (et non plus le seul coffre vanilla) : tout rangement qui l'expose est
@@ -36,15 +37,36 @@ import java.util.Set;
  */
 public final class CentralizerLogic {
 
-    /** Coût en points d'expérience par case rangée. */
-    private static final int XP_COST_PER_SLOT = 3;
+    /**
+     * Coût en points d'expérience d'une pile expédiée.
+     *
+     * <p>Le prix est le même pour une pile de soixante-quatre blocs que pour un
+     * objet seul : ce qu'on paie, c'est le voyage, pas le poids. C'était déjà le
+     * cas quand le sac vidait une rangée entière — trois points par case, quel
+     * que soit son contenu.</p>
+     */
+    public static final int XP_COST_PER_STACK = 3;
     /** Garde-fou sur la taille du réseau de rangements exploré. */
     private static final int MAX_STORAGES = 256;
-    /** Cases 9 à 17 : la rangée du haut du rangement principal. */
-    private static final int ROW_START = 9;
-    private static final int ROW_END = 17;
 
-    public static void deposit(ServerPlayer player) {
+    /**
+     * Expédie la pile portée au curseur, et remplace ce qui reste au curseur
+     * par le reliquat.
+     *
+     * <p>L'ordre des vérifications n'est pas indifférent : le réseau d'abord,
+     * l'expérience ensuite, l'insertion en dernier. On ne prélève donc jamais
+     * pour un voyage qui n'a pas eu lieu, et une pile qui ne rentre nulle part
+     * revient au curseur intacte, sans avoir rien coûté.</p>
+     *
+     * <p>Rien ici n'appelle {@code broadcastChanges} : ce serait sans effet. Le
+     * serveur suspend les mises à jour du menu pendant qu'il rejoue le clic, et
+     * les reprend juste après pour envoyer d'un coup ce qui a changé — dont ce
+     * curseur, que le client croyait encore plein.</p>
+     */
+    public static void sendCarried(ServerPlayer player, ItemStack carried, SlotAccess carriedAccess) {
+        if (carried.isEmpty()) {
+            return;
+        }
         MinecraftServer server = player.getServer();
         if (server == null) {
             return;
@@ -52,86 +74,37 @@ public final class CentralizerLogic {
         TardisStateManager manager = TardisStateManager.get(server);
         TardisData data = manager.findByOwner(player.getUUID());
         if (data == null || data.centralizerPos == null) {
-            fail(player, "enderportals.message.no_centralizer");
+            refuse(player, "enderportals.message.no_centralizer");
             return;
         }
         ServerLevel enderWorld = server.getLevel(ModDimensions.ENDER_WORLD);
         BlockPos centralizer = data.centralizerPos;
         if (enderWorld == null || !enderWorld.getBlockState(centralizer).is(ModBlocks.CENTRALIZER.get())) {
             manager.clearCentralizer(centralizer);
-            fail(player, "enderportals.message.no_centralizer");
+            refuse(player, "enderportals.message.no_centralizer");
             return;
         }
 
         List<IItemHandler> storages = collectHandlers(enderWorld, centralizer);
         if (storages.isEmpty()) {
-            fail(player, "enderportals.message.no_chest");
+            refuse(player, "enderportals.message.no_chest");
+            return;
+        }
+        if (!EnderXp.has(player, XP_COST_PER_STACK)) {
+            refuse(player, "enderportals.message.not_enough_xp", XP_COST_PER_STACK);
             return;
         }
 
-        Inventory inv = player.getInventory();
-        int candidates = 0;
-        for (int slot = ROW_START; slot <= ROW_END; slot++) {
-            if (!inv.getItem(slot).isEmpty()) {
-                candidates++;
-            }
-        }
-        if (candidates == 0) {
-            neutral(player);
+        ItemStack remainder = insert(storages, carried, false);
+        if (remainder.getCount() == carried.getCount()) {
+            // Pas une seule unité n'est passée : le réseau est plein pour cet
+            // objet-là. Rien n'est prélevé.
+            refuse(player, "enderportals.message.chests_full");
             return;
         }
-        // Rangements pleins (aucune place pour aucun objet candidat) : message
-        // dédié, vérifié avant tout prélèvement d'XP.
-        if (!hasAnyRoom(storages, inv)) {
-            full(player);
-            return;
-        }
-        if (!EnderXp.has(player, XP_COST_PER_SLOT * candidates)) {
-            fail(player, "enderportals.message.not_enough_xp");
-            return;
-        }
-
-        int moved = 0;
-        for (int slot = ROW_START; slot <= ROW_END; slot++) {
-            ItemStack stack = inv.getItem(slot);
-            if (stack.isEmpty()) {
-                continue;
-            }
-            int before = stack.getCount();
-            ItemStack remainder = insert(storages, stack, false);
-            if (remainder.getCount() != before) {
-                moved++;
-                inv.setItem(slot, remainder);
-            }
-        }
-        inv.setChanged();
-
-        if (moved == 0) {
-            // Filet de sécurité : hasAnyRoom garantit normalement moved >= 1.
-            full(player);
-            return;
-        }
-        // Force la synchronisation de l'inventaire modifié vers le client.
-        player.containerMenu.broadcastChanges();
-        EnderXp.charge(player, XP_COST_PER_SLOT * moved);
+        carriedAccess.set(remainder);
+        EnderXp.charge(player, XP_COST_PER_STACK);
         success(player);
-    }
-
-    /**
-     * Le réseau a-t-il de la place pour au moins un objet de la ligne du haut ?
-     * Insertion simulée, court-circuit dès la première place trouvée.
-     */
-    private static boolean hasAnyRoom(List<IItemHandler> storages, Inventory inv) {
-        for (int slot = ROW_START; slot <= ROW_END; slot++) {
-            ItemStack stack = inv.getItem(slot);
-            if (stack.isEmpty()) {
-                continue;
-            }
-            if (insert(storages, stack, true).getCount() < stack.getCount()) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**
@@ -214,30 +187,25 @@ public final class CentralizerLogic {
     // ------------------------------------------------------------------
 
     private static void success(ServerPlayer player) {
-        ServerLevel level = player.serverLevel();
-        // Mystique (chime d'améthyste + rangement du coffre de l'Ender).
-        level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.ENDER_CHEST_CLOSE, SoundSource.PLAYERS, 0.6f, 1.1f);
-        level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.5f, 1.4f);
+        // Mystique, et pour ce joueur seulement : le geste se fait dans un
+        // inventaire, pas dans le monde. playNotifySound n'envoie le son qu'à
+        // lui, là où playSound l'aurait fait entendre à tout le voisinage —
+        // insupportable quand on range pile après pile.
+        player.playNotifySound(SoundEvents.ENDER_CHEST_CLOSE, SoundSource.PLAYERS, 0.6f, 1.1f);
+        player.playNotifySound(SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.5f, 1.4f);
     }
 
-    private static void fail(ServerPlayer player, String messageKey) {
-        player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 0.5f, 0.5f);
-        player.displayClientMessage(Component.translatable(messageKey), true);
-    }
-
-    /** Rangements pleins : son grave dédié + message. */
-    private static void full(ServerPlayer player) {
-        player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 0.6f, 0.6f);
-        player.displayClientMessage(Component.translatable("enderportals.message.chests_full"), true);
-    }
-
-    private static void neutral(ServerPlayer player) {
-        player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.DISPENSER_FAIL, SoundSource.PLAYERS, 0.6f, 1.0f);
+    /**
+     * Le refus : un son sec, et la raison au-dessus de la barre d'action.
+     *
+     * <p>Un seul son pour tous les refus. Trois timbres pour trois causes
+     * obligeraient le joueur à les apprendre, alors que la phrase les nomme
+     * déjà.</p>
+     */
+    private static void refuse(ServerPlayer player, String messageKey, Object... args) {
+        player.playNotifySound(SoundEvents.DISPENSER_FAIL, SoundSource.PLAYERS, 0.8f, 0.8f);
+        player.displayClientMessage(
+                Component.translatable(messageKey, args).withStyle(ChatFormatting.RED), true);
     }
 
     private CentralizerLogic() {

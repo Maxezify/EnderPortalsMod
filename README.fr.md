@@ -9,7 +9,7 @@ Derrière cette porte, une parcelle entière vous appartient — et vous l'empor
 partout : la porte se dématérialise dans votre poche et se repose où vous
 voulez.
 
-Version courante : **0.22.2**.
+Version courante : **0.23.0**.
 
 ---
 
@@ -327,12 +327,16 @@ où :
 * **Le Transmetteur d'objet** (7 blocs de fer, 1 bloc de redstone, 1 coffre de
   l'Ender) se pose **dans l'Ender**, contre vos rangements. Il fédère tout le
   réseau accolé : de bloc en bloc, le réseau grandit.
-* **Le Sac de l'Ender** (un bundle + un coffre de l'Ender) se porte en **seconde
-  main**. Un clic droit envoie **toute la rangée du haut de votre inventaire**
-  dans ce réseau, où que vous soyez dans le monde.
+* **Le Sac de l'Ender** (un bundle + un coffre de l'Ender) se range dans
+  l'inventaire. **Prenez une pile au curseur** — clic gauche dessus — puis
+  **clic droit sur le sac** : elle part dans ce réseau, où que vous soyez dans
+  le monde.
 
-Chaque case rangée coûte **3 points d'expérience**. Réseau plein ou XP
-insuffisante : rien ne part, et vous êtes prévenu.
+C'est le geste des bourses de vanilla, et il n'occupe plus votre seconde main.
+Chaque pile expédiée coûte **3 points d'expérience** — le prix du voyage, pas du
+poids : une pile de soixante-quatre blocs coûte autant qu'un objet seul. Réseau
+plein ou XP insuffisante : rien ne part, la pile reste au curseur, un son sec le
+dit et le message donne la raison.
 
 ### Il se branche sur votre mod de rangement
 
@@ -575,7 +579,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.22.2.jar
+# → build/libs/enderportals-0.23.0.jar
 ```
 
 Le build est géré par **ModDevGradle** ; NeoForge et les mappings officiels sont

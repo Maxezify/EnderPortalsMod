@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.22.2**.
+Current version: **0.23.0**.
 
 ---
 
@@ -312,12 +312,15 @@ Two items turn your pocket base into a warehouse you can reach from anywhere:
 * **The Item Transmitter** (7 iron blocks, 1 redstone block, 1 ender chest) is
   placed **inside the Ender**, against your storage. It federates the whole
   network next to it: block by block, the network grows.
-* **The Ender Bag** (a bundle + an ender chest) is held in your **off hand**. One
-  right-click sends **the entire top row of your inventory** into that network,
-  wherever you are in the world.
+* **The Ender Bag** (a bundle + an ender chest) sits in your inventory. **Pick a
+  stack onto the cursor** — left-click it — then **right-click the bag**: it goes
+  into that network, wherever you are in the world.
 
-Each slot stored costs **3 experience points**. If the network is full or you
-are short on XP, nothing is sent and you are told so.
+It is the vanilla bundle gesture, and it no longer takes up your off hand. Every
+stack sent costs **3 experience points** — the price of the trip, not of the
+weight: a stack of sixty-four blocks costs the same as a single item. If the
+network is full or you are short on XP, nothing leaves, the stack stays on your
+cursor, a dry sound says so and the message gives the reason.
 
 ### It plugs into your storage mod
 
@@ -549,7 +552,7 @@ Requires **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.22.2.jar
+# → build/libs/enderportals-0.23.0.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are
