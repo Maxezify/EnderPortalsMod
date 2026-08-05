@@ -9,7 +9,7 @@ Derrière cette porte, une parcelle entière vous appartient — et vous l'empor
 partout : la porte se dématérialise dans votre poche et se repose où vous
 voulez.
 
-Version courante : **0.24.0**.
+Version courante : **0.25.0**.
 
 ---
 
@@ -104,11 +104,18 @@ bibliothécaire, jamais à la table d'enchantement.
 
 | Vous faites… | Il se passe… |
 | --- | --- |
-| Clic droit **par terre** | La porte se matérialise en fondu à l'endroit visé, et disparaît de son ancien emplacement. |
-| Clic droit sur la **porte fermée** | Elle s'ouvre. Franchissez l'embrasure : vous êtes chez vous. |
-| Clic droit sur la **porte ouverte** | Elle se referme et s'efface. Votre base repart dans votre poche. |
-| Clic droit sur la **porte intérieure** | Rappelle la porte dans le monde extérieur — c'est votre sortie. |
-| Clic droit **dans le vide** | Lie la clé à votre porte. |
+| Clic droit sur la porte, **à la main** | Elle s'ouvre, ou se referme. Comme toutes les portes du jeu. |
+| Clic droit sur la **porte intérieure**, porte rangée | Elle se matérialise dehors, ouverte : c'est votre sortie. |
+| **Clé** + clic droit **par terre** | La porte se matérialise en fondu à l'endroit visé, et disparaît de son ancien emplacement. |
+| **Clé** + **accroupi** + clic droit sur la porte | Elle se dématérialise : votre base repart dans votre poche. |
+| **Clé** + clic droit **dans le vide** | Lie la clé à votre porte. |
+
+La clé ouvre et ferme aussi, si vous l'avez en main — c'est le même geste, elle
+ne vous oblige pas à la ranger. Ce qu'elle seule fait, c'est **faire apparaître
+et disparaître** la porte, et se lier à elle.
+
+**Tout cela n'obéit qu'au propriétaire.** Un autre joueur qui clique votre porte,
+à la main comme à la clé, lit « verrouillée ».
 
 ### La clé n'obéit qu'à vous
 
@@ -143,13 +150,12 @@ parcelle est entourée de bedrock, et cette porte est la seule sortie.
 
 S'il a dû déplacer la porte, il vous en donne les coordonnées.
 
-**Et sans la clé ?** La porte intérieure ouvre quand même, pour son
-propriétaire. C'est la même exigence poussée un cran plus loin : mourir dehors
-laisse la clé au sol avec le reste, et si votre lit est dans l'Ender vous
-réapparaissez à l'intérieur, sans elle. Reforger une clé demande une perle de
-l'Ender — or aucune créature n'y apparaît. Sans cette issue, la base et tout ce
-qu'elle contient seraient perdus. La clé garde tout le reste : matérialiser la
-porte où l'on veut, l'ouvrir du dehors, la ranger dans sa poche.
+**Et sans la clé ?** La porte s'ouvre à la main, donc rien ne peut vous enfermer.
+C'était la raison de ce partage des rôles : mourir dehors laisse la clé au sol
+avec le reste, et si votre lit est dans l'Ender vous réapparaissez à l'intérieur,
+sans elle. Reforger une clé demande une perle de l'Ender — or aucune créature
+n'apparaît dans l'Ender. Une porte qui n'ouvrait qu'à la clé condamnait donc la
+base et tout ce qu'elle contenait.
 
 **Poser** la porte au sol depuis l'extérieur, en revanche, peut être refusé :
 là, c'est vous qui avez désigné l'endroit, « pas assez de place » est une
@@ -599,7 +605,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.24.0.jar
+# → build/libs/enderportals-0.25.0.jar
 ```
 
 Le build est géré par **ModDevGradle** ; NeoForge et les mappings officiels sont

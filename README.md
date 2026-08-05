@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.24.0**.
+Current version: **0.25.0**.
 
 ---
 
@@ -100,11 +100,18 @@ table.
 
 | You do… | What happens |
 | --- | --- |
-| Right-click **on the ground** | The door fades into place where you aimed, and vanishes from wherever it stood before. |
-| Right-click a **closed door** | It opens. Step through the doorway: you are home. |
-| Right-click an **open door** | It closes and fades away. Your base goes back into your pocket. |
-| Right-click the **inner door** | Recalls the door to the outside world — this is your way out. |
-| Right-click **in the air** | Binds the key to your door. |
+| Right-click the door, **bare-handed** | It opens, or closes. Like every door in the game. |
+| Right-click the **inner door** while the door is stowed | It materialises outside, open: that is your way out. |
+| **Key** + right-click **on the ground** | The door fades into place where you aimed, and vanishes from wherever it stood before. |
+| **Key** + **sneak** + right-click the door | It dematerialises: your base goes back into your pocket. |
+| **Key** + right-click **in the air** | Binds the key to your door. |
+
+The key opens and closes too, if you happen to be holding it — same gesture, no
+need to put it away. What only the key does is **make the door appear and
+disappear**, and bind itself to it.
+
+**All of this obeys the owner alone.** Anyone else clicking your door, with or
+without a key, reads "locked".
 
 ### The key obeys only you
 
@@ -138,13 +145,12 @@ So **the recall cannot fail**. It tries, in order:
 
 If it had to move the door, it tells you the new coordinates.
 
-**And without the key?** The inner door still opens, for its owner. It is the
-same requirement taken one step further: dying outside leaves the key on the
-ground with everything else, and if your bed is in the Ender you respawn inside
-without it. Forging another key needs an ender pearl — and no creature spawns in
-the Ender. Without that way out, the base and everything in it would be lost for
-good. The key keeps everything else: materialising the door where you like,
-opening it from outside, putting it back in your pocket.
+**And without the key?** The door opens by hand, so nothing can shut you in. That
+is the reason for the split: dying outside leaves the key on the ground with
+everything else, and if your bed is in the Ender you respawn inside without it.
+Forging another key needs an ender pearl — and no creature spawns in the Ender. A
+door that only answered to its key therefore condemned the base and everything
+in it.
 
 **Placing** the door from outside, on the other hand, is allowed to refuse. There
 you chose the spot yourself, "not enough room" is an honest answer, and you are
@@ -572,7 +578,7 @@ Requires **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.24.0.jar
+# → build/libs/enderportals-0.25.0.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are

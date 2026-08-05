@@ -114,22 +114,11 @@ public class TardisKeyItem extends Item {
         // leur code : on le pose au premier usage plutôt que d'obliger à
         // reforger la clé.
         stampCode(stack, data);
-        if (door.isInterior()) {
-            if (data.deployed) {
-                TardisHelper.dismissExterior(server, data);
-                player.displayClientMessage(Component.translatable("enderportals.message.tardis_dismissed"), true);
-            } else {
-                // Le rappel ne peut pas se contenter d'échouer : voir
-                // TardisHelper.recallExterior.
-                TardisHelper.recallExterior(server, data, player);
-            }
-        } else {
-            if (!data.open) {
-                TardisHelper.setDoorsOpen(server, data, true);
-            } else {
-                TardisHelper.dismissExterior(server, data);
-            }
-        }
+        // Le geste lui-même appartient à la porte, clé ou pas : elle s'ouvre à
+        // la main comme toutes les portes du jeu. Ce que la clé ajoute ici, et
+        // qu'aucune main nue ne peut faire, c'est l'accroupissement — la porte
+        // se dématérialise et repart dans la poche.
+        TardisDoorBlock.operate(state, level, pos, player, player.isShiftKeyDown());
     }
 
     private static void handleGroundClick(MinecraftServer server, ServerLevel level, UseOnContext context,
@@ -241,6 +230,11 @@ public class TardisKeyItem extends Item {
         } else {
             tooltip.add(Component.translatable("enderportals.tooltip.key_unbound").withStyle(ChatFormatting.GRAY));
         }
+        // Ce que la clé fait et que la main ne fait pas. Ouvrir n'y est pas :
+        // c'est le geste de la main, et l'écrire ici laisserait croire qu'il
+        // faut la clé pour ça.
+        tooltip.add(Component.translatable("enderportals.tooltip.key_place").withStyle(ChatFormatting.DARK_GRAY));
+        tooltip.add(Component.translatable("enderportals.tooltip.key_dismiss").withStyle(ChatFormatting.DARK_GRAY));
         super.appendHoverText(stack, context, tooltip, flag);
     }
 }

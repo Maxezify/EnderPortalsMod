@@ -138,37 +138,42 @@ public class TardisDoorBlock extends Block implements EntityBlock {
         if (player.getMainHandItem().is(ModItems.TARDIS_KEY.get())) {
             return InteractionResult.PASS;
         }
-        if (!level.isClientSide && !emergencyExit(state, level, pos, player)) {
+        if (!level.isClientSide && !operate(state, level, pos, player, false)) {
             player.displayClientMessage(Component.translatable("enderportals.message.locked"), true);
         }
         return InteractionResult.SUCCESS;
     }
 
     /**
-     * La sortie de secours : la porte <b>intérieure</b> obéit à son propriétaire
-     * même sans clé.
+     * Ce que fait un clic sur une porte, la clé en main ou non.
      *
-     * <p>Sans elle, une partie pouvait finir murée. Il suffisait d'avoir son lit
-     * dans l'Ender et de mourir dehors : les affaires — la clé avec — restent au
-     * lieu de la mort, on réapparaît à l'intérieur, et la porte close ne répond
-     * plus. Reforger une clé demande une perle de l'Ender, or <b>aucune créature
-     * n'apparaît dans l'Ender</b> : sans perle en réserve, la base et tout ce
-     * qu'elle contient étaient perdus pour de bon.</p>
+     * <p>Une porte s'ouvre <b>à la main</b>, comme toutes les portes du jeu, et
+     * seulement pour qui elle est. La clé n'a jamais eu à servir de poignée :
+     * son affaire, c'est de <b>lier</b> une porte à un joueur, et de la faire
+     * <b>apparaître et disparaître</b>. Confondre les deux obligeait à sortir sa
+     * clé pour le geste le plus banal — et, quand la clé était restée au lieu
+     * d'une mort, murait la base : les affaires tombent là où l'on meurt, et si
+     * le lit est dans l'Ender on réapparaît à l'intérieur, sans clé. Reforger
+     * en demande une perle de l'Ender, or <b>aucune créature n'apparaît dans
+     * l'Ender</b>.</p>
      *
-     * <p>C'est le même principe que le rappel qui ne peut pas échouer : une
-     * parcelle cloisonnée de bedrock n'a qu'une issue, et rien ne doit pouvoir
-     * la condamner. La clé garde tout le reste — matérialiser la porte où l'on
-     * veut, l'ouvrir et la refermer du dehors, la ranger dans sa poche.</p>
+     * <p>La porte <b>intérieure</b> a un cas de plus : si la porte extérieure
+     * est rangée, le clic la rappelle au lieu d'ouvrir. Ouvrir seul ne servirait
+     * à rien — il n'y aurait rien de l'autre côté à franchir.</p>
      *
-     * <p>Deux restrictions. <b>Le propriétaire seul</b> : un allié venu par un
-     * Passage repart par où il est entré, et n'a pas à pouvoir faire apparaître
-     * la porte d'autrui. Et <b>ouvrir seulement</b> : jamais dématérialiser,
-     * sinon ce geste de secours servirait à se murer.</p>
+     * <p>Le propriétaire, et lui seul. Un allié venu par un Passage repart par
+     * où il est entré ; il n'a pas à ouvrir la porte d'autrui, ni à la faire
+     * apparaître ailleurs.</p>
+     *
+     * @param dismiss dématérialiser au lieu d'ouvrir. C'est l'accroupissement,
+     *                et il demande la clé : sans elle, personne ne peut faire
+     *                disparaître sa propre issue
+     * @return faux si ce joueur n'a rien à faire ici — à l'appelant de le dire
      */
-    private static boolean emergencyExit(BlockState state, Level level, BlockPos pos, Player player) {
+    public static boolean operate(BlockState state, Level level, BlockPos pos, Player player, boolean dismiss) {
         BlockPos base = state.getValue(HALF) == DoubleBlockHalf.UPPER ? pos.below() : pos;
         if (!(level.getBlockEntity(base) instanceof TardisDoorBlockEntity door)
-                || !door.isInterior() || door.getTardisId() == null) {
+                || door.isDematerializing() || door.getTardisId() == null) {
             return false;
         }
         MinecraftServer server = level.getServer();
@@ -179,15 +184,20 @@ public class TardisDoorBlock extends Block implements EntityBlock {
         if (data == null || !player.getUUID().equals(data.ownerUuid)) {
             return false;
         }
-        if (data.deployed) {
-            // La porte est déjà quelque part : on ne la déplace pas, on
-            // l'ouvre. La rappeler la ferait sauter d'un bloc — son
-            // emplacement est occupé par elle-même.
-            TardisHelper.setDoorsOpen(server, data, true);
-            player.displayClientMessage(
-                    Component.translatable("enderportals.message.exit_opened"), true);
-        } else {
+        if (dismiss) {
+            if (data.deployed) {
+                TardisHelper.dismissExterior(server, data);
+                player.displayClientMessage(
+                        Component.translatable("enderportals.message.tardis_dismissed"), true);
+            }
+            return true;
+        }
+        if (!data.deployed && door.isInterior()) {
+            // Le rappel ne peut pas se contenter d'échouer : voir
+            // TardisHelper.recallExterior.
             TardisHelper.recallExterior(server, data, player);
+        } else {
+            TardisHelper.setDoorsOpen(server, data, !data.open);
         }
         return true;
     }
