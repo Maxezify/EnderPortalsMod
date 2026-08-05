@@ -9,7 +9,7 @@ Derrière cette porte, une parcelle entière vous appartient — et vous l'empor
 partout : la porte se dématérialise dans votre poche et se repose où vous
 voulez.
 
-Version courante : **0.23.1**.
+Version courante : **0.23.2**.
 
 ---
 
@@ -583,7 +583,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.23.1.jar
+# → build/libs/enderportals-0.23.2.jar
 ```
 
 Le build est géré par **ModDevGradle** ; NeoForge et les mappings officiels sont

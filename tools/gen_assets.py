@@ -654,44 +654,66 @@ def tex_centralizer():
     write_png(f"{ASSETS}/textures/block/centralizer_top.png", 16, 16, top)
 
 
+# Cuir de l'Ender : quatre valeurs, du creux du pli à l'arête qui prend la
+# lumière. Assez sombre pour qu'on y reconnaisse l'obsidienne des machines,
+# assez clair en haut à gauche pour que le sac ne soit pas une tache noire dans
+# un inventaire mal éclairé.
+BAG_OUT = (14, 10, 22, 255)
+BAG_DARK = (30, 24, 44, 255)
+BAG_MID = (58, 48, 82, 255)
+BAG_LIT = (92, 80, 124, 255)
+BAG_HI = (126, 114, 158, 255)
+
+BAG_LETTERS = {
+    "o": BAG_OUT, "d": BAG_DARK, "m": BAG_MID, "l": BAG_LIT, "h": BAG_HI,
+    # L'or des machines, recopié ici : la palette du Téléporteur est
+    # définie plus bas dans le fichier, et un sac ne devrait pas
+    # dépendre de l'ordre des déclarations.
+    "G": (238, 206, 124, 255), "g": (196, 158, 74, 255), "k": (132, 100, 40, 255),
+    "C": GEM_CORE, "H": GEM_HI, "M": GEM_MID, "D": GEM_DARK,
+}
+
+# Le Sac de l'Ender.
+#
+# L'ancien était une boule sombre à goulot brun : la silhouette ne disait pas
+# « sac », le bruit de la toile brouillait les valeurs, et l'emblème tenait en
+# trois pixels sarcelle qu'on lisait comme une salissure.
+#
+# Celui-ci reprend la silhouette que tout joueur reconnaît — celle de la bourse
+# de vanilla : col resserré, épaules qui s'ouvrent, fond lourd. Ce qui change,
+# c'est la matière : cuir violet sombre au lieu du cuir fauve, cordon d'or comme
+# les rails des machines, et un cristal serti dans son logement au milieu du
+# rabat. Le cristal plutôt que l'œil sarcelle des versions précédentes : c'est
+# lui la signature du mod depuis la 0.22, et un emblème qui ne renvoie à rien
+# n'est qu'un ornement.
+#
+# Le sertissage compte autant que la gemme : sans son anneau sombre, la pierre
+# flotte sur le cuir au lieu d'y être enchâssée — c'était exactement le défaut
+# de l'ancien emblème.
+ENDER_BAG = [
+    "......oooo......",
+    ".....ohmmdo.....",
+    "....ohlmmmdo....",
+    "...oGGgggkkko...",
+    "....olmggmdo....",
+    "...ohldmmldmo...",
+    "..ohlldmmldmdo..",
+    "..ohlmdmmmdmdo..",
+    ".ohlmmmCHmmmmdo.",
+    ".ohlmmCHMDmmmdo.",
+    ".ohlmmmMDdmmmdo.",
+    ".olmmmmmdmmmmdo.",
+    ".olmmmmmmmmmmdo.",
+    "..olmmmmmmmddo..",
+    "...omdddddddo...",
+    "....oooooooo....",
+]
+
+
 def tex_ender_bag():
-    """Sac sombre bombé, cordon serré, œil de l'Ender sarcelle sur le rabat."""
-    cloth = [(30, 26, 46, 255), (42, 35, 62, 255), (55, 46, 82, 255)]
-    tie = (70, 58, 40, 255)
-    teal = (72, 214, 196, 255)
-    teal_d = (26, 120, 108, 255)
-    pale = (170, 248, 238, 255)
-    out = (12, 10, 20, 255)
+    """Le Sac de l'Ender : bourse de cuir violet, cordon d'or, cristal serti."""
     px = canvas(16, 16)
-    noise = blob_noise(16, 16, seed=3690, scale=3)
-    # corps du sac : ovale bombé (lignes 5..15)
-    body = [
-        (5, 4, 10), (4, 5, 11), (3, 6, 12), (3, 7, 12), (2, 8, 13),
-        (2, 9, 13), (2, 10, 13), (2, 11, 13), (3, 12, 12), (3, 13, 12), (4, 14, 11),
-    ]
-    for (x0, y, x1) in body:
-        for x in range(x0, x1 + 1):
-            put(px, x, y, shade(cloth, noise[y][x]))
-    # goulot / cordon (lignes 2..4)
-    for x in range(6, 10):
-        put(px, x, 2, tie)
-        put(px, x, 3, shade(cloth, 0.7))
-    put(px, 5, 3, tie)
-    put(px, 10, 3, tie)
-    # ombre bas
-    for x in range(4, 12):
-        put(px, x, 14, shade(cloth, 0.1))
-    # œil de l'Ender sur le rabat
-    put(px, 7, 8, teal); put(px, 8, 8, teal)
-    put(px, 7, 9, teal); put(px, 8, 9, teal)
-    put(px, 6, 8, teal_d); put(px, 9, 9, teal_d)
-    put(px, 7, 8, pale)
-    # contour sombre auto
-    fill = {(x, y) for y in range(16) for x in range(16) if px[y][x][3] > 0}
-    for (x, y) in list(fill):
-        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-            if (x + dx, y + dy) not in fill and 0 <= x + dx < 16 and 0 <= y + dy < 16:
-                put(px, x + dx, y + dy, out)
+    stamp(px, 0, 0, ENDER_BAG, BAG_LETTERS)
     write_png(f"{ASSETS}/textures/item/ender_bag.png", 16, 16, px)
 
 
