@@ -26,6 +26,16 @@ public final class EnderTooltip {
     private static final String HINT = "enderportals.tooltip.hold_shift";
 
     /**
+     * Le nom de la touche, inséré dans cette ligne plutôt qu'écrit dedans.
+     *
+     * <p>Deux raisons de le sortir du texte. Il se colore alors seul, en jaune
+     * sur le gris sombre de la ligne, sans codes {@code §} noyés dans les
+     * fichiers de langue. Et sa place dans la phrase reste libre : le français
+     * la met au milieu, une autre langue la mettrait ailleurs.</p>
+     */
+    private static final String HINT_KEY = "enderportals.tooltip.shift_key";
+
+    /**
      * Le joueur demande-t-il le détail ?
      *
      * <p>Le test de {@code Dist} n'est pas décoratif : {@link ClientShift}
@@ -48,7 +58,9 @@ public final class EnderTooltip {
         if (expanded()) {
             tooltip.addAll(List.of(lines));
         } else {
-            tooltip.add(Component.translatable(HINT).withStyle(ChatFormatting.DARK_GRAY));
+            tooltip.add(Component.translatable(HINT,
+                            Component.translatable(HINT_KEY).withStyle(ChatFormatting.YELLOW))
+                    .withStyle(ChatFormatting.DARK_GRAY));
         }
     }
 
