@@ -246,9 +246,11 @@ public class TardisKeyItem extends Item {
         }
         // Ce que la clé fait et que la main ne fait pas. Ouvrir n'y est pas :
         // c'est le geste de la main, et l'écrire ici laisserait croire qu'il
-        // faut la clé pour ça.
-        tooltip.add(Component.translatable("enderportals.tooltip.key_place").withStyle(ChatFormatting.DARK_GRAY));
-        tooltip.add(Component.translatable("enderportals.tooltip.key_dismiss").withStyle(ChatFormatting.DARK_GRAY));
+        // faut la clé pour ça. La liaison et le code, eux, restent affichés :
+        // ils décrivent cette clé-ci, pas le fonctionnement des clés.
+        EnderTooltip.details(tooltip,
+                EnderTooltip.line("enderportals.tooltip.key_place"),
+                EnderTooltip.line("enderportals.tooltip.key_dismiss"));
         super.appendHoverText(stack, context, tooltip, flag);
     }
 }

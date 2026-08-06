@@ -1,7 +1,6 @@
 package com.maxezify.enderportals.item;
 
 import com.maxezify.enderportals.ModDimensions;
-import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -27,10 +26,9 @@ public class CentralizerBlockItem extends BlockItem {
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
                                 TooltipFlag flag) {
-        tooltip.add(Component.translatable("enderportals.tooltip.centralizer_1")
-                .withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("enderportals.tooltip.centralizer_2")
-                .withStyle(ChatFormatting.DARK_GRAY));
+        EnderTooltip.details(tooltip,
+                EnderTooltip.head("enderportals.tooltip.centralizer_1"),
+                EnderTooltip.line("enderportals.tooltip.centralizer_2"));
         super.appendHoverText(stack, context, tooltip, flag);
     }
 

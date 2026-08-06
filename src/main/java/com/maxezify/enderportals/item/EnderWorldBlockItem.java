@@ -2,7 +2,6 @@ package com.maxezify.enderportals.item;
 
 import com.maxezify.enderportals.ModDimensions;
 import com.maxezify.enderportals.block.AllyPassageBlock;
-import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -43,8 +42,9 @@ public class EnderWorldBlockItem extends BlockItem {
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
                                 TooltipFlag flag) {
-        tooltip.add(Component.translatable(tooltipKey + "_1").withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(tooltipKey + "_2").withStyle(ChatFormatting.DARK_GRAY));
+        EnderTooltip.details(tooltip,
+                EnderTooltip.head(tooltipKey + "_1"),
+                EnderTooltip.line(tooltipKey + "_2"));
         super.appendHoverText(stack, context, tooltip, flag);
     }
 

@@ -9,7 +9,7 @@ Derrière cette porte, une parcelle entière vous appartient — et vous l'empor
 partout : la porte se dématérialise dans votre poche et se repose où vous
 voulez.
 
-Version courante : **0.27.0**.
+Version courante : **0.28.0**.
 
 ---
 
@@ -549,6 +549,21 @@ Téléporteur d'entité — dans la langue du jeu (français ou anglais).
 
 ---
 
+## Les infobulles
+
+Chaque machine a de quoi remplir cinq ou six lignes. Toutes affichées en
+permanence, elles couvraient l'écran au moindre survol d'un coffre : le mode
+d'emploi ne se déroule donc que si vous **maintenez Maj**, comme dans les mods de
+rangement.
+
+Ce qui reste visible sans rien appuyer, c'est **l'état de cet exemplaire-là** —
+la porte à laquelle cette clé est liée et son code d'ami, l'Atterrisseur que vise
+ce téléporteur. C'est ce qui distingue deux objets dans un coffre, et c'est ce
+qu'on vient y lire. Le reste explique comment ils marchent, et on ne le relit pas
+trente fois.
+
+---
+
 ## Les progrès
 
 Un arbre complet, **« Le paradis des cubes »** :
@@ -653,7 +668,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.27.0.jar
+# → build/libs/enderportals-0.28.0.jar
 ```
 
 Le build est géré par **ModDevGradle** ; NeoForge et les mappings officiels sont

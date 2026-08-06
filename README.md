@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.27.0**.
+Current version: **0.28.0**.
 
 ---
 
@@ -523,6 +523,20 @@ Teleporter — in the game's language (English or French).
 
 ---
 
+## Tooltips
+
+Every machine here has enough to fill five or six lines. Shown all at once, they
+covered the screen the moment you hovered over a chest — so the instructions only
+unfold while you **hold Shift**, the way storage mods do it.
+
+What stays visible without pressing anything is **the state of that particular
+item**: the door this key is bound to and its friend code, the Lander this
+teleporter is aiming at. That is what tells two items apart in a chest, and what
+you came to read. The rest explains how they work, and you do not read that
+thirty times.
+
+---
+
 ## Advancements
 
 A full tree, **"The paradise of cubes"**:
@@ -623,7 +637,7 @@ Requires **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.27.0.jar
+# → build/libs/enderportals-0.28.0.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are

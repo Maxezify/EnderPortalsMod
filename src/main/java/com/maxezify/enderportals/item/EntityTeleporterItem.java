@@ -83,25 +83,25 @@ public class EntityTeleporterItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Item.TooltipContext context,
                                 List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("enderportals.tooltip.entity_teleporter_1")
-                .withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("enderportals.tooltip.entity_teleporter_2")
-                .withStyle(ChatFormatting.DARK_GRAY));
-        tooltip.add(Component.translatable("enderportals.tooltip.entity_teleporter_3")
-                .withStyle(ChatFormatting.DARK_GRAY));
-        tooltip.add(Component.translatable("enderportals.tooltip.entity_teleporter_lamp")
-                .withStyle(ChatFormatting.DARK_GRAY));
-        // Le prix vient de la logique, pas d'un nombre recopié dans les trois
-        // fichiers de langue : une infobulle qui ment sur un coût est pire que
-        // pas d'infobulle du tout.
-        tooltip.add(Component.translatable("enderportals.tooltip.entity_teleporter_xp",
-                EntityTeleporterLogic.XP_PER_PASSENGER).withStyle(ChatFormatting.DARK_GRAY));
+        // La destination passe devant le mode d'emploi et ne se replie pas :
+        // c'est le seul renseignement qui distingue deux coques dans un coffre,
+        // et celui qu'on vient chercher.
         BlockPos lander = stack.get(ModComponents.LANDER_POS.get());
         tooltip.add(lander == null
                 ? Component.translatable("enderportals.tooltip.entity_teleporter_free")
                         .withStyle(ChatFormatting.RED)
                 : Component.translatable("enderportals.tooltip.entity_teleporter_bound",
                         lander.getX(), lander.getY(), lander.getZ()).withStyle(ChatFormatting.GREEN));
+        // Le prix vient de la logique, pas d'un nombre recopié dans les trois
+        // fichiers de langue : une infobulle qui ment sur un coût est pire que
+        // pas d'infobulle du tout.
+        EnderTooltip.details(tooltip,
+                EnderTooltip.head("enderportals.tooltip.entity_teleporter_1"),
+                EnderTooltip.line("enderportals.tooltip.entity_teleporter_2"),
+                EnderTooltip.line("enderportals.tooltip.entity_teleporter_3"),
+                EnderTooltip.line("enderportals.tooltip.entity_teleporter_lamp"),
+                EnderTooltip.line("enderportals.tooltip.entity_teleporter_xp",
+                        EntityTeleporterLogic.XP_PER_PASSENGER));
         super.appendHoverText(stack, context, tooltip, flag);
     }
 }

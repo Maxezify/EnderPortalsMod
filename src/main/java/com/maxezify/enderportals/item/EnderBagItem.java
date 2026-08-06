@@ -1,7 +1,6 @@
 package com.maxezify.enderportals.item;
 
 import com.maxezify.enderportals.tardis.CentralizerLogic;
-import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.SlotAccess;
@@ -90,14 +89,13 @@ public class EnderBagItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
                                 TooltipFlag flag) {
-        tooltip.add(Component.translatable("enderportals.tooltip.ender_bag")
-                .withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("enderportals.tooltip.ender_bag_reverse")
-                .withStyle(ChatFormatting.GRAY));
         // Le prix vient de la logique : une infobulle qui ment sur un coût est
         // pire que pas d'infobulle du tout.
-        tooltip.add(Component.translatable("enderportals.tooltip.ender_bag_price",
-                CentralizerLogic.XP_COST_PER_STACK).withStyle(ChatFormatting.DARK_GRAY));
+        EnderTooltip.details(tooltip,
+                EnderTooltip.head("enderportals.tooltip.ender_bag"),
+                EnderTooltip.head("enderportals.tooltip.ender_bag_reverse"),
+                EnderTooltip.line("enderportals.tooltip.ender_bag_price",
+                        CentralizerLogic.XP_COST_PER_STACK));
         super.appendHoverText(stack, context, tooltip, flag);
     }
 }
