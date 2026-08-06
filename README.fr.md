@@ -9,7 +9,7 @@ Derrière cette porte, une parcelle entière vous appartient — et vous l'empor
 partout : la porte se dématérialise dans votre poche et se repose où vous
 voulez.
 
-Version courante : **0.25.1**.
+Version courante : **0.26.0**.
 
 ---
 
@@ -114,11 +114,28 @@ La clé ouvre et ferme aussi, si vous l'avez en main — c'est le même geste, e
 ne vous oblige pas à la ranger. Ce qu'elle seule fait, c'est **faire apparaître
 et disparaître** la porte, et se lier à elle.
 
-**Un geste à la fois.** La porte met un peu plus de trois secondes à se
-matérialiser, trois à s'effacer. Tant que le fondu dure, elle refuse l'ordre
-suivant et vous répond « La porte n'a pas fini son passage. » Cela vaut pour
-tout — apparition, disparition, ouverture, fermeture, et la pose au sol à la
-clé. Dès qu'elle a fini de réapparaître, elle obéit de nouveau.
+**Un geste à la fois.** La porte met **1,75 s** à se matérialiser, **1,5 s** à
+s'effacer. Tant que le fondu dure, elle refuse l'ordre suivant et vous répond
+« La porte n'a pas fini son passage. » Cela vaut pour tout — apparition,
+disparition, ouverture, fermeture, et la pose au sol à la clé. Dès qu'elle a
+fini de réapparaître, elle obéit de nouveau.
+
+### Le passage
+
+Un fondu, ce n'est pas une opacité qui monte. Voici ce que vous voyez quand la
+porte arrive :
+
+* **Une onde** de lumière blanche à bords violets remonte les quatre faces du
+  caisson, du seuil au linteau. Elle s'allume en montant et s'éteint en sortant
+  par le haut — à la disparition, elle redescend.
+* **La matière converge.** Les grains de portail affluent depuis une couronne
+  large de plus d'un bloc et se resserrent sur la porte à mesure qu'elle prend.
+  Quand elle s'en va, tout repart vers l'extérieur et monte.
+* **La porte tremble** de trois centimètres tant qu'elle n'est pas tout à fait
+  là, et se stabilise en même temps qu'elle s'opacifie. Son battement d'opacité
+  s'apaise de la même façon : elle ne claque pas à 100 %, elle se pose.
+* **Elle atterrit** sur une couronne d'étincelles et deux notes — un choc grave
+  et une résonance d'améthyste. En partant, elle claque sur un souffle aigu.
 
 **Tout cela n'obéit qu'au propriétaire.** Un autre joueur qui clique votre porte,
 à la main comme à la clé, lit « verrouillée ».
@@ -611,7 +628,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.25.1.jar
+# → build/libs/enderportals-0.26.0.jar
 ```
 
 Le build est géré par **ModDevGradle** ; NeoForge et les mappings officiels sont

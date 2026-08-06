@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.25.1**.
+Current version: **0.26.0**.
 
 ---
 
@@ -110,11 +110,28 @@ The key opens and closes too, if you happen to be holding it — same gesture, n
 need to put it away. What only the key does is **make the door appear and
 disappear**, and bind itself to it.
 
-**One gesture at a time.** The door takes a little over three seconds to
-materialise, three to fade away. While that fade lasts it turns the next order
-down and answers "The door has not finished its passage." That covers
-everything — appearing, disappearing, opening, closing, and setting it down
-with the key. The moment it has finished reappearing, it obeys again.
+**One gesture at a time.** The door takes **1.75 s** to materialise, **1.5 s** to
+fade away. While that fade lasts it turns the next order down and answers "The
+door has not finished its passage." That covers everything — appearing,
+disappearing, opening, closing, and setting it down with the key. The moment it
+has finished reappearing, it obeys again.
+
+### The passage
+
+A fade is not an opacity going up. Here is what you actually see when the door
+arrives:
+
+* **A wave** of white light with violet edges climbs all four faces of the
+  casing, from threshold to lintel. It lights up as it rises and goes out as it
+  leaves through the top — on the way out, it travels back down.
+* **Matter converges.** Portal grains stream in from a ring over a block wide
+  and tighten onto the door as it takes hold. When it leaves, everything flies
+  back outwards and rises.
+* **The door shivers** by three centimetres for as long as it is not quite
+  there, and steadies as it turns solid. Its opacity throb calms the same way:
+  it does not snap to 100 %, it settles.
+* **It lands** on a ring of sparks and two notes — a deep impact and an amethyst
+  resonance. On the way out, it snaps shut on a high whisper.
 
 **All of this obeys the owner alone.** Anyone else clicking your door, with or
 without a key, reads "locked".
@@ -584,7 +601,7 @@ Requires **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.25.1.jar
+# → build/libs/enderportals-0.26.0.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are

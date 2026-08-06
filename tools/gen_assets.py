@@ -413,7 +413,36 @@ def tex_door_entity_sheet():
             put(px, 48 + x, 48 + y, base)
     for (sx, sy) in ((51, 50), (58, 53), (54, 57), (60, 60), (50, 60), (56, 51)):
         put(px, sx, sy, SPECK_TEAL if (sx + sy) % 2 == 0 else SPECK_VIOLET)
+    paint_fade_band(px, 0, 32)
     write_png(f"{ASSETS}/textures/entity/tardis_door.png", 64, 64, px)
+
+
+# Onde de matérialisation : cœur presque blanc, bords violets, extinction
+# complète en haut et en bas. C'est la douceur des extrémités qui fait tout le
+# travail — une bande à bords francs se lit comme un rectangle collé sur la
+# porte, pas comme une lumière qui la parcourt.
+BAND_CORE = (252, 249, 255)
+BAND_EDGE = (168, 72, 255)
+BAND_NOISE = blob_noise(16, 16, seed=1717, scale=4)
+
+
+def paint_fade_band(px, ox, oy):
+    """Bande lumineuse 16×16, dégradée du centre vers le haut et le bas.
+
+    Le profil sature volontairement au centre : sans cela la bande reste
+    translucide de bout en bout et se lit comme un badigeon posé sur la porte
+    plutôt que comme une lumière qui la traverse."""
+    for y in range(16):
+        # 1 au centre de la bande, 0 à ses deux extrémités.
+        d = abs(y - 7.5) / 8.0
+        a = min(1.0, 1.45 * (1.0 - d) ** 3.2)
+        # Le grain casse l'uniformité : étirée sur toute la largeur de la porte,
+        # une bande lisse laisse voir ses paliers de dégradé.
+        for x in range(16):
+            g = min(1.0, a * (0.86 + 0.14 * BAND_NOISE[y][x]))
+            color = tuple(int(BAND_EDGE[i] + (BAND_CORE[i] - BAND_EDGE[i]) * g)
+                          for i in range(3))
+            put(px, ox + x, oy + y, color + (int(255 * g),))
 
 
 # ---------------------------------------------------------------- objets

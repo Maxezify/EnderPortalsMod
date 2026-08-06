@@ -74,10 +74,10 @@ public class TardisData {
     /**
      * Temps de jeu avant lequel la porte n'accepte plus d'ordre.
      *
-     * <p>Une matérialisation dure un peu plus de trois secondes, une
-     * dématérialisation trois : pendant ce fondu, la porte est à la fois là et
-     * pas là. Rappeler une porte qui n'a pas fini de s'effacer en poserait une
-     * seconde par-dessus les blocs de la première ; l'ouvrir et la refermer dix
+     * <p>Une matérialisation dure 1,75 s, une dématérialisation 1,5 s : pendant
+     * ce fondu, la porte est à la fois là et pas là. Rappeler une porte qui n'a
+     * pas fini de s'effacer en poserait une seconde par-dessus les blocs de la
+     * première ; l'ouvrir et la refermer dix
      * fois par seconde reposerait autant de tickets de chunks. D'où cette
      * échéance, qui vaut pour tous les gestes et se lit sur le temps de jeu —
      * il ne court pas quand le monde est fermé.</p>

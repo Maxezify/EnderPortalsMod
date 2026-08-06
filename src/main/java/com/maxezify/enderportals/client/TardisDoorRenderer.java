@@ -16,6 +16,7 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 
@@ -42,6 +43,22 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
     private static final float[] BACK = {16, 0, 32, 32};
     private static final float[] EDGE = {32, 0, 35, 32};
     private static final float[] VOID_UV = {48, 48, 64, 64};
+    /** L'onde de matérialisation : cœur blanc, bords violets, extrémités éteintes. */
+    private static final float[] GLOW = {0, 32, 16, 48};
+
+    /** Demi-hauteur de l'onde. Le dégradé de la texture en adoucit les bords. */
+    private static final float BAND_HALF = 0.30f;
+    /** Distance à l'axe de la porte : juste au-delà de la coque (0,47). */
+    private static final float BAND_OUT = 0.49f;
+    /**
+     * Course de l'onde. Elle part sous le seuil et sort par le haut, pour que la
+     * porte ne s'allume ni ne s'éteigne sur une bande arrêtée en plein milieu.
+     */
+    private static final float BAND_FROM = -0.35f;
+    private static final float BAND_TO = 2.35f;
+
+    /** Amplitude du tremblement pendant un fondu, en blocs. */
+    private static final float SHIVER = 0.03f;
 
     private static final int AXIS_X = 0;
     private static final int AXIS_Y = 1;
@@ -106,19 +123,34 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
         // travers du portail, des deux côtés.
         boolean insidePortal = ImmPtlRenderCompat.isRenderingThroughPortal(door.getLevel());
         float alpha = door.getAlpha(tickDelta);
-        if (alpha <= 0.02f) {
+        boolean stable = alpha >= 0.999f;
+        float progress = door.getFadeProgress(tickDelta);
+        // L'onde court même aux moments où la coque n'est plus qu'un souffle :
+        // la pulsation d'opacité passe par des creux très bas, et sortir sur le
+        // seul critère de la coque ferait clignoter l'onde avec elle.
+        boolean banding = !stable && progress > 0.001f && progress < 0.999f;
+        if (alpha <= 0.02f && !banding) {
             return;
         }
         Direction facing = state.getValue(TardisDoorBlock.FACING);
         boolean open = state.getValue(TardisDoorBlock.OPEN);
         // Pendant les fondus, la porte irradie légèrement.
         int lightCoord = alpha < 1.0f ? LightTexture.FULL_BRIGHT : light;
-        boolean stable = alpha >= 0.999f;
 
         poseStack.pushPose();
         poseStack.translate(0.5, 0.0, 0.5);
         // Orientation validée en jeu (v4) : +Z local = avant de la porte.
         poseStack.mulPose(Axis.YP.rotationDegrees(-facing.toYRot()));
+        float fadeTime = door.getFadeTime(tickDelta);
+        if (!stable) {
+            // Le tremblement : la porte n'est pas encore tout à fait ici. Il
+            // s'éteint de lui-même à mesure qu'elle prend, et son amplitude suit
+            // la pulsation de l'opacité — deux fréquences premières entre elles,
+            // pour que le mouvement ne retombe jamais sur lui-même.
+            float shiver = (1.0f - alpha) * SHIVER;
+            poseStack.translate(Mth.sin(fadeTime * 1.7f) * shiver, 0.0f,
+                    Mth.cos(fadeTime * 2.3f) * shiver);
+        }
         PoseStack.Pose entry = poseStack.last();
 
         // Hors fondu : couche opaque (cutout), profondeur nette, zéro tri translucide.
@@ -156,6 +188,14 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
         if (open && !ImmPtlCompat.isLoaded() && !door.isPortalActive()) {
             VertexConsumer veil = buffer.getBuffer(RenderType.entityTranslucent(TEXTURE));
             drawVoidVeil(veil, entry, alpha, lightCoord, overlay);
+        }
+
+        // L'onde qui parcourt la porte pendant le fondu : elle monte quand la
+        // porte se forme, descend quand elle s'en va. Même couche translucide
+        // que la coque — un seul lot de sommets — et pleine luminosité, ce qui
+        // en fait une lumière et non un badigeon.
+        if (banding) {
+            drawFadeBand(vertexBuffer, entry, progress, door.isDematerializing(), fadeTime, overlay);
         }
 
         // Petit panneau avec le pseudo du propriétaire, sur la façade fermée.
@@ -235,6 +275,43 @@ public class TardisDoorRenderer implements BlockEntityRenderer<TardisDoorBlockEn
         region(buffer, entry, x0, y0, z0, x0, y0, z1, x0, y1, z1, x0, y1, z0, nx, alpha, light, overlay, -1, 0, 0);
         region(buffer, entry, x0, y1, z1, x1, y1, z1, x1, y1, z0, x0, y1, z0, py, alpha, light, overlay, 0, 1, 0);
         region(buffer, entry, x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1, ny, alpha, light, overlay, 0, -1, 0);
+    }
+
+    /**
+     * L'onde de matérialisation : une couronne lumineuse qui parcourt la porte
+     * sur ses quatre faces, du seuil au linteau en apparaissant, en sens inverse
+     * en partant.
+     *
+     * <p>Son intensité suit un demi-sinus : nulle aux deux bouts de la course,
+     * maximale à mi-parcours. Une bande d'intensité constante s'allume et
+     * s'éteint franchement aux extrémités, et l'œil voit alors deux coupures
+     * plutôt qu'un passage.</p>
+     */
+    private static void drawFadeBand(VertexConsumer buffer, PoseStack.Pose entry,
+                                     float progress, boolean leaving, float fadeTime, int overlay) {
+        float travel = leaving ? 1.0f - progress : progress;
+        float y = BAND_FROM + (BAND_TO - BAND_FROM) * travel;
+        float y0 = y - BAND_HALF;
+        float y1 = y + BAND_HALF;
+        // Le scintillement, en opposition de phase avec celui de la coque : la
+        // porte s'efface quand l'onde brille, et réciproquement.
+        float intensity = Mth.sin((float) Math.PI * progress)
+                * (0.82f + 0.18f * Mth.cos(fadeTime * 0.9f));
+        float bandAlpha = Mth.clamp(intensity, 0.0f, 1.0f);
+        if (bandAlpha <= 0.02f) {
+            return;
+        }
+        float s = BAND_OUT;
+        int lit = LightTexture.FULL_BRIGHT;
+        // Avant, arrière, puis les deux flancs — normales sortantes.
+        region(buffer, entry, -s, y0, s, s, y0, s, s, y1, s, -s, y1, s,
+                GLOW, bandAlpha, lit, overlay, 0, 0, 1);
+        region(buffer, entry, s, y0, -s, -s, y0, -s, -s, y1, -s, s, y1, -s,
+                GLOW, bandAlpha, lit, overlay, 0, 0, -1);
+        region(buffer, entry, s, y0, s, s, y0, -s, s, y1, -s, s, y1, s,
+                GLOW, bandAlpha, lit, overlay, 1, 0, 0);
+        region(buffer, entry, -s, y0, -s, -s, y0, s, -s, y1, s, -s, y1, -s,
+                GLOW, bandAlpha, lit, overlay, -1, 0, 0);
     }
 
     /** Voile sombre du vortex, dans le plan de l'embrasure (deux faces). */
