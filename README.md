@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.29.1**.
+Current version: **0.29.2**.
 
 ---
 
@@ -272,11 +272,19 @@ place**. Click it: it steps to the next degree, and wraps back to the first.
 | **Guest** | ✔ | ✔ | |
 | **Partner** | ✔ | ✔ | ✔ |
 
-"Use" covers **anything you can act on**: chests, furnaces, levers, doors. A
-visitor walks through and looks, touching nothing — which is exactly what the
-name says. The rule does not try to tell storage apart from other blocks: it did
-for a while, and Sophisticated Storage chests slipped through, because they open
-their screen by their own route.
+"Use" covers **anything you can act on**: chests, furnaces, crafting tables,
+levers. A visitor does not open those — but they do **get around**: doors,
+trapdoors, fence gates, buttons and pressure plates stay available. Walking
+through someone's place is not helping yourself to it.
+
+That split is an **allowlist**, and that is what makes it safe. The mod does not
+try to recognise storage in order to refuse it — it did for a while, and
+Sophisticated Storage chests slipped through, because they open their screen by
+their own route. Instead it enumerates what is **permitted** and refuses
+everything else: the next mod's storage is covered in advance, with nobody having
+to foresee it. The list lives in the `enderportals:visitor_usable` tag, built from
+vanilla tags — modded doors that join `#minecraft:doors` come along for free — and
+a pack that wants levers in there has one line to write.
 
 Three things to know:
 
@@ -685,7 +693,7 @@ Requires **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.29.1.jar
+# → build/libs/enderportals-0.29.2.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are

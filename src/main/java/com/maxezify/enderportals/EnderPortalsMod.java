@@ -159,8 +159,10 @@ public class EnderPortalsMod {
      * Refuser l'<b>objet</b> ferme d'un coup la pose de blocs, le seau de lave,
      * le briquet et la houe, quels qu'ils soient et sans liste à tenir à jour.
      * Refuser en plus le <b>bloc</b>, pour un visiteur, ferme tout ce qui
-     * s'actionne — coffres de mods compris, qu'aucun test de contenu n'aurait
-     * su reconnaître à coup sûr.</p>
+     * s'actionne — coffres de mods compris, qu'aucun test de contenu n'aurait su
+     * reconnaître à coup sûr. Portes, trappes, portillons et boutons y échappent
+     * par une liste blanche explicite : circuler chez quelqu'un n'est pas s'y
+     * servir. Voir {@link com.maxezify.enderportals.ModTags#VISITOR_USABLE}.</p>
      *
      * <p>Annuler l'événement entier aurait fait les deux à la fois, et surtout
      * ouvert une faille chez l'invité : accroupi, vanilla saute l'usage du bloc
@@ -176,7 +178,7 @@ public class EnderPortalsMod {
             return;
         }
         event.setUseItem(TriState.FALSE);
-        if (!PlotGuard.mayUse(player, pos)) {
+        if (!PlotGuard.mayUse(player, pos, event.getLevel().getBlockState(pos))) {
             event.setUseBlock(TriState.FALSE);
             refuse(player, "enderportals.message.plot_no_use");
         }

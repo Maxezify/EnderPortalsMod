@@ -1,12 +1,14 @@
 package com.maxezify.enderportals.tardis;
 
 import com.maxezify.enderportals.ModDimensions;
+import com.maxezify.enderportals.ModTags;
 import com.maxezify.enderportals.world.EnderWorldChunkGenerator;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -15,8 +17,9 @@ import org.jetbrains.annotations.Nullable;
  * <p>Jusqu'à la 0.29.0, le Passage des Alliés était consenti mais le
  * consentement était total : celui qu'on laissait entrer pouvait casser les
  * murs et vider les coffres, et rien dans le mod ne s'y opposait. Trois degrés
- * y répondent : <b>visiteur</b> entre et regarde, <b>invité</b> se sert en plus
- * des blocs — coffres compris —, <b>associé</b> casse et pose comme chez lui.
+ * y répondent : <b>visiteur</b> entre, circule et n'ouvre rien, <b>invité</b> se
+ * sert en plus des blocs — coffres compris —, <b>associé</b> casse et pose comme
+ * chez lui.
  * Le degré est à sens unique, et le défaut est le plus fermé.</p>
  *
  * <p><b>Aucune exception, pas même pour les opérateurs.</b> La 0.29.0 les
@@ -98,16 +101,24 @@ public final class PlotGuard {
     }
 
     /**
-     * Se servir d'un bloc — coffre, four, levier, porte : à partir de l'invité.
+     * Se servir d'un bloc — coffre, four, établi : à partir de l'invité, sauf
+     * pour la courte liste de ce qu'un visiteur peut actionner malgré tout.
      *
-     * <p>Le tri ne cherche plus à distinguer les rangements du reste. Il le
-     * faisait en 0.29.0, en testant si le bloc portait un {@code Container} ou un
-     * {@code MenuProvider} ; les coffres de Sophisticated Storage passaient au
-     * travers, parce qu'ils ouvrent leur écran par leur propre chemin. Un visiteur
-     * n'a de toute façon rien à actionner chez autrui — c'est exactement ce que
-     * dit son nom — et la règle sans exception n'a rien à laisser filer.</p>
+     * <p>Le tri ne cherche pas à reconnaître les rangements pour les refuser :
+     * c'est ce que faisait la 0.29.0, en testant {@code Container} et
+     * {@code MenuProvider}, et les coffres de Sophisticated Storage passaient au
+     * travers faute d'exposer l'un ou l'autre au bloc. Le sens est inversé.
+     * {@link ModTags#VISITOR_USABLE} énumère ce qui est <b>permis</b> — portes,
+     * trappes, portillons, boutons — et tout le reste est refusé, y compris ce
+     * que le mod ne connaît pas encore.</p>
+     *
+     * <p>Les plaques de pression figurent dans ce tag pour la forme : on les
+     * déclenche en marchant dessus, pas d'un clic droit, si bien qu'elles n'ont
+     * jamais été empêchées. Ce qui vaut de la même façon pour les fils de
+     * détente et les capteurs — la garde ne tient que le clic droit, le coup de
+     * pioche et la pose.</p>
      */
-    public static boolean mayUse(ServerPlayer player, BlockPos pos) {
-        return allows(player, pos, AllyLinks.GUEST);
+    public static boolean mayUse(ServerPlayer player, BlockPos pos, BlockState state) {
+        return allows(player, pos, AllyLinks.GUEST) || state.is(ModTags.VISITOR_USABLE);
     }
 }

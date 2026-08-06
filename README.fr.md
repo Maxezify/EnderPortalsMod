@@ -9,7 +9,7 @@ Derrière cette porte, une parcelle entière vous appartient — et vous l'empor
 partout : la porte se dématérialise dans votre poche et se repose où vous
 voulez.
 
-Version courante : **0.29.1**.
+Version courante : **0.29.2**.
 
 ---
 
@@ -283,11 +283,20 @@ dernier.
 | **Invité** | ✔ | ✔ | |
 | **Associé** | ✔ | ✔ | ✔ |
 
-« Se servir » couvre **tout ce qui s'actionne** : coffres, fours, leviers,
-portes. Un visiteur traverse et regarde, sans rien toucher — c'est ce que dit son
-nom. Le tri ne cherche pas à reconnaître les rangements parmi les autres blocs :
-il l'a fait un temps, et les coffres de Sophisticated Storage passaient au
-travers parce qu'ils ouvrent leur écran par leur propre chemin.
+« Se servir » couvre **tout ce qui s'actionne** : coffres, fours, établis,
+leviers. Un visiteur ne les ouvre pas — mais il **circule** : portes, trappes,
+portillons, boutons et plaques de pression restent à sa portée. Traverser chez
+quelqu'un n'est pas s'y servir.
+
+Ce partage est une **liste blanche**, et c'est ce qui le rend sûr. Le mod ne
+cherche pas à reconnaître les rangements pour les refuser — il l'a fait un temps,
+et les coffres de Sophisticated Storage passaient au travers parce qu'ils ouvrent
+leur écran par leur propre chemin. Il énumère au contraire ce qui est **permis**,
+et refuse tout le reste : le rangement du prochain mod installé est couvert
+d'avance, sans que personne ait à le prévoir. La liste vit dans le tag
+`enderportals:visitor_usable`, faite de tags de vanilla — les portes des mods qui
+s'y inscrivent en profitent — et un pack qui veut y ajouter le levier n'a qu'une
+ligne à écrire.
 
 Trois choses à savoir :
 
@@ -718,7 +727,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.29.1.jar
+# → build/libs/enderportals-0.29.2.jar
 ```
 
 Le build est géré par **ModDevGradle** ; NeoForge et les mappings officiels sont
