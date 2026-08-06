@@ -13,6 +13,8 @@ import net.minecraft.world.level.saveddata.SavedData;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -320,6 +322,21 @@ public class TardisStateManager extends SavedData {
         return tardises.get(id);
     }
 
+    /**
+     * Toutes les parcelles connues, en lecture seule.
+     *
+     * <p>Ouvert pour {@link PlotGuard}, qui doit retrouver la parcelle sous une
+     * position. Il le fait en comparant des positions de porte plutôt qu'en
+     * inversant la spirale : le rang d'une parcelle et l'endroit où sa porte a
+     * réellement été posée se sont désaccordés le jour où l'espacement est passé
+     * de 1024 à 8192 blocs, et les bases d'alors ont gardé leur position. Partir
+     * de la position persistée n'a pas ce défaut — c'est la même fonction
+     * d'enclos qui est appliquée aux deux bouts de la comparaison.</p>
+     */
+    public Collection<TardisData> all() {
+        return Collections.unmodifiableCollection(tardises.values());
+    }
+
     /** La porte déjà éveillée par ce joueur, s'il en a une. */
     @Nullable
     public TardisData findByOwner(UUID owner) {
@@ -364,50 +381,6 @@ public class TardisStateManager extends SavedData {
     private static BlockPos plotOrigin(int plot) {
         int[] cell = spiralCell(plot);
         return new BlockPos(cell[0] * PLOT_SPACING + 8, PLOT_Y, cell[1] * PLOT_SPACING + 8);
-    }
-
-    /**
-     * Rang de la parcelle occupant cette cellule : l'inverse exact de
-     * {@link #spiralCell}.
-     *
-     * <p>Écrit plutôt qu'obtenu en parcourant les parcelles jusqu'à trouver la
-     * bonne : la question se pose à chaque bloc cassé dans l'Ender, et une
-     * recherche linéaire par cellule aurait coûté d'autant plus cher que le
-     * monde compte de bases. Rendre un rang ne dit rien de son attribution — il
-     * peut parfaitement désigner une parcelle que personne n'a jamais reçue.</p>
-     */
-    public static int plotIndexOfCell(int cellX, int cellZ) {
-        int ring = Math.max(Math.abs(cellX), Math.abs(cellZ));
-        if (ring == 0) {
-            return 0;
-        }
-        int side;
-        int step;
-        if (cellX == ring && cellZ > -ring) {
-            side = 0;
-            step = cellZ + ring - 1;
-        } else if (cellZ == ring) {
-            side = 1;
-            step = ring - 1 - cellX;
-        } else if (cellX == -ring) {
-            side = 2;
-            step = ring - 1 - cellZ;
-        } else {
-            side = 3;
-            step = cellX + ring - 1;
-        }
-        return (2 * ring - 1) * (2 * ring - 1) + side * (2 * ring) + step;
-    }
-
-    /** La parcelle de ce rang, si elle a été attribuée. */
-    @Nullable
-    public TardisData findByPlot(int plotIndex) {
-        for (TardisData data : tardises.values()) {
-            if (data.plotIndex == plotIndex) {
-                return data;
-            }
-        }
-        return null;
     }
 
     /**

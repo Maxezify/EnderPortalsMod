@@ -149,7 +149,7 @@
   "enderportals.message.trust_theirs_guest": "%s made you a guest: their storage is open to you.",
   "enderportals.message.trust_theirs_partner": "%s made you a partner: you may build there.",
   "enderportals.message.plot_no_build": "You are not a partner here.",
-  "enderportals.message.plot_no_storage": "That storage is not open to you.",
+  "enderportals.message.plot_no_use": "You may not use anything here.",
   "enderportals.book.page1": "§5The Offering§0\n\nThe player has the Overworld, and beneath it, the Nether.\n\nThe Enderman has the End, and beneath it, the §5Ender§0.",
   "enderportals.book.page2": "§5The Offering§0\n\nWhen an Enderman lifts a block, it is not stealing it.\n\nIt carries it away to be given up — and what is given up reaches the Ender.",
   "enderportals.book.page3": "§5The Paradise of Cubes§0\n\nThere sleeps undone matter, caught in a grey translucent mass.\n\nYour door does not open onto a new world. It opens onto theirs.",

@@ -149,7 +149,7 @@
   "enderportals.message.trust_theirs_guest": "%s vous met invité : ses rangements vous sont ouverts.",
   "enderportals.message.trust_theirs_partner": "%s vous met associé : vous bâtissez chez lui.",
   "enderportals.message.plot_no_build": "Vous n'êtes pas associé ici.",
-  "enderportals.message.plot_no_storage": "Ces rangements ne vous sont pas ouverts.",
+  "enderportals.message.plot_no_use": "Vous ne pouvez rien actionner ici.",
   "enderportals.book.page1": "§5L'Offrande§0\n\nLe joueur a l'Overworld, et sous l'Overworld, le Nether.\n\nL'Enderman a l'End, et sous l'End, l'§5Ender§0.",
   "enderportals.book.page2": "§5L'Offrande§0\n\nQuand un Enderman soulève un bloc, il ne le vole pas.\n\nIl l'emporte pour le sacrifier — et ce qui est sacrifié rejoint l'Ender.",
   "enderportals.book.page3": "§5Le Paradis des Cubes§0\n\nLà dort la matière défaite, prise dans une masse grise et translucide.\n\nVotre porte n'ouvre pas sur un monde neuf. Elle ouvre sur le leur.",

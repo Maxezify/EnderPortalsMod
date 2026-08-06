@@ -9,7 +9,7 @@ Derrière cette porte, une parcelle entière vous appartient — et vous l'empor
 partout : la porte se dématérialise dans votre poche et se repose où vous
 voulez.
 
-Version courante : **0.29.0**.
+Version courante : **0.29.1**.
 
 ---
 
@@ -277,11 +277,17 @@ lien est **vert**, une pastille dit ce que cet allié peut faire **chez vous**.
 Cliquez dessus : elle passe au degré suivant, et revient au premier après le
 dernier.
 
-| Degré | Entrer | Ouvrir vos rangements | Casser et poser |
+| Degré | Entrer | Se servir de vos blocs | Casser et poser |
 | --- | :---: | :---: | :---: |
 | **Visiteur** | ✔ | | |
 | **Invité** | ✔ | ✔ | |
 | **Associé** | ✔ | ✔ | ✔ |
+
+« Se servir » couvre **tout ce qui s'actionne** : coffres, fours, leviers,
+portes. Un visiteur traverse et regarde, sans rien toucher — c'est ce que dit son
+nom. Le tri ne cherche pas à reconnaître les rangements parmi les autres blocs :
+il l'a fait un temps, et les coffres de Sophisticated Storage passaient au
+travers parce qu'ils ouvrent leur écran par leur propre chemin.
 
 Trois choses à savoir :
 
@@ -292,6 +298,10 @@ Trois choses à savoir :
   défaut, ce qui est exactement ce qu'on cherche à éviter.
 * **Tout le monde commence visiteur**, y compris les alliances nouées avant cette
   version. Personne ne se réveille avec des droits qu'on ne lui a pas donnés.
+* **Sans exception, pas même pour les opérateurs.** Un administrateur garde le
+  mode créatif et les commandes, qui ne passent pas par là ; mais sur un serveur
+  où tout le monde est opérateur — un serveur de test, typiquement — une garde
+  qui s'efface devant eux ne se déclenche jamais et paraît simplement cassée.
 
 L'allié est prévenu au terminal à chaque changement : il découvrirait sinon son
 degré en se faisant refuser un coffre, sans savoir que quelque chose avait
@@ -708,7 +718,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.29.0.jar
+# → build/libs/enderportals-0.29.1.jar
 ```
 
 Le build est géré par **ModDevGradle** ; NeoForge et les mappings officiels sont

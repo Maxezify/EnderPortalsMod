@@ -157,12 +157,15 @@ public class EnderPortalsMod {
      *
      * <p>C'est cette distinction qui rend le tri exact sans énumérer les objets.
      * Refuser l'<b>objet</b> ferme d'un coup la pose de blocs, le seau de lave,
-     * le briquet et la houe, quels qu'ils soient et sans liste à tenir à jour ;
-     * laisser le <b>bloc</b> agir garde au visiteur les portes et les boutons,
-     * qui ne lui font rien prendre. Annuler l'événement entier aurait fait les
-     * deux à la fois — et surtout ouvert une faille : accroupi, vanilla saute
-     * l'usage du bloc et passe la main à l'objet, si bien qu'un invité
-     * accroupi devant un coffre aurait posé son bloc.</p>
+     * le briquet et la houe, quels qu'ils soient et sans liste à tenir à jour.
+     * Refuser en plus le <b>bloc</b>, pour un visiteur, ferme tout ce qui
+     * s'actionne — coffres de mods compris, qu'aucun test de contenu n'aurait
+     * su reconnaître à coup sûr.</p>
+     *
+     * <p>Annuler l'événement entier aurait fait les deux à la fois, et surtout
+     * ouvert une faille chez l'invité : accroupi, vanilla saute l'usage du bloc
+     * et passe la main à l'objet, si bien qu'un invité accroupi devant un coffre
+     * aurait posé son bloc.</p>
      */
     private void onPlotRightClick(PlayerInteractEvent.RightClickBlock event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) {
@@ -173,9 +176,9 @@ public class EnderPortalsMod {
             return;
         }
         event.setUseItem(TriState.FALSE);
-        if (PlotGuard.isStorage(event.getLevel(), pos) && !PlotGuard.mayOpen(player, pos)) {
+        if (!PlotGuard.mayUse(player, pos)) {
             event.setUseBlock(TriState.FALSE);
-            refuse(player, "enderportals.message.plot_no_storage");
+            refuse(player, "enderportals.message.plot_no_use");
         }
     }
 

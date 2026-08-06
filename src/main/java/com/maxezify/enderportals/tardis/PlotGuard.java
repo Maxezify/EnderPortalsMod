@@ -5,11 +5,8 @@ import com.maxezify.enderportals.world.EnderWorldChunkGenerator;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.Container;
-import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -17,22 +14,25 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>Jusqu'à la 0.29.0, le Passage des Alliés était consenti mais le
  * consentement était total : celui qu'on laissait entrer pouvait casser les
- * murs et vider les coffres, et rien dans le mod ne s'y opposait — la parcelle
- * n'avait aucune notion de permission. Pour une mécanique dont tout le propos
- * est le partage choisi, c'était le trou.</p>
+ * murs et vider les coffres, et rien dans le mod ne s'y opposait. Trois degrés
+ * y répondent : <b>visiteur</b> entre et regarde, <b>invité</b> se sert en plus
+ * des blocs — coffres compris —, <b>associé</b> casse et pose comme chez lui.
+ * Le degré est à sens unique, et le défaut est le plus fermé.</p>
  *
- * <p>Trois degrés, accordés un par un depuis le Contrôle de l'amitié :
- * <b>visiteur</b> entre et regarde, <b>invité</b> ouvre en plus les rangements,
- * <b>associé</b> casse et pose comme chez lui. Le degré est à sens unique — vous
- * ouvrir mes coffres ne vous oblige pas à m'ouvrir les vôtres — et le défaut est
- * le plus fermé, y compris pour les alliances nouées avant cette version.</p>
+ * <p><b>Aucune exception, pas même pour les opérateurs.</b> La 0.29.0 les
+ * laissait passer, au motif habituel qu'un administrateur doit pouvoir réparer.
+ * C'était une mauvaise idée : sur un serveur de test, où tout le monde est
+ * opérateur, la garde ne se déclenchait jamais et le système paraissait
+ * simplement ne pas fonctionner. Un administrateur a de toute façon le mode
+ * créatif et les commandes, qui ne passent ni par l'un ni par l'autre de ces
+ * événements.</p>
  *
  * <p><b>Ce que cette classe ne garde pas.</b> Elle tient les trois vecteurs
- * directs : casser, poser, ouvrir un rangement. Une créature apprivoisée tuée,
- * un cadre d'objet vidé, un TNT allumé depuis l'extérieur de la parcelle ou un
- * entonnoir posé dessous par un associé restent possibles. C'est un tri
- * délibéré : ces voies demandent chacune leur propre écouteur, et prétendre à
- * l'étanchéité sans les traiter serait pire que d'annoncer la portée réelle.</p>
+ * directs : casser, poser, se servir d'un bloc. Une créature apprivoisée tuée,
+ * un cadre d'objet vidé, un TNT allumé depuis l'extérieur de la parcelle
+ * restent possibles. C'est un tri délibéré : ces voies demandent chacune leur
+ * propre écouteur, et prétendre à l'étanchéité sans les traiter serait pire que
+ * d'annoncer la portée réelle.</p>
  */
 public final class PlotGuard {
 
@@ -41,17 +41,33 @@ public final class PlotGuard {
 
     /**
      * La parcelle qui contient cette position, ou {@code null} — hors de
-     * l'Ender, ou sur une cellule que personne n'a reçue.
+     * l'Ender, ou sur un enclos que personne n'occupe.
+     *
+     * <p>La parcelle est retrouvée en comparant des <b>positions de porte</b>,
+     * et non en inversant la spirale qui attribue les rangs. L'inversion était
+     * exacte, mais elle supposait que le rang d'une parcelle et l'endroit où sa
+     * porte a réellement été posée s'accordent : deux choses qui se sont
+     * séparées le jour où l'espacement est passé de 1024 à 8192 blocs, les bases
+     * d'alors ayant gardé leur position d'origine. Là, la même fonction d'enclos
+     * est appliquée aux deux bouts de la comparaison : elles ne peuvent pas
+     * diverger.</p>
      */
     @Nullable
     public static TardisData plotAt(MinecraftServer server, Level level, BlockPos pos) {
         if (!level.dimension().equals(ModDimensions.ENDER_WORLD)) {
             return null;
         }
-        int index = TardisStateManager.plotIndexOfCell(
-                EnderWorldChunkGenerator.enclosureIndex(pos.getX()),
-                EnderWorldChunkGenerator.enclosureIndex(pos.getZ()));
-        return TardisStateManager.get(server).findByPlot(index);
+        int cellX = EnderWorldChunkGenerator.enclosureIndex(pos.getX());
+        int cellZ = EnderWorldChunkGenerator.enclosureIndex(pos.getZ());
+        for (TardisData data : TardisStateManager.get(server).all()) {
+            BlockPos door = data.interiorDoorPos;
+            if (door != null
+                    && EnderWorldChunkGenerator.enclosureIndex(door.getX()) == cellX
+                    && EnderWorldChunkGenerator.enclosureIndex(door.getZ()) == cellZ) {
+                return data;
+            }
+        }
+        return null;
     }
 
     /** Ce que l'hôte de cette parcelle accorde à ce joueur. */
@@ -66,16 +82,14 @@ public final class PlotGuard {
     /**
      * Ce joueur peut-il agir ici au degré demandé ?
      *
-     * <p>Les opérateurs passent outre. C'est le choix habituel, et le seul qui
-     * laisse réparer une parcelle dont le propriétaire ne joue plus ; ils ont de
-     * toute façon la commande qui déplace n'importe quel bloc.</p>
+     * <p>Le monde est celui du joueur, et non celui que porte l'événement : un
+     * joueur casse, pose et clique toujours dans le monde où il se tient, et
+     * l'événement expose un {@code LevelAccessor} qu'il aurait fallu convertir —
+     * donc une branche capable de sauter la vérification sans rien dire.</p>
      */
     public static boolean allows(ServerPlayer player, BlockPos pos, int needed) {
         MinecraftServer server = player.getServer();
-        if (server == null || player.hasPermissions(2)) {
-            return true;
-        }
-        return trustAt(server, player.level(), pos, player) >= needed;
+        return server == null || trustAt(server, player.level(), pos, player) >= needed;
     }
 
     /** Casser ou poser : réservé à l'associé. */
@@ -83,22 +97,17 @@ public final class PlotGuard {
         return allows(player, pos, AllyLinks.PARTNER);
     }
 
-    /** Ouvrir un rangement : à partir de l'invité. */
-    public static boolean mayOpen(ServerPlayer player, BlockPos pos) {
-        return allows(player, pos, AllyLinks.GUEST);
-    }
-
     /**
-     * Ce bloc garde-t-il quelque chose ?
+     * Se servir d'un bloc — coffre, four, levier, porte : à partir de l'invité.
      *
-     * <p>Les deux tests ne font pas double emploi : {@link Container} attrape les
-     * coffres, tonneaux, fours et entonnoirs de vanilla, {@link MenuProvider} les
-     * rangements des mods qui n'exposent leur contenu que par un écran. Un bloc
-     * qui n'est ni l'un ni l'autre — une porte, un levier — n'a rien à protéger,
-     * et un visiteur peut s'en servir.</p>
+     * <p>Le tri ne cherche plus à distinguer les rangements du reste. Il le
+     * faisait en 0.29.0, en testant si le bloc portait un {@code Container} ou un
+     * {@code MenuProvider} ; les coffres de Sophisticated Storage passaient au
+     * travers, parce qu'ils ouvrent leur écran par leur propre chemin. Un visiteur
+     * n'a de toute façon rien à actionner chez autrui — c'est exactement ce que
+     * dit son nom — et la règle sans exception n'a rien à laisser filer.</p>
      */
-    public static boolean isStorage(Level level, BlockPos pos) {
-        BlockEntity be = level.getBlockEntity(pos);
-        return be instanceof Container || be instanceof MenuProvider;
+    public static boolean mayUse(ServerPlayer player, BlockPos pos) {
+        return allows(player, pos, AllyLinks.GUEST);
     }
 }

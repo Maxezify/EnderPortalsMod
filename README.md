@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.29.0**.
+Current version: **0.29.1**.
 
 ---
 
@@ -266,11 +266,17 @@ Opening a passage is no longer giving everything away. To the right of each name
 as soon as the link is **green**, a badge says what that ally may do **at your
 place**. Click it: it steps to the next degree, and wraps back to the first.
 
-| Degree | Walk in | Open your storage | Break and build |
+| Degree | Walk in | Use your blocks | Break and build |
 | --- | :---: | :---: | :---: |
 | **Visitor** | ✔ | | |
 | **Guest** | ✔ | ✔ | |
 | **Partner** | ✔ | ✔ | ✔ |
+
+"Use" covers **anything you can act on**: chests, furnaces, levers, doors. A
+visitor walks through and looks, touching nothing — which is exactly what the
+name says. The rule does not try to tell storage apart from other blocks: it did
+for a while, and Sophisticated Storage chests slipped through, because they open
+their screen by their own route.
 
 Three things to know:
 
@@ -281,6 +287,10 @@ Three things to know:
   as the default, which is exactly what this is meant to avoid.
 * **Everyone starts as a visitor**, including alliances sealed before this
   version. Nobody wakes up with rights they were never given.
+* **No exceptions, not even for operators.** An admin still has creative mode and
+  commands, which do not go through this; but on a server where everyone is an
+  operator — a test server, typically — a guard that steps aside for them never
+  fires at all, and simply looks broken.
 
 The ally is told on their terminal on every change: otherwise they would discover
 their degree by being refused a chest, with no idea anything had moved. Forgetting
@@ -675,7 +685,7 @@ Requires **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.29.0.jar
+# → build/libs/enderportals-0.29.1.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are
