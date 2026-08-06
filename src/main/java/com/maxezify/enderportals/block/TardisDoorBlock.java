@@ -50,6 +50,13 @@ public class TardisDoorBlock extends Block implements EntityBlock {
     public static final EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
     public static final BooleanProperty OPEN = BlockStateProperties.OPEN;
 
+    /**
+     * Délai entre deux battements, en ticks. Une demi-seconde : de quoi laisser
+     * le battant claquer sans permettre d'en faire un hochet, et surtout sans
+     * reposer dix tickets de chunks à la seconde sur la salle intérieure.
+     */
+    private static final int SWING_TICKS = 10;
+
     public TardisDoorBlock(BlockBehaviour.Properties properties) {
         super(properties);
         registerDefaultState(getStateDefinition().any()
@@ -173,7 +180,7 @@ public class TardisDoorBlock extends Block implements EntityBlock {
     public static boolean operate(BlockState state, Level level, BlockPos pos, Player player, boolean dismiss) {
         BlockPos base = state.getValue(HALF) == DoubleBlockHalf.UPPER ? pos.below() : pos;
         if (!(level.getBlockEntity(base) instanceof TardisDoorBlockEntity door)
-                || door.isDematerializing() || door.getTardisId() == null) {
+                || door.getTardisId() == null) {
             return false;
         }
         MinecraftServer server = level.getServer();
@@ -184,9 +191,20 @@ public class TardisDoorBlock extends Block implements EntityBlock {
         if (data == null || !player.getUUID().equals(data.ownerUuid)) {
             return false;
         }
+        // Le fondu n'est pas fini. On le dit plutôt que d'ignorer le clic : une
+        // porte qui ne répond pas sans expliquer se fait cliquer dix fois de
+        // plus. L'échéance suffit en pratique ; le drapeau du bloc reste
+        // consulté au cas où un battant serait resté figé en cours d'effacement
+        // (chunk déchargé au mauvais moment) bien après la fin du compte.
+        if (data.isBusy(server) || door.isDematerializing()) {
+            player.displayClientMessage(
+                    Component.translatable("enderportals.message.door_busy"), true);
+            return true;
+        }
         if (dismiss) {
             if (data.deployed) {
                 TardisHelper.dismissExterior(server, data);
+                data.markBusy(server, TardisDoorBlockEntity.FADE_OUT_TICKS);
                 player.displayClientMessage(
                         Component.translatable("enderportals.message.tardis_dismissed"), true);
             }
@@ -196,9 +214,12 @@ public class TardisDoorBlock extends Block implements EntityBlock {
             // Le rappel ne peut pas se contenter d'échouer : voir
             // TardisHelper.recallExterior.
             TardisHelper.recallExterior(server, data, player);
+            data.markBusy(server, TardisDoorBlockEntity.FADE_IN_TICKS);
         } else {
             TardisHelper.setDoorsOpen(server, data, !data.open);
+            data.markBusy(server, SWING_TICKS);
         }
+        TardisStateManager.get(server).setDirty();
         return true;
     }
 

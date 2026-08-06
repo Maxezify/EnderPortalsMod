@@ -27,6 +27,7 @@
   "enderportals.message.already_inside": "The vortex refuses: you are already on the other side.",
   "enderportals.message.tardis_dismissed": "The door dematerialises in the outside world.",
   "enderportals.message.tardis_recalled": "The door materialises at its last location.",
+  "enderportals.message.door_busy": "The door has not finished its passage.",
   "enderportals.message.no_create_inside": "The vortex refuses: you cannot awaken a door inside the Ender world.",
   "enderportals.message.already_owner": "You are already bound to an Ender Door — one per person.",
   "item.enderportals.guide_book": "World of Ender Guide",

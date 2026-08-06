@@ -80,8 +80,10 @@ public class TardisKeyItem extends Item {
     private static void handleDoorClick(MinecraftServer server, ServerLevel level, BlockPos pos, BlockState state,
                                         Player player, ItemStack stack) {
         BlockPos base = state.getValue(TardisDoorBlock.HALF) == DoubleBlockHalf.UPPER ? pos.below() : pos;
+        // Une porte en cours d'effacement n'est pas écartée ici : c'est
+        // TardisDoorBlock.operate qui tranche, et il le dit au joueur.
         if (!(level.getBlockEntity(base) instanceof TardisDoorBlockEntity door)
-                || door.isDematerializing() || door.getTardisId() == null) {
+                || door.getTardisId() == null) {
             return;
         }
         TardisData data = TardisStateManager.get(server).getTardis(door.getTardisId());
@@ -146,6 +148,13 @@ public class TardisKeyItem extends Item {
             player.displayClientMessage(Component.translatable("enderportals.message.not_your_door"), true);
             return;
         }
+        // Même délai que sur la porte elle-même : reposer la porte ailleurs
+        // pendant qu'elle achève son fondu la dupliquerait le temps du
+        // recouvrement, et le clic au sol se répète tout aussi vite.
+        if (data.isBusy(server)) {
+            player.displayClientMessage(Component.translatable("enderportals.message.door_busy"), true);
+            return;
+        }
         BlockPos clicked = context.getClickedPos();
         BlockPos base = level.getBlockState(clicked).canBeReplaced() ? clicked : clicked.relative(context.getClickedFace());
         // Respecte la spawn protection, le mode aventure et les mods de claim.
@@ -154,7 +163,12 @@ public class TardisKeyItem extends Item {
             return;
         }
         Direction facing = player.getDirection().getOpposite();
-        TardisHelper.deployExterior(server, data, level, base, facing, false, player);
+        if (TardisHelper.deployExterior(server, data, level, base, facing, false, player)) {
+            // Seulement si la porte est bien partie : un refus faute de place
+            // n'a rien lancé, et n'a donc rien à faire attendre.
+            data.markBusy(server, TardisDoorBlockEntity.FADE_IN_TICKS);
+            TardisStateManager.get(server).setDirty();
+        }
     }
 
     /**

@@ -27,6 +27,7 @@
   "enderportals.message.already_inside": "Le vortex refuse : vous êtes déjà de l'autre côté.",
   "enderportals.message.tardis_dismissed": "La porte se dématérialise dans le monde extérieur.",
   "enderportals.message.tardis_recalled": "La porte se matérialise à son dernier emplacement.",
+  "enderportals.message.door_busy": "La porte n'a pas fini son passage.",
   "enderportals.message.no_create_inside": "Le vortex refuse : impossible d'éveiller une porte à l'intérieur du monde de l'Ender.",
   "enderportals.message.already_owner": "Vous êtes déjà lié à une Porte de l'Ender — une seule par personne.",
   "item.enderportals.guide_book": "Guide de World of Ender",

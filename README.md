@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.25.0**.
+Current version: **0.25.1**.
 
 ---
 
@@ -109,6 +109,12 @@ table.
 The key opens and closes too, if you happen to be holding it — same gesture, no
 need to put it away. What only the key does is **make the door appear and
 disappear**, and bind itself to it.
+
+**One gesture at a time.** The door takes a little over three seconds to
+materialise, three to fade away. While that fade lasts it turns the next order
+down and answers "The door has not finished its passage." That covers
+everything — appearing, disappearing, opening, closing, and setting it down
+with the key. The moment it has finished reappearing, it obeys again.
 
 **All of this obeys the owner alone.** Anyone else clicking your door, with or
 without a key, reads "locked".
@@ -578,7 +584,7 @@ Requires **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.25.0.jar
+# → build/libs/enderportals-0.25.1.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are

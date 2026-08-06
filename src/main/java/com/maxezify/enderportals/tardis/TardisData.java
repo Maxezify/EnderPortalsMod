@@ -8,6 +8,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 
@@ -70,6 +71,43 @@ public class TardisData {
      */
     public int friendCode;
 
+    /**
+     * Temps de jeu avant lequel la porte n'accepte plus d'ordre.
+     *
+     * <p>Une matérialisation dure un peu plus de trois secondes, une
+     * dématérialisation trois : pendant ce fondu, la porte est à la fois là et
+     * pas là. Rappeler une porte qui n'a pas fini de s'effacer en poserait une
+     * seconde par-dessus les blocs de la première ; l'ouvrir et la refermer dix
+     * fois par seconde reposerait autant de tickets de chunks. D'où cette
+     * échéance, qui vaut pour tous les gestes et se lit sur le temps de jeu —
+     * il ne court pas quand le monde est fermé.</p>
+     */
+    public long busyUntil;
+
+    /**
+     * L'horloge de l'échéance : celle de l'Overworld, la seule qui vaille.
+     *
+     * <p>La porte se manœuvre depuis deux dimensions — l'intérieur dans le
+     * monde de l'Ender, l'extérieur dans le monde réel — et il n'y a qu'un
+     * {@code busyUntil} pour les deux. Lire le temps de jeu sur le monde
+     * courant marcherait aujourd'hui, les dimensions dérivant leur horloge de
+     * l'Overworld ; le demander explicitement à l'Overworld évite d'en
+     * dépendre.</p>
+     */
+    private static long clock(MinecraftServer server) {
+        return server.overworld().getGameTime();
+    }
+
+    /** La porte est-elle encore occupée par le geste précédent ? */
+    public boolean isBusy(MinecraftServer server) {
+        return clock(server) < busyUntil;
+    }
+
+    /** Referme la porte à tout ordre pendant {@code ticks} ticks. */
+    public void markBusy(MinecraftServer server, int ticks) {
+        busyUntil = clock(server) + ticks;
+    }
+
     public TardisData(UUID id, int plotIndex) {
         this.id = id;
         this.plotIndex = plotIndex;
@@ -89,6 +127,7 @@ public class TardisData {
         putPos(nbt, "Exterior", exteriorPos);
         nbt.putString("ExteriorFacing", exteriorFacing.getName());
         nbt.putBoolean("Deployed", deployed);
+        nbt.putLong("BusyUntil", busyUntil);
         nbt.putBoolean("Open", open);
         ListTag portals = new ListTag();
         for (UUID portal : portalIds) {
@@ -125,6 +164,7 @@ public class TardisData {
         data.exteriorPos = getPos(nbt, "Exterior");
         data.exteriorFacing = directionOrDefault(nbt.getString("ExteriorFacing"), Direction.NORTH);
         data.deployed = nbt.getBoolean("Deployed");
+        data.busyUntil = nbt.getLong("BusyUntil");
         data.open = nbt.getBoolean("Open");
         for (Tag element : nbt.getList("Portals", Tag.TAG_COMPOUND)) {
             data.portalIds.add(((CompoundTag) element).getUUID("Id"));
