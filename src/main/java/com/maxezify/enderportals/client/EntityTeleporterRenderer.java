@@ -66,6 +66,19 @@ public class EntityTeleporterRenderer extends EntityRenderer<EntityTeleporterEnt
     private static final float[] R_POST = {0, 12, 16, 16};
     private static final float[] R_CRYSTAL = {0, 16, 16, 24};
     private static final float[] R_PAD = {16, 16, 32, 24};
+    /** L'anneau de charge : cœur blanc, bords violets, extrémités éteintes. */
+    private static final float[] R_GLOW = {0, 24, 16, 32};
+
+    /** Demi-hauteur de l'anneau. Le dégradé de la texture en adoucit les bords. */
+    private static final float RING_HALF = 0.13f;
+    /** Écartement de l'anneau : juste au-delà des montants (0,585 / 0,725). */
+    private static final float RING_X = 0.64f;
+    private static final float RING_Z = 0.78f;
+    /** Course de l'anneau, du dessous de la quille au-dessus des cristaux. */
+    private static final float RING_FROM = -0.12f;
+    private static final float RING_TO = 0.86f;
+    /** Ticks d'une remontée complète : trois par seconde, c'est un régime. */
+    private static final float RING_CYCLE = 20.0f;
 
     private static final int HULL = 0;
     private static final int DECK = 1;
@@ -169,8 +182,72 @@ public class EntityTeleporterRenderer extends EntityRenderer<EntityTeleporterEnt
             box(hull, entry, part, uv, lit);
         }
 
+        // L'anneau de charge, le temps que les chunks d'arrivée se génèrent.
+        // Couche translucide à part : la coque, elle, est dessinée en cutout,
+        // qui ne sait pas mélanger.
+        if (entity.isCharging()) {
+            drawChargeRing(buffer.getBuffer(RenderType.entityTranslucent(TEXTURE)), entry,
+                    entity.getChargeAge() + partialTick);
+        }
+
         poseStack.popPose();
         super.render(entity, yRot, partialTick, poseStack, buffer, light);
+    }
+
+    /**
+     * L'anneau lumineux de la charge : il remonte la machine en boucle, du
+     * dessous de la quille au-dessus des cristaux.
+     *
+     * <p>Il se rallume à chaque tour au lieu de faire un seul passage, parce que
+     * la charge n'a pas de durée connue — elle dure ce que dure la génération
+     * des chunks d'arrivée. Un balayage unique aurait donc dû se figer quelque
+     * part ; un régime, lui, dit « ça travaille » aussi longtemps qu'il faut.
+     * Son éclat suit un demi-sinus, nul aux deux bouts de la course : c'est ce
+     * qui fait une remontée plutôt que deux coupures.</p>
+     */
+    private static void drawChargeRing(VertexConsumer buffer, PoseStack.Pose entry, float chargeTime) {
+        float t = (chargeTime % RING_CYCLE) / RING_CYCLE;
+        float y = RING_FROM + (RING_TO - RING_FROM) * t;
+        float y0 = y - RING_HALF;
+        float y1 = y + RING_HALF;
+        float alpha = (float) Math.sin(Math.PI * t);
+        if (alpha <= 0.02f) {
+            return;
+        }
+        float x = RING_X;
+        float z = RING_Z;
+        int lit = LightTexture.FULL_BRIGHT;
+        glowFace(buffer, entry, -x, y0, z, x, y0, z, x, y1, z, -x, y1, z, alpha, lit, 0, 0, 1);
+        glowFace(buffer, entry, x, y0, -z, -x, y0, -z, -x, y1, -z, x, y1, -z, alpha, lit, 0, 0, -1);
+        glowFace(buffer, entry, x, y0, z, x, y0, -z, x, y1, -z, x, y1, z, alpha, lit, 1, 0, 0);
+        glowFace(buffer, entry, -x, y0, -z, -x, y0, z, -x, y1, z, -x, y1, -z, alpha, lit, -1, 0, 0);
+    }
+
+    /**
+     * Une face de l'anneau. Elle ne passe pas par {@link #region} : celle-ci
+     * fixe l'opacité à un, ce qui suffit à toute la coque et à rien d'autre.
+     */
+    private static void glowFace(VertexConsumer buffer, PoseStack.Pose entry,
+                                 float ax, float ay, float az, float bx, float by, float bz,
+                                 float cx, float cy, float cz, float dx, float dy, float dz,
+                                 float alpha, int light, float nx, float ny, float nz) {
+        float u0 = R_GLOW[0] / TEX, v0 = R_GLOW[1] / TEX;
+        float u1 = R_GLOW[2] / TEX, v1 = R_GLOW[3] / TEX;
+        glowVertex(buffer, entry, ax, ay, az, u0, v1, alpha, light, nx, ny, nz);
+        glowVertex(buffer, entry, bx, by, bz, u1, v1, alpha, light, nx, ny, nz);
+        glowVertex(buffer, entry, cx, cy, cz, u1, v0, alpha, light, nx, ny, nz);
+        glowVertex(buffer, entry, dx, dy, dz, u0, v0, alpha, light, nx, ny, nz);
+    }
+
+    private static void glowVertex(VertexConsumer buffer, PoseStack.Pose entry,
+                                   float x, float y, float z, float u, float v,
+                                   float alpha, int light, float nx, float ny, float nz) {
+        buffer.addVertex(entry.pose(), x, y, z)
+                .setColor(1.0f, 1.0f, 1.0f, alpha)
+                .setUv(u, v)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(light)
+                .setNormal(entry, nx, ny, nz);
     }
 
     /** Une caisse pleine, ses six faces peintes de la même région. */

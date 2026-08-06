@@ -9,7 +9,7 @@ Derrière cette porte, une parcelle entière vous appartient — et vous l'empor
 partout : la porte se dématérialise dans votre poche et se repose où vous
 voulez.
 
-Version courante : **0.26.0**.
+Version courante : **0.27.0**.
 
 ---
 
@@ -465,6 +465,31 @@ vraiment. Une fois posée, la coque et sa passagère ne font qu'**une seule fich
 dans la sauvegarde — le chunk peut se décharger derrière elles sans que rien ne
 se perde, exactement comme un cochon en barque à l'autre bout du monde.
 
+### La charge, et le départ
+
+Cette attente dure de zéro à quelques secondes, sans qu'on puisse le prévoir.
+C'est elle que la machine met en scène :
+
+* **Un anneau de lumière** remonte la coque en boucle, du dessous de la quille
+  au-dessus des cristaux, tant que la charge dure. C'est la même lumière que
+  l'onde de la porte — les deux machines relèvent de la même technique.
+* **La coque aspire.** Les grains de portail convergent depuis une couronne d'un
+  bon mètre, pendant que les quatre cristaux crachent chacun leur tour une
+  étincelle vers le haut.
+* **Une note monte**, de plus en plus haut, tant que le terrain d'arrivée n'est
+  pas prêt. Tant qu'elle monte, ça travaille.
+* **Le départ.** La coque s'en va sur une colonne d'étincelles et une gerbe
+  violette qui s'engouffre à l'endroit qu'elle vient de quitter — c'est ce que
+  vous voyez, puisque vous restez de ce côté-ci. À l'arrivée, la couronne
+  s'écarte au-dessus de l'Atterrisseur.
+* **Si le voyage est refusé** après le début de la charge — l'Atterrisseur a
+  disparu, l'expérience a été dépensée entre-temps —, l'anneau s'éteint sur un
+  déclic sec. Un refus muet, au milieu de tout ce spectacle, serait passé
+  inaperçu.
+
+Recliquer pendant la charge ne relance rien : la coque répond qu'elle est déjà
+en train de partir.
+
 ---
 
 ## Bâtir : la famille des briques
@@ -628,7 +653,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.26.0.jar
+# → build/libs/enderportals-0.27.0.jar
 ```
 
 Le build est géré par **ModDevGradle** ; NeoForge et les mappings officiels sont

@@ -118,6 +118,16 @@ public final class EntityTeleporterLogic {
 
     /** Le départ : vérifications, puis attente des chunks d'arrivée. */
     private static void depart(ServerPlayer player, EntityTeleporterEntity machine) {
+        // Un départ déjà lancé ne se relance pas. Sans ce garde-fou, recliquer
+        // pendant la génération des chunks mettait une seconde attente en file :
+        // sans conséquence d'un monde à l'autre, où la coque est retirée et la
+        // seconde arrivée ne trouve plus rien, mais pas dans l'Ender vers un
+        // autre Atterrisseur — là, la coque survit au voyage, repart une
+        // seconde fois et le joueur paie deux fois.
+        if (machine.isCharging()) {
+            say(player, "enderportals.message.teleporter_departing", ChatFormatting.AQUA);
+            return;
+        }
         BlockPos lander = machine.getLander();
         if (lander == null) {
             say(player, "enderportals.message.teleporter_unlinked", ChatFormatting.RED);
@@ -137,9 +147,27 @@ public final class EntityTeleporterLogic {
         say(player, "enderportals.message.teleporter_departing", ChatFormatting.AQUA);
         machine.level().playSound(null, machine.getX(), machine.getY(), machine.getZ(),
                 SoundEvents.BEACON_POWER_SELECT, SoundSource.BLOCKS, 0.8f, 1.5f);
+        // La charge commence ici et tient tout le temps de la génération des
+        // chunks d'arrivée : c'est elle qui occupe cette attente sans durée
+        // prévisible, pendant laquelle la machine ne montrait rien.
+        machine.setCharging(true);
 
         EnderChunks.whenReady(server, lander, WARM_RADIUS, WAIT_RADIUS, "atterrisseur",
                 enderWorld -> land(player, machine, lander, enderWorld));
+    }
+
+    /**
+     * Coupe la charge et signale l'abandon.
+     *
+     * <p>Un refus qui survient <b>après</b> le début de la charge doit se voir :
+     * le joueur regarde une machine qui bourdonne et s'illumine, un message seul
+     * se perdrait dans le spectacle.</p>
+     */
+    private static void abort(ServerPlayer player, EntityTeleporterEntity machine, String key) {
+        machine.setCharging(false);
+        machine.level().playSound(null, machine.getX(), machine.getY(), machine.getZ(),
+                SoundEvents.DISPENSER_FAIL, SoundSource.BLOCKS, 0.8f, 0.7f);
+        say(player, key, ChatFormatting.RED);
     }
 
     /**
@@ -152,10 +180,11 @@ public final class EntityTeleporterLogic {
     private static void land(ServerPlayer player, EntityTeleporterEntity machine, BlockPos lander,
                              ServerLevel enderWorld) {
         if (machine.isRemoved() || machine.getPassengers().isEmpty()) {
+            machine.setCharging(false);
             return;
         }
         if (!enderWorld.getBlockState(lander).is(ModBlocks.ENTITY_LANDER.get())) {
-            say(player, "enderportals.message.teleporter_no_lander", ChatFormatting.RED);
+            abort(player, machine, "enderportals.message.teleporter_no_lander");
             machine.setLander(null);
             return;
         }
@@ -166,18 +195,36 @@ public final class EntityTeleporterLogic {
         boolean payer = !player.isRemoved();
         int cost = price(machine);
         if (payer && !EnderXp.has(player, cost)) {
+            machine.setCharging(false);
+            machine.level().playSound(null, machine.getX(), machine.getY(), machine.getZ(),
+                    SoundEvents.DISPENSER_FAIL, SoundSource.BLOCKS, 0.8f, 0.7f);
             say(player, ChatFormatting.RED, "enderportals.message.teleporter_no_xp", cost);
             return;
         }
+        // Le lieu du départ, relevé avant le voyage : après, la machine est
+        // ailleurs — et dans le cas de deux mondes, ce n'est même plus la même
+        // entité. Or c'est là que se tient le joueur, et donc là que la scène
+        // doit se jouer.
+        Vec3 origin = machine.position();
+        ServerLevel departure = machine.level() instanceof ServerLevel from ? from : null;
+
         Vec3 arrival = Vec3.atBottomCenterOf(lander.above());
         EntityTeleporterEntity arrived = move(machine, enderWorld, arrival);
         if (arrived == null) {
-            say(player, "enderportals.message.teleporter_failed", ChatFormatting.RED);
+            abort(player, machine, "enderportals.message.teleporter_failed");
             return;
         }
+        // La coque survit au voyage quand il se fait dans le même monde : c'est
+        // sur elle qu'il faut couper la charge, la neuve d'un changement de
+        // dimension naissant déjà éteinte.
+        arrived.setCharging(false);
         if (payer) {
             EnderXp.charge(player, cost);
         }
+        if (departure != null) {
+            EntityTeleporterEntity.departureBurst(departure, origin);
+        }
+        EntityTeleporterEntity.arrivalBurst(enderWorld, arrival);
         enderWorld.playSound(null, arrival.x, arrival.y, arrival.z,
                 SoundEvents.END_PORTAL_SPAWN, SoundSource.BLOCKS, 0.6f, 1.7f);
         say(player, "enderportals.message.teleporter_arrived", ChatFormatting.GREEN);

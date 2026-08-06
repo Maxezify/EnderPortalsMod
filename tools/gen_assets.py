@@ -426,15 +426,15 @@ BAND_EDGE = (168, 72, 255)
 BAND_NOISE = blob_noise(16, 16, seed=1717, scale=4)
 
 
-def paint_fade_band(px, ox, oy):
-    """Bande lumineuse 16×16, dégradée du centre vers le haut et le bas.
+def paint_fade_band(px, ox, oy, height=16):
+    """Bande lumineuse 16 de large, dégradée du centre vers le haut et le bas.
 
     Le profil sature volontairement au centre : sans cela la bande reste
     translucide de bout en bout et se lit comme un badigeon posé sur la porte
     plutôt que comme une lumière qui la traverse."""
-    for y in range(16):
+    for y in range(height):
         # 1 au centre de la bande, 0 à ses deux extrémités.
-        d = abs(y - 7.5) / 8.0
+        d = abs(y - (height - 1) / 2.0) / (height / 2.0)
         a = min(1.0, 1.45 * (1.0 - d) ** 3.2)
         # Le grain casse l'uniformité : étirée sur toute la largeur de la porte,
         # une bande lisse laisse voir ses paliers de dégradé.
@@ -1436,6 +1436,11 @@ def tex_entity_teleporter():
     rect(px, 23, 19, 24, 20, GEM_CORE)
     for x, y in ((17, 17), (30, 17), (17, 22), (30, 22)):
         put(px, x, y, GEM_HI)
+
+    # Anneau de charge (0,24)-(16,32) : la même onde que celle de la porte, en
+    # plus courte. Les deux machines relèvent de la même technique ; il aurait
+    # été étrange qu'elles ne s'éclairent pas de la même lumière.
+    paint_fade_band(px, 0, 24, height=8)
 
     write_png(f"{ASSETS}/textures/entity/entity_teleporter.png", 32, 32, px)
 

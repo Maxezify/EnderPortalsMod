@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.26.0**.
+Current version: **0.27.0**.
 
 ---
 
@@ -443,6 +443,28 @@ and passenger are **a single record** in the save — the chunk can unload behin
 them without anything being lost, exactly like a pig in a boat on the far side of
 the world.
 
+### Charging, and leaving
+
+That wait lasts anywhere from nothing to a few seconds, and there is no telling
+in advance. The machine makes a show of it:
+
+* **A ring of light** travels up the hull on a loop, from under the keel to above
+  the crystals, for as long as the charge lasts. It is the same light as the
+  door's wave — the two machines are the same technology.
+* **The hull draws in.** Portal grains converge from a ring over a metre wide,
+  while the four crystals spit a spark upward, each in turn.
+* **A note climbs**, higher and higher, until the arrival ground is ready. As
+  long as it climbs, work is happening.
+* **The departure.** The hull leaves on a column of sparks and a violet burst
+  collapsing into the spot it just left — which is what you see, since you stay
+  on this side. At the other end, the ring spreads out above the Lander.
+* **If the trip is refused** after charging has begun — the Lander is gone, the
+  experience was spent in the meantime — the ring goes out on a dry click. A
+  silent refusal in the middle of all that would go unnoticed.
+
+Clicking again while it charges restarts nothing: the hull answers that it is
+already on its way.
+
 ---
 
 ## Building: the brick family
@@ -601,7 +623,7 @@ Requires **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.26.0.jar
+# → build/libs/enderportals-0.27.0.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are
