@@ -44,8 +44,29 @@ public class AllyLinks {
     /** Deux minutes pour que l'autre réponde à une demande de connexion. */
     public static final long REQUEST_TIMEOUT_TICKS = 2400L;
 
+    /** Il entre, et c'est tout. Niveau par défaut de tout allié. */
+    public static final int VISITOR = 0;
+    /** Il entre et ouvre les rangements. */
+    public static final int GUEST = 1;
+    /** Il entre, ouvre, casse et pose : chez lui comme chez vous. */
+    public static final int PARTNER = 2;
+
+    /** Nombre de degrés, pour la rotation de la pastille. */
+    public static final int TRUST_LEVELS = 3;
+
     /** Déclarations, à sens unique : déclarant → déclarés. */
     private final Map<UUID, Set<UUID>> declared = new HashMap<>();
+
+    /**
+     * Ce que chacun accorde à chacun chez lui : hôte → (allié → degré).
+     *
+     * <p>À sens unique, comme la déclaration : vous ouvrir mes coffres ne vous
+     * oblige pas à m'ouvrir les vôtres. Seuls les degrés au-dessus de
+     * {@link #VISITOR} sont rangés ici — un allié absent de la carte est un
+     * visiteur, et c'est ce qui fait qu'une sauvegarde d'avant la 0.29.0 se
+     * relit sans rien accorder à personne.</p>
+     */
+    private final Map<UUID, Map<UUID, Integer>> trust = new HashMap<>();
     /**
      * Demandes de connexion en cours : demandeur → (cible → demande).
      *
@@ -141,6 +162,47 @@ public class AllyLinks {
         return hasDeclared(a, b) && hasDeclared(b, a);
     }
 
+    // ------------------------------------------------------------------
+    // Confiance
+    // ------------------------------------------------------------------
+
+    /** Ce que {@code host} accorde à {@code ally} chez lui. */
+    public int trustOf(UUID host, UUID ally) {
+        Map<UUID, Integer> mine = trust.get(host);
+        if (mine == null) {
+            return VISITOR;
+        }
+        Integer level = mine.get(ally);
+        return level == null ? VISITOR : Math.max(VISITOR, Math.min(PARTNER, level));
+    }
+
+    /**
+     * Fait passer un allié au degré suivant, et rend le degré atteint.
+     *
+     * <p>La rotation revient au visiteur après l'associé : c'est un seul bouton
+     * pour trois états, et rétrograder ne doit pas demander de chemin
+     * particulier.</p>
+     */
+    public int cycleTrust(UUID host, UUID ally) {
+        int next = (trustOf(host, ally) + 1) % TRUST_LEVELS;
+        setTrust(host, ally, next);
+        return next;
+    }
+
+    public void setTrust(UUID host, UUID ally, int level) {
+        if (level <= VISITOR) {
+            // Le défaut ne s'écrit pas : la carte ne garde que ce qui est
+            // accordé, et se vide d'elle-même quand on retire tout.
+            Map<UUID, Integer> mine = trust.get(host);
+            if (mine != null && mine.remove(ally) != null && mine.isEmpty()) {
+                trust.remove(host);
+            }
+            return;
+        }
+        trust.computeIfAbsent(host, key -> new HashMap<>())
+                .put(ally, Math.min(level, PARTNER));
+    }
+
     /**
      * Retire un joueur du carnet d'un autre.
      *
@@ -159,6 +221,11 @@ public class AllyLinks {
         }
         dropRequest(from, to);
         dropRequest(to, from);
+        // Le degré tombe avec le carnet, dans les deux sens. Le laisser derrière
+        // rendrait sa confiance à un allié réinscrit plus tard, sans que
+        // personne ne l'ait redonnée.
+        setTrust(from, to, VISITOR);
+        setTrust(to, from, VISITOR);
         // Le lien lui-même vit sur l'arche : c'est l'appelant qui le dénoue,
         // parce que lui seul voit les deux fiches de TARDIS.
     }
@@ -289,6 +356,18 @@ public class AllyLinks {
         }
         nbt.put("Declared", declarations);
 
+        ListTag grants = new ListTag();
+        for (Map.Entry<UUID, Map<UUID, Integer>> entry : trust.entrySet()) {
+            for (Map.Entry<UUID, Integer> one : entry.getValue().entrySet()) {
+                CompoundTag tag = new CompoundTag();
+                tag.putUUID("Host", entry.getKey());
+                tag.putUUID("Ally", one.getKey());
+                tag.putInt("Level", one.getValue());
+                grants.add(tag);
+            }
+        }
+        nbt.put("Trust", grants);
+
         // Ni les liens ni les demandes ne s'écrivent ici. Les liens sont sur les
         // arches depuis la 0.19.0 ; les demandes ne survivent pas à un
         // redémarrage, deux minutes n'ayant aucun sens en travers d'un arrêt —
@@ -300,6 +379,11 @@ public class AllyLinks {
         declared.clear();
         requests.clear();
         legacyLinks.clear();
+        trust.clear();
+        for (Tag element : nbt.getList("Trust", Tag.TAG_COMPOUND)) {
+            CompoundTag tag = (CompoundTag) element;
+            setTrust(tag.getUUID("Host"), tag.getUUID("Ally"), tag.getInt("Level"));
+        }
         for (Tag element : nbt.getList("Declared", Tag.TAG_COMPOUND)) {
             CompoundTag tag = (CompoundTag) element;
             Set<UUID> targets = new HashSet<>();

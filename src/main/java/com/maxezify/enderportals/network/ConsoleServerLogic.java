@@ -176,7 +176,8 @@ public final class ConsoleServerLogic {
             } else {
                 state = ConsoleStatePayload.CONFIRMED;
             }
-            allies.add(new ConsoleStatePayload.Ally(other, displayName(manager, other), state));
+            allies.add(new ConsoleStatePayload.Ally(other, displayName(manager, other), state,
+                    links.trustOf(me, other)));
         }
         // Ordre stable : les liens ouverts en tête, puis par pseudo. Sans cela
         // la liste danserait d'un rafraîchissement à l'autre (HashSet).
@@ -268,6 +269,7 @@ public final class ConsoleServerLogic {
             case ConsoleActionPayload.SUBMIT_CODE -> submitCode(player, manager, payload);
             case ConsoleActionPayload.TOGGLE -> toggle(player, manager, payload);
             case ConsoleActionPayload.FORGET -> forget(player, manager, payload);
+            case ConsoleActionPayload.TRUST -> trust(player, manager, payload);
             default -> {
                 return;
             }
@@ -442,6 +444,57 @@ public final class ConsoleServerLogic {
         }
         say(server, me, ConsoleLog.WARN, "enderportals.message.ally_forgotten", otherName);
         refresh(server, other);
+    }
+
+    /**
+     * Un clic sur la pastille : l'allié passe au degré suivant chez moi.
+     *
+     * <p>Le geste n'est offert que sur un lien ouvert — c'est là qu'il se pose,
+     * puisqu'un passage est la seule façon d'entrer chez quelqu'un — mais le
+     * degré, lui, <b>survit à la fermeture</b>. Le redemander à chaque
+     * réouverture aurait fait d'un réglage de confiance une corvée, et poussé
+     * chacun à laisser l'associé par défaut.</p>
+     *
+     * <p>L'amitié est revérifiée ici : le carnet du client peut être en retard
+     * d'un rafraîchissement sur un allié qui vient de se retirer, et le degré
+     * accordé à quelqu'un qui n'est plus ami ne serait plus visible nulle
+     * part.</p>
+     */
+    private static void trust(ServerPlayer player, TardisStateManager manager,
+                              ConsoleActionPayload payload) {
+        MinecraftServer server = player.server;
+        UUID me = player.getUUID();
+        UUID other = payload.target();
+        if (!manager.allies().isConfirmed(me, other)) {
+            return;
+        }
+        int level = manager.allies().cycleTrust(me, other);
+        manager.setDirty();
+        String suffix = trustSuffix(level);
+        say(server, me, ConsoleLog.INFO, "enderportals.message.trust_set_" + suffix,
+                displayName(manager, other));
+        // L'allié est prévenu : il découvrirait sinon son degré en se faisant
+        // refuser un coffre, sans savoir que quelque chose avait changé.
+        say(server, other, ConsoleLog.INFO, "enderportals.message.trust_theirs_" + suffix,
+                player.getGameProfile().getName());
+        refresh(server, other);
+    }
+
+    /**
+     * Le degré, en une clé de message par degré plutôt qu'un nom passé en
+     * argument.
+     *
+     * <p>Les arguments du journal sont des chaînes, insérées telles quelles :
+     * y glisser une clé de traduction aurait affiché la clé. Trois phrases
+     * complètes coûtent trois lignes de langue de plus et laissent en prime
+     * chaque langue tourner la sienne comme il faut.</p>
+     */
+    private static String trustSuffix(int level) {
+        return switch (level) {
+            case AllyLinks.GUEST -> "guest";
+            case AllyLinks.PARTNER -> "partner";
+            default -> "visitor";
+        };
     }
 
     // ------------------------------------------------------------------

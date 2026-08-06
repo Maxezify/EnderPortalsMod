@@ -8,7 +8,7 @@ a translucent underground mass where destroyed blocks come to rest. Behind that
 door, an entire plot of land is yours — and you carry it everywhere. The door
 dematerialises into your pocket and sets itself down wherever you like.
 
-Current version: **0.28.1**.
+Current version: **0.29.0**.
 
 ---
 
@@ -259,6 +259,42 @@ an arch is either free and closed, or bound and open.
 
 Nothing forces you to have several. One arch, one Control, one friend at a time
 works exactly as before.
+
+### The three degrees of trust
+
+Opening a passage is no longer giving everything away. To the right of each name,
+as soon as the link is **green**, a badge says what that ally may do **at your
+place**. Click it: it steps to the next degree, and wraps back to the first.
+
+| Degree | Walk in | Open your storage | Break and build |
+| --- | :---: | :---: | :---: |
+| **Visitor** | ✔ | | |
+| **Guest** | ✔ | ✔ | |
+| **Partner** | ✔ | ✔ | ✔ |
+
+Three things to know:
+
+* **The degree runs one way.** Opening my chests to you does not oblige me to
+  open yours. Each of you sets their own plot, on their own panel.
+* **It survives the passage closing.** Asking for it again on every reopening
+  would have turned a setting into a chore — and pushed everyone to leave partner
+  as the default, which is exactly what this is meant to avoid.
+* **Everyone starts as a visitor**, including alliances sealed before this
+  version. Nobody wakes up with rights they were never given.
+
+The ally is told on their terminal on every change: otherwise they would discover
+their degree by being refused a chest, with no idea anything had moved. Forgetting
+an ally (**Shift + click** on the name) resets the degree both ways.
+
+> **What this does not cover.** The three direct routes are held: breaking,
+> placing, opening storage. A tamed animal killed, an item frame emptied, TNT lit
+> from outside your plot are all still possible. That is a deliberate scope
+> rather than a watertightness claimed too cheaply.
+>
+> **And if you close the passage while a friend is inside?** They leave through
+> your inner door if it is open. Closed, they cannot open it — it obeys you alone
+> — and your plot is walled in bedrock. So close up once they are home. That point
+> predates the trust degrees and is unchanged by them.
 
 ### The friend code
 
@@ -639,7 +675,7 @@ Requires **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.28.1.jar
+# → build/libs/enderportals-0.29.0.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are

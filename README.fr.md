@@ -9,7 +9,7 @@ Derrière cette porte, une parcelle entière vous appartient — et vous l'empor
 partout : la porte se dématérialise dans votre poche et se repose où vous
 voulez.
 
-Version courante : **0.28.1**.
+Version courante : **0.29.0**.
 
 ---
 
@@ -269,6 +269,45 @@ fois, donc une arche est soit libre et close, soit liée et ouverte.
 
 Rien n'oblige à en avoir plusieurs : une arche, un Contrôle, un ami à la fois
 fonctionne exactement comme avant.
+
+### Les trois degrés de confiance
+
+Ouvrir un passage, ce n'est plus tout donner. À droite de chaque nom, dès que le
+lien est **vert**, une pastille dit ce que cet allié peut faire **chez vous**.
+Cliquez dessus : elle passe au degré suivant, et revient au premier après le
+dernier.
+
+| Degré | Entrer | Ouvrir vos rangements | Casser et poser |
+| --- | :---: | :---: | :---: |
+| **Visiteur** | ✔ | | |
+| **Invité** | ✔ | ✔ | |
+| **Associé** | ✔ | ✔ | ✔ |
+
+Trois choses à savoir :
+
+* **Le degré est à sens unique.** Vous ouvrir mes coffres ne m'oblige pas à
+  ouvrir les vôtres. Chacun règle sa propre parcelle, sur son propre panneau.
+* **Il survit à la fermeture du passage.** Le rendre à chaque réouverture aurait
+  fait d'un réglage une corvée — et poussé tout le monde à laisser l'associé par
+  défaut, ce qui est exactement ce qu'on cherche à éviter.
+* **Tout le monde commence visiteur**, y compris les alliances nouées avant cette
+  version. Personne ne se réveille avec des droits qu'on ne lui a pas donnés.
+
+L'allié est prévenu au terminal à chaque changement : il découvrirait sinon son
+degré en se faisant refuser un coffre, sans savoir que quelque chose avait
+bougé. Oublier un allié (**Maj + clic** sur son nom) remet le degré à zéro dans
+les deux sens.
+
+> **Ce que cela ne garde pas.** Les trois voies directes sont tenues : casser,
+> poser, ouvrir un rangement. Une créature apprivoisée tuée, un cadre d'objet
+> vidé, un TNT allumé depuis l'extérieur de votre parcelle restent possibles.
+> C'est un tri assumé plutôt qu'une étanchéité annoncée à la légère.
+>
+> **Et si vous refermez le passage pendant qu'un ami est chez vous ?** Il sort
+> par votre porte intérieure si elle est ouverte. Fermée, il ne peut pas
+> l'ouvrir — elle n'obéit qu'à vous — et votre parcelle est cloisonnée de
+> bedrock. Refermez donc quand il est rentré. Ce point-là est antérieur aux
+> degrés de confiance et ne change pas avec eux.
 
 ### Le code d'ami
 
@@ -669,7 +708,7 @@ Prérequis : **Java 21**.
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.28.1.jar
+# → build/libs/enderportals-0.29.0.jar
 ```
 
 Le build est géré par **ModDevGradle** ; NeoForge et les mappings officiels sont

@@ -3,6 +3,7 @@ package com.maxezify.enderportals.client;
 import com.maxezify.enderportals.EnderPortalsMod;
 import com.maxezify.enderportals.network.ConsoleActionPayload;
 import com.maxezify.enderportals.network.ConsoleStatePayload;
+import com.maxezify.enderportals.tardis.AllyLinks;
 import com.maxezify.enderportals.tardis.ConsoleLog;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -46,8 +47,20 @@ public class FriendshipConsoleScreen extends Screen {
     private static final ResourceLocation TEXTURE =
             EnderPortalsMod.id("textures/gui/friendship_console.png");
 
-    private static final int WIDTH = 220;
+    /**
+     * Le panneau, et la planche dont il est découpé.
+     *
+     * <p>Il faisait 220 de large jusqu'à la 0.29.0, et sa planche tenait dans
+     * 256×256. La colonne du carnet ayant grandi de 56 px pour loger la
+     * pastille de confiance, le panneau dépasse les 256 : la planche passe donc
+     * à 512 de large, et chaque découpe doit dire cette taille — les raccourcis
+     * de {@code GuiGraphics} supposent 256×256 en dur, et auraient étiré la
+     * moitié de l'interface.</p>
+     */
+    private static final int WIDTH = 276;
     private static final int HEIGHT = 234;
+    private static final int SHEET_W = 512;
+    private static final int SHEET_H = 256;
 
     /** Longueur d'un code d'ami. Voir {@code TardisStateManager}. */
     private static final int CODE_LENGTH = 8;
@@ -55,13 +68,13 @@ public class FriendshipConsoleScreen extends Screen {
     // Carnet, à gauche.
     private static final int LIST_X = 8;
     private static final int LIST_Y = 8;
-    private static final int LIST_W = 96;
+    private static final int LIST_W = 152;
     private static final int ROW_H = 20;
     private static final int FIRST_ROW_Y = 26;
     private static final int MAX_ROWS = 6;
 
     // Pavé, à droite.
-    private static final int PAD_X = 112;
+    private static final int PAD_X = LIST_X + LIST_W + 8;
     private static final int DISPLAY_Y = 10;
     private static final int DISPLAY_H = 20;
     private static final int KEY_W = 30;
@@ -80,7 +93,7 @@ public class FriendshipConsoleScreen extends Screen {
 
     // Terminal, en bas, sur toute la largeur.
     private static final int TERM_X = 8;
-    private static final int TERM_W = 204;
+    private static final int TERM_W = WIDTH - 16;
     private static final int TERM_Y = 162;
     private static final int TERM_H = 64;
     /** Marge de texte à l'intérieur de l'encart. */
@@ -99,7 +112,7 @@ public class FriendshipConsoleScreen extends Screen {
     /** Largeur utile de la ligne d'état : de la marge de texte au bord opposé. */
     private static final int TERM_STATUS_W = TERM_W - 11;
     /** Largeur de repli, ascenseur déduit. Doit rester d'accord avec TERM_BAR_X. */
-    private static final int TERM_TEXT_W = 180;
+    private static final int TERM_TEXT_W = TERM_W - 24;
     private static final int TERM_BAR_X = TERM_X + TERM_W - 7;
     private static final String TERM_PROMPT = ">";
 
@@ -108,13 +121,13 @@ public class FriendshipConsoleScreen extends Screen {
     // les boutons, trop larges pour la colonne. Doit rester d'accord avec
     // tex_console_gui() de tools/gen_assets.py, qui refuse de générer une
     // planche recouverte par le panneau.
-    private static final int KEY_U = 222, KEY_V = 20;
-    private static final int KEY_HOVER_U = 222, KEY_HOVER_V = 48;
-    private static final int VALIDATE_U = 0, VALIDATE_V = 234;
-    private static final int VALIDATE_HOVER_U = 48, VALIDATE_HOVER_V = 234;
-    private static final int CLEAR_U = 96, CLEAR_V = 234;
-    private static final int CLEAR_HOVER_U = 144, CLEAR_HOVER_V = 234;
-    private static final int HOURGLASS_U = 224, HOURGLASS_V = 0;
+    private static final int KEY_U = WIDTH + 2, KEY_V = 20;
+    private static final int KEY_HOVER_U = WIDTH + 2, KEY_HOVER_V = 48;
+    private static final int VALIDATE_U = 0, VALIDATE_V = HEIGHT;
+    private static final int VALIDATE_HOVER_U = 48, VALIDATE_HOVER_V = HEIGHT;
+    private static final int CLEAR_U = 96, CLEAR_V = HEIGHT;
+    private static final int CLEAR_HOVER_U = 144, CLEAR_HOVER_V = HEIGHT;
+    private static final int HOURGLASS_U = WIDTH + 4, HOURGLASS_V = 0;
     private static final int HOURGLASS_SIZE = 16;
     private static final int ACTION_W = 46, ACTION_H = 20;
 
@@ -126,6 +139,26 @@ public class FriendshipConsoleScreen extends Screen {
     private static final int COLOR_LINKED = 0xFF48D65E;
     private static final int COLOR_AWAITING = 0xFFD9C33A;
     private static final int COLOR_ASKED = 0xFFFF9A28;
+
+    /**
+     * La pastille de confiance, à droite du pseudo. Elle n'apparaît que sur un
+     * lien ouvert : c'est là que le réglage a un sens, un passage étant la seule
+     * façon d'entrer chez quelqu'un.
+     */
+    private static final int BADGE_W = 54;
+    private static final int BADGE_H = 12;
+    /** Marge entre la pastille et le bord droit de la ligne. */
+    private static final int BADGE_MARGIN = 3;
+
+    /** Fond, liseré haut, liseré bas et texte, dans l'ordre des trois degrés. */
+    private static final int[][] BADGE_COLORS = {
+            {0xFF4A4658, 0xFF625E74, 0xFF322F3E, 0xFFD8D4E4},
+            {0xFF276579, 0xFF3C8CA6, 0xFF17414F, 0xFFDCF3FF},
+            {0xFF8E6220, 0xFFB98430, 0xFF5C3E12, 0xFFFFEFC8},
+    };
+    private static final int BADGE_BORDER = 0xFF17141F;
+    /** Éclaircissement au survol, appliqué au fond seul. */
+    private static final int BADGE_HOVER = 0x28FFFFFF;
 
     private static final int COLOR_TERM_TITLE = 0xFFD8B45E;
     private static final int COLOR_TERM_PROMPT = 0xFF6F63A0;
@@ -245,10 +278,23 @@ public class FriendshipConsoleScreen extends Screen {
     // Rendu
     // ------------------------------------------------------------------
 
+    /**
+     * Une découpe de la planche, taille dite explicitement.
+     *
+     * <p>Le raccourci à six arguments de {@code GuiGraphics} suppose une texture
+     * de 256×256 et divise les coordonnées par cette valeur. La planche en fait
+     * 512 de large depuis que le panneau dépasse 256 : passer par le raccourci
+     * aurait affiché deux fois trop grand, et donc la moitié gauche de
+     * l'interface étirée sur tout l'écran.</p>
+     */
+    private static void sheet(GuiGraphics guiGraphics, int x, int y, int u, int v, int w, int h) {
+        guiGraphics.blit(TEXTURE, x, y, 0, (float) u, (float) v, w, h, SHEET_W, SHEET_H);
+    }
+
     @Override
     public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.renderBackground(guiGraphics, mouseX, mouseY, partialTick);
-        guiGraphics.blit(TEXTURE, leftPos, topPos, 0, 0, WIDTH, HEIGHT);
+        sheet(guiGraphics, leftPos, topPos, 0, 0, WIDTH, HEIGHT);
     }
 
     @Override
@@ -304,14 +350,14 @@ public class FriendshipConsoleScreen extends Screen {
             ConsoleStatePayload.Ally ally = allies.get(scroll + i);
             int x = leftPos + LIST_X;
             int y = topPos + FIRST_ROW_Y + i * ROW_H;
-            renderRow(guiGraphics, ally, x, y, isOver(mouseX, mouseY, x, y));
+            renderRow(guiGraphics, ally, x, y, mouseX, mouseY);
         }
     }
 
     private void renderRow(GuiGraphics guiGraphics, ConsoleStatePayload.Ally ally, int x, int y,
-                           boolean hovered) {
+                           int mouseX, int mouseY) {
         int border = borderColor(ally.state());
-        if (hovered) {
+        if (isOver(mouseX, mouseY, x, y)) {
             guiGraphics.fill(x, y, x + LIST_W, y + ROW_H - 2, 0x30FFFFFF);
         }
         if (border != 0) {
@@ -319,13 +365,63 @@ public class FriendshipConsoleScreen extends Screen {
         }
         if (ally.state() == ConsoleStatePayload.PENDING) {
             // Sablier : un seul des deux codes a été tapé.
-            guiGraphics.blit(TEXTURE, x + 2, y + 2, HOURGLASS_U, HOURGLASS_V,
+            sheet(guiGraphics, x + 2, y + 2, HOURGLASS_U, HOURGLASS_V,
                     HOURGLASS_SIZE, HOURGLASS_SIZE);
         } else {
             PlayerFaceRenderer.draw(guiGraphics, skinOf(ally.uuid()), x + 2, y + 2, 16);
         }
         int nameColor = ally.state() == ConsoleStatePayload.PENDING ? COLOR_DIM : COLOR_TEXT;
-        guiGraphics.drawString(font, trim(ally.name()), x + 22, y + 6, nameColor, false);
+        guiGraphics.drawString(font, trim(ally.name(), hasBadge(ally)), x + 22, y + 6, nameColor, false);
+        if (hasBadge(ally)) {
+            renderBadge(guiGraphics, ally, badgeX(x), y + (ROW_H - 2 - BADGE_H) / 2,
+                    isOverBadge(mouseX, mouseY, x, y));
+        }
+    }
+
+    /** Seul un lien ouvert porte une pastille. */
+    private static boolean hasBadge(ConsoleStatePayload.Ally ally) {
+        return ally.state() == ConsoleStatePayload.LINKED;
+    }
+
+    private static int badgeX(int rowX) {
+        return rowX + LIST_W - BADGE_W - BADGE_MARGIN;
+    }
+
+    /**
+     * La pastille : un petit cabochon peint comme les touches du pavé — fond
+     * plein, liseré clair en haut, sombre en bas — plutôt qu'un rectangle plat.
+     * Le panneau n'a aucune surface plate ailleurs, et une seule aurait sauté
+     * aux yeux.
+     */
+    private void renderBadge(GuiGraphics guiGraphics, ConsoleStatePayload.Ally ally,
+                             int x, int y, boolean hovered) {
+        int[] colors = BADGE_COLORS[Math.max(0, Math.min(BADGE_COLORS.length - 1, ally.trust()))];
+        guiGraphics.fill(x, y, x + BADGE_W, y + BADGE_H, BADGE_BORDER);
+        guiGraphics.fill(x + 1, y + 1, x + BADGE_W - 1, y + BADGE_H - 1, colors[0]);
+        guiGraphics.fill(x + 1, y + 1, x + BADGE_W - 1, y + 2, colors[1]);
+        guiGraphics.fill(x + 1, y + BADGE_H - 2, x + BADGE_W - 1, y + BADGE_H - 1, colors[2]);
+        if (hovered) {
+            guiGraphics.fill(x + 1, y + 1, x + BADGE_W - 1, y + BADGE_H - 1, BADGE_HOVER);
+        }
+        Component label = trustLabel(ally.trust());
+        // Un libellé traduit peut déborder de la pastille : on le rogne comme
+        // les pseudos plutôt que de le laisser sortir sous le cadre.
+        int width = font.width(label);
+        if (width > BADGE_W - 4) {
+            label = Component.literal(
+                    font.plainSubstrByWidth(label.getString(), BADGE_W - 4 - font.width("…")) + "…");
+            width = font.width(label);
+        }
+        guiGraphics.drawString(font, label, x + (BADGE_W - width) / 2,
+                y + (BADGE_H - font.lineHeight) / 2 + 1, colors[3], false);
+    }
+
+    private static Component trustLabel(int trust) {
+        return Component.translatable(switch (trust) {
+            case AllyLinks.GUEST -> "enderportals.console.trust_guest";
+            case AllyLinks.PARTNER -> "enderportals.console.trust_partner";
+            default -> "enderportals.console.trust_visitor";
+        });
     }
 
     private int borderColor(int allyState) {
@@ -339,8 +435,16 @@ public class FriendshipConsoleScreen extends Screen {
         };
     }
 
-    private String trim(String name) {
-        return font.width(name) <= LIST_W - 26 ? name : font.plainSubstrByWidth(name, LIST_W - 32) + "…";
+    /**
+     * Le pseudo, rogné pour ne pas courir sous la pastille. Le budget est
+     * calculé depuis la place réellement occupée à droite, et non depuis la
+     * largeur de la ligne : la pastille n'est pas toujours là.
+     */
+    private String trim(String name, boolean badge) {
+        int budget = LIST_W - 26 - (badge ? BADGE_W + BADGE_MARGIN : 0);
+        return font.width(name) <= budget
+                ? name
+                : font.plainSubstrByWidth(name, Math.max(0, budget - font.width("…"))) + "…";
     }
 
     /**
@@ -536,6 +640,13 @@ public class FriendshipConsoleScreen extends Screen {
         return mouseX >= x && mouseX < x + LIST_W && mouseY >= y && mouseY < y + ROW_H - 2;
     }
 
+    /** Le curseur est-il sur la pastille de cette ligne ? */
+    private boolean isOverBadge(int mouseX, int mouseY, int x, int y) {
+        int bx = badgeX(x);
+        int by = y + (ROW_H - 2 - BADGE_H) / 2;
+        return mouseX >= bx && mouseX < bx + BADGE_W && mouseY >= by && mouseY < by + BADGE_H;
+    }
+
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0) {
@@ -544,11 +655,18 @@ public class FriendshipConsoleScreen extends Screen {
             for (int i = 0; i < shown; i++) {
                 int x = leftPos + LIST_X;
                 int y = topPos + FIRST_ROW_Y + i * ROW_H;
+                ConsoleStatePayload.Ally ally = allies.get(scroll + i);
+                // La pastille passe avant la ligne : elle est dedans, et un clic
+                // dessus ne doit pas refermer le passage par la même occasion.
+                if (hasBadge(ally) && isOverBadge((int) mouseX, (int) mouseY, x, y)) {
+                    PacketDistributor.sendToServer(
+                            ConsoleActionPayload.trust(console, ally.uuid()));
+                    return true;
+                }
                 if (isOver((int) mouseX, (int) mouseY, x, y)) {
-                    UUID target = allies.get(scroll + i).uuid();
                     PacketDistributor.sendToServer(hasShiftDown()
-                            ? ConsoleActionPayload.forget(console, target)
-                            : ConsoleActionPayload.toggle(console, target));
+                            ? ConsoleActionPayload.forget(console, ally.uuid())
+                            : ConsoleActionPayload.toggle(console, ally.uuid()));
                     return true;
                 }
             }
@@ -676,7 +794,7 @@ public class FriendshipConsoleScreen extends Screen {
         @Override
         protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
             boolean lit = isHoveredOrFocused();
-            guiGraphics.blit(TEXTURE, getX(), getY(), lit ? hoverU : u, lit ? hoverV : v,
+            sheet(guiGraphics, getX(), getY(), lit ? hoverU : u, lit ? hoverV : v,
                     this.width, this.height);
             Font font = Minecraft.getInstance().font;
             int textX = getX() + (this.width - font.width(getMessage())) / 2;

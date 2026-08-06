@@ -3,7 +3,10 @@ package com.maxezify.enderportals;
 import com.maxezify.enderportals.block.InactiveTardisDoorBlock;
 import com.maxezify.enderportals.compat.ImmPtlCompat;
 import com.maxezify.enderportals.network.ConsoleServerLogic;
+import com.maxezify.enderportals.tardis.PlotGuard;
 import com.maxezify.enderportals.tardis.TardisStateManager;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -13,6 +16,7 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.minecraft.stats.Stats;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.common.util.TriState;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
@@ -54,6 +58,9 @@ public class EnderPortalsMod {
         NeoForge.EVENT_BUS.addListener(this::onBlockBroken);
         NeoForge.EVENT_BUS.addListener(this::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(this::onServerTick);
+        NeoForge.EVENT_BUS.addListener(this::onPlotBreak);
+        NeoForge.EVENT_BUS.addListener(this::onPlotPlace);
+        NeoForge.EVENT_BUS.addListener(this::onPlotRightClick);
 
         LOGGER.info("World of Ender (NeoForge) initialisé — le vortex vous attend.");
         LOGGER.info("Immersive Portals détecté : {}", ImmPtlCompat.isLoaded());
@@ -117,6 +124,64 @@ public class EnderPortalsMod {
                         player, player.getMainHandItem())) {
             ModAdvancements.award(player, ModAdvancements.RITUAL);
         }
+    }
+
+    /**
+     * Casser chez un autre : réservé à l'associé.
+     *
+     * <p>Cet écouteur-ci est distinct de {@link #onBlockBroken} bien qu'ils
+     * guettent le même événement. Celui-là compte pour un progrès et ne refuse
+     * jamais rien ; celui-ci décide. Les mêler aurait fait dépendre le progrès
+     * d'un ordre d'exécution que rien ne garantit.</p>
+     */
+    private void onPlotBreak(BlockEvent.BreakEvent event) {
+        if (event.getPlayer() instanceof ServerPlayer player
+                && !PlotGuard.mayBuild(player, event.getPos())) {
+            event.setCanceled(true);
+            refuse(player, "enderportals.message.plot_no_build");
+        }
+    }
+
+    /** Poser chez un autre : réservé à l'associé, par le même chemin. */
+    private void onPlotPlace(BlockEvent.EntityPlaceEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player
+                && !PlotGuard.mayBuild(player, event.getPos())) {
+            event.setCanceled(true);
+            refuse(player, "enderportals.message.plot_no_build");
+        }
+    }
+
+    /**
+     * Le clic droit chez un autre, découpé en deux : ce que l'objet en main
+     * ferait, et ce que le bloc fait de lui-même.
+     *
+     * <p>C'est cette distinction qui rend le tri exact sans énumérer les objets.
+     * Refuser l'<b>objet</b> ferme d'un coup la pose de blocs, le seau de lave,
+     * le briquet et la houe, quels qu'ils soient et sans liste à tenir à jour ;
+     * laisser le <b>bloc</b> agir garde au visiteur les portes et les boutons,
+     * qui ne lui font rien prendre. Annuler l'événement entier aurait fait les
+     * deux à la fois — et surtout ouvert une faille : accroupi, vanilla saute
+     * l'usage du bloc et passe la main à l'objet, si bien qu'un invité
+     * accroupi devant un coffre aurait posé son bloc.</p>
+     */
+    private void onPlotRightClick(PlayerInteractEvent.RightClickBlock event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+        BlockPos pos = event.getPos();
+        if (PlotGuard.mayBuild(player, pos)) {
+            return;
+        }
+        event.setUseItem(TriState.FALSE);
+        if (PlotGuard.isStorage(event.getLevel(), pos) && !PlotGuard.mayOpen(player, pos)) {
+            event.setUseBlock(TriState.FALSE);
+            refuse(player, "enderportals.message.plot_no_storage");
+        }
+    }
+
+    /** Un refus se dit sur la barre d'action, sans encombrer le chat. */
+    private static void refuse(ServerPlayer player, String key) {
+        player.displayClientMessage(Component.translatable(key), true);
     }
 
     /**

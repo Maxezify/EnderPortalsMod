@@ -223,6 +223,20 @@ public class EnderWorldChunkGenerator extends ChunkGenerator {
                 < PLOT_WALL_THICKNESS;
     }
 
+    /**
+     * Rang, sur un axe, de l'enclos qui contient cette coordonnée.
+     *
+     * <p>C'est l'inverse de {@link #isWallAxis} : l'enclos de rang {@code k}
+     * s'étend d'un mur à l'autre, et sa porte est en {@code k × PLOT_SPACING + 8}.
+     * Le calcul vit ici, avec les murs qu'il lit, plutôt que recopié chez celui
+     * qui s'en sert — deux définitions du même quadrillage finiraient par
+     * diverger, et la divergence donnerait à quelqu'un les droits du voisin.</p>
+     */
+    public static int enclosureIndex(int coordinate) {
+        return Math.floorDiv(coordinate + PLOT_WALL_OFFSET - PLOT_WALL_THICKNESS,
+                TardisStateManager.PLOT_SPACING);
+    }
+
     public EnderWorldChunkGenerator(BiomeSource biomeSource) {
         super(biomeSource);
     }

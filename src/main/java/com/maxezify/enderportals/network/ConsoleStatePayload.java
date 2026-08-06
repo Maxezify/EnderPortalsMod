@@ -66,8 +66,13 @@ public record ConsoleStatePayload(BlockPos console, int myCode, int passageState
     /**
      * Une ligne de la liste. Le pseudo voyage avec l'entrée : le client ne peut
      * pas le retrouver seul pour un allié hors ligne.
+     *
+     * <p>{@code trust} est ce que <b>je</b> lui accorde chez moi, jamais ce
+     * qu'il m'accorde chez lui : la pastille du carnet commande ma parcelle, et
+     * afficher les deux dans la même liste n'aurait su dire laquelle on
+     * change.</p>
      */
-    public record Ally(UUID uuid, String name, int state) {
+    public record Ally(UUID uuid, String name, int state, int trust) {
     }
 
     public static final CustomPacketPayload.Type<ConsoleStatePayload> TYPE =
@@ -86,6 +91,7 @@ public record ConsoleStatePayload(BlockPos console, int myCode, int passageState
             buf.writeUUID(ally.uuid());
             buf.writeUtf(ally.name(), NAME_LENGTH);
             buf.writeVarInt(ally.state());
+            buf.writeVarInt(ally.trust());
         }
         buf.writeVarInt(payload.log().size());
         for (ConsoleLog.Entry line : payload.log()) {
@@ -106,7 +112,8 @@ public record ConsoleStatePayload(BlockPos console, int myCode, int passageState
         int count = buf.readVarInt();
         List<Ally> allies = new ArrayList<>(Math.min(count, 64));
         for (int i = 0; i < count; i++) {
-            allies.add(new Ally(buf.readUUID(), buf.readUtf(NAME_LENGTH), buf.readVarInt()));
+            allies.add(new Ally(buf.readUUID(), buf.readUtf(NAME_LENGTH),
+                    buf.readVarInt(), buf.readVarInt()));
         }
         int lines = buf.readVarInt();
         List<ConsoleLog.Entry> log = new ArrayList<>(Math.min(lines, ConsoleLog.CAPACITY));

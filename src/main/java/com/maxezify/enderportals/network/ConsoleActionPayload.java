@@ -28,6 +28,16 @@ public record ConsoleActionPayload(BlockPos console, int action, int code, UUID 
     public static final int CLOSE = 2;
     /** Retirer un allié du carnet (maj + clic). */
     public static final int FORGET = 3;
+    /**
+     * Faire tourner le degré de confiance accordé à un allié.
+     *
+     * <p>Le client n'envoie pas le degré voulu, seulement l'intention de passer
+     * au suivant : c'est le serveur qui détient l'ordre des trois et la valeur
+     * courante. Un client modifié ne peut donc pas s'accorder l'associé chez
+     * quelqu'un, il ne peut qu'appuyer sur un bouton qui n'est pas le sien — et
+     * la vérification de propriété du panneau le refuse.</p>
+     */
+    public static final int TRUST = 4;
 
     /** Cible absente : les actions sans destinataire portent cet UUID. */
     public static final UUID NO_TARGET = new UUID(0L, 0L);
@@ -48,6 +58,10 @@ public record ConsoleActionPayload(BlockPos console, int action, int code, UUID 
 
     public static ConsoleActionPayload forget(BlockPos console, UUID target) {
         return new ConsoleActionPayload(console, FORGET, 0, target);
+    }
+
+    public static ConsoleActionPayload trust(BlockPos console, UUID target) {
+        return new ConsoleActionPayload(console, TRUST, 0, target);
     }
 
     public static ConsoleActionPayload close(BlockPos console) {

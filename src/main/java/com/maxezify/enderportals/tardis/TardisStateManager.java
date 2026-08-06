@@ -367,6 +367,50 @@ public class TardisStateManager extends SavedData {
     }
 
     /**
+     * Rang de la parcelle occupant cette cellule : l'inverse exact de
+     * {@link #spiralCell}.
+     *
+     * <p>Écrit plutôt qu'obtenu en parcourant les parcelles jusqu'à trouver la
+     * bonne : la question se pose à chaque bloc cassé dans l'Ender, et une
+     * recherche linéaire par cellule aurait coûté d'autant plus cher que le
+     * monde compte de bases. Rendre un rang ne dit rien de son attribution — il
+     * peut parfaitement désigner une parcelle que personne n'a jamais reçue.</p>
+     */
+    public static int plotIndexOfCell(int cellX, int cellZ) {
+        int ring = Math.max(Math.abs(cellX), Math.abs(cellZ));
+        if (ring == 0) {
+            return 0;
+        }
+        int side;
+        int step;
+        if (cellX == ring && cellZ > -ring) {
+            side = 0;
+            step = cellZ + ring - 1;
+        } else if (cellZ == ring) {
+            side = 1;
+            step = ring - 1 - cellX;
+        } else if (cellX == -ring) {
+            side = 2;
+            step = ring - 1 - cellZ;
+        } else {
+            side = 3;
+            step = cellX + ring - 1;
+        }
+        return (2 * ring - 1) * (2 * ring - 1) + side * (2 * ring) + step;
+    }
+
+    /** La parcelle de ce rang, si elle a été attribuée. */
+    @Nullable
+    public TardisData findByPlot(int plotIndex) {
+        for (TardisData data : tardises.values()) {
+            if (data.plotIndex == plotIndex) {
+                return data;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Coordonnées de cellule {@code {x, z}} du n-ième point d'une spirale
      * carrée centrée sur l'origine : l'anneau {@code r} porte ses {@code 8r}
      * cellules, parcourues bord est, sud, ouest puis nord.

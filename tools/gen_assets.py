@@ -1293,17 +1293,29 @@ def tex_friendship_console():
 # Géométrie de l'interface. Doit rester d'accord avec FriendshipConsoleScreen :
 # c'est ici que sont creusés les logements des touches, et une touche posée
 # ailleurs que son logement se verrait immédiatement.
-GUI_W, GUI_H = 220, 234
-GUI_PAD_X, GUI_KEYS_Y = 112, 36
+#
+# Le carnet a la seule largeur variable : le pavé et le terminal s'en déduisent,
+# comme ils s'en déduisaient déjà quand la colonne faisait 96 px. L'élargir de
+# 96 à 152 loge la pastille de confiance à droite de chaque pseudo, et donne au
+# terminal 56 px de ligne en plus par la même occasion.
+GUI_LIST_X, GUI_LIST_Y = 8, 8
+GUI_LIST_W, GUI_LIST_H = 152, 150
+GUI_PAD_X, GUI_KEYS_Y = GUI_LIST_X + GUI_LIST_W + 8, 36
+GUI_PAD_W = 96
+GUI_W, GUI_H = GUI_PAD_X + GUI_PAD_W + 12, 234
 GUI_KEY_W, GUI_KEY_H, GUI_KEY_GAP = 30, 24, 3
 GUI_ACTION_W, GUI_ACTION_H = 46, 20
+
+# La planche ne tient plus dans une texture de 256 : le panneau à lui seul en
+# fait 276. Le fichier passe donc à 512 de large — la hauteur, elle, suffit.
+GUI_SHEET_W, GUI_SHEET_H = 512, 256
 # Neuf touches, trois rangées pleines : les codes ne contiennent aucun zéro,
 # donc le pavé n'a pas de dixième touche.
 GUI_KEY_CELLS = [(i % 3, i // 3) for i in range(9)]
 GUI_ACTIONS_Y = GUI_KEYS_Y + 3 * (GUI_KEY_H + GUI_KEY_GAP) + 1
 
 # Le terminal, en bas, sur toute la largeur utile.
-GUI_TERM_X, GUI_TERM_W = 8, 204
+GUI_TERM_X, GUI_TERM_W = 8, GUI_W - 16
 GUI_TERM_Y, GUI_TERM_H = 162, 64
 GUI_TERM_HEADER_H = 12
 # Bande d'état, en bas de l'encart : la cause s'y lit en permanence.
@@ -1314,10 +1326,10 @@ GUI_TERM_STATUS_H = 10
 # bande sous lui (y ≥ GUI_H) les quatre boutons d'action, trop larges pour la
 # colonne. Le panneau ayant grandi pour loger le terminal, la planche ne peut
 # plus occuper la bande y = 192 : elle y serait recouverte par le panneau.
-GUI_HOURGLASS_X, GUI_HOURGLASS_Y = 224, 0
-GUI_KEY_SPRITE_X = 222
+GUI_HOURGLASS_X, GUI_HOURGLASS_Y = GUI_W + 4, 0
+GUI_KEY_SPRITE_X = GUI_W + 2
 GUI_KEY_SPRITE_Y, GUI_KEY_HOVER_SPRITE_Y = 20, 48
-GUI_ACTION_SPRITE_Y = 234
+GUI_ACTION_SPRITE_Y = GUI_H
 GUI_ACTION_SPRITE_X = (0, 48, 96, 144)
 
 
@@ -1329,8 +1341,9 @@ def _outside_panel(x, y, w, h, what):
     if x < GUI_W and y < GUI_H:
         raise SystemExit(f"{what} en ({x},{y}) recouvert par le panneau "
                          f"{GUI_W}x{GUI_H} — déplacer la planche de sprites")
-    if x + w > 256 or y + h > 256:
-        raise SystemExit(f"{what} en ({x},{y}) déborde de la texture 256x256")
+    if x + w > GUI_SHEET_W or y + h > GUI_SHEET_H:
+        raise SystemExit(f"{what} en ({x},{y}) déborde de la texture "
+                         f"{GUI_SHEET_W}x{GUI_SHEET_H}")
 
 
 # ----------------------------------------------------------------------
@@ -1544,7 +1557,7 @@ def tex_console_gui():
     well = (96, 94, 104, 255)
     well_edge = (66, 64, 74, 255)
 
-    px = canvas(256, 256, (0, 0, 0, 0))
+    px = canvas(GUI_SHEET_W, GUI_SHEET_H, (0, 0, 0, 0))
 
     # ---- coque : corps, biseau, arête
     rect(px, 0, 0, GUI_W - 1, GUI_H - 1, body)
@@ -1577,28 +1590,31 @@ def tex_console_gui():
         put(px, x1, y1, body_light)
 
     # ---- le carnet : encart sombre, bandeau de titre souligné d'or, rayures
-    sunken(8, 8, 103, 157, inset, inset_edge)
-    rect(px, 9, 9, 102, 21, inset_title)
-    rect(px, 9, 22, 102, 22, gold)
-    rect(px, 9, 23, 102, 23, inset_edge)
-    for y in range(28, 156, 6):
-        for x in range(11, 101, 3):
+    lx0, ly0 = GUI_LIST_X, GUI_LIST_Y
+    lx1, ly1 = lx0 + GUI_LIST_W - 1, ly0 + GUI_LIST_H - 1
+    sunken(lx0, ly0, lx1, ly1, inset, inset_edge)
+    rect(px, lx0 + 1, ly0 + 1, lx1 - 1, ly0 + 13, inset_title)
+    rect(px, lx0 + 1, ly0 + 14, lx1 - 1, ly0 + 14, gold)
+    rect(px, lx0 + 1, ly0 + 15, lx1 - 1, ly0 + 15, inset_edge)
+    for y in range(ly0 + 20, ly1 - 1, 6):
+        for x in range(lx0 + 3, lx1 - 2, 3):
             put(px, x, y, inset_line)
 
     # ---- l'écran : bezel épais, dégradé vertical, grille fine
-    sunken(110, 8, 209, 31, screen_edge, screen_edge)
+    sx0, sx1 = GUI_PAD_X - 2, GUI_PAD_X + GUI_PAD_W + 1
+    sunken(sx0, 8, sx1, 31, screen_edge, screen_edge)
     for y in range(10, 30):
         # Dégradé sur toute la hauteur : une bande nette en haut se lisait comme
         # un défaut plutôt que comme une lueur.
         t = (y - 10) / 19.0
         shade_row = (int(112 - 60 * t), int(88 - 46 * t), int(190 - 92 * t), 255)
-        for x in range(112, 208):
+        for x in range(sx0 + 2, sx1 - 1):
             put(px, x, y, shade_row)
-    for x in range(112, 208, 8):
+    for x in range(sx0 + 2, sx1 - 1, 8):
         for y in range(11, 29):
             r, g, b, _ = px[y][x]
             put(px, x, y, (max(0, r - 14), max(0, g - 12), max(0, b - 18), 255))
-    rect(px, 112, 10, 207, 10, (168, 146, 236, 255))
+    rect(px, sx0 + 2, 10, sx1 - 2, 10, (168, 146, 236, 255))
 
     # ---- logements des touches et des boutons
     for (col, row) in GUI_KEY_CELLS:
@@ -1703,7 +1719,7 @@ def tex_console_gui():
             if ch != " ":
                 put(px, GUI_HOURGLASS_X + x, GUI_HOURGLASS_Y + y, hg[ch])
 
-    write_png(f"{ASSETS}/textures/gui/friendship_console.png", 256, 256, px)
+    write_png(f"{ASSETS}/textures/gui/friendship_console.png", GUI_SHEET_W, GUI_SHEET_H, px)
 
 
 # ---------------------------------------------------- modèles et blockstates
