@@ -34,6 +34,12 @@ jobs:
       - name: Vérifier la coque du téléporteur
         run: python3 tools/check_hull.py
 
+      # Un README se périme en silence : on change un coût, on oublie la
+      # documentation, et un joueur suit une instruction fausse. Les chiffres
+      # documentés sont donc relus depuis les constantes et les recettes.
+      - name: Vérifier les README
+        run: python3 tools/check_readme.py
+
       - name: Build
         run: ./gradlew build --stacktrace --no-daemon
 
