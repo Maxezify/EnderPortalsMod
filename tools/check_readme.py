@@ -146,7 +146,11 @@ DOCUMENTED = {
                       "minecraft:slime_block": 1},
     "guide_book": {"enderportals:ender_crystal": 8, "minecraft:book": 1},
     "ender_block": {"enderportals:ender_crystal": 4},
+    "ender_bricks": {"enderportals:ender_block": 4},
 }
+
+# Le titre au-dessus de la grille des crafts, dans chaque langue.
+GRID_HEADING = {"README.fr.md": "### Tous les crafts", "README.md": "### Every recipe"}
 
 
 def ingredients(recipe):
@@ -167,6 +171,43 @@ def check_recipes():
         actual = ingredients(recipe)
         if actual != expected:
             fail("README", f"recette {recipe} : documentée {expected}, réelle {actual}")
+
+
+def yield_of(recipe):
+    """Combien d'objets sort une recette. Sans mention, elle en sort un."""
+    data = json.loads((DATA / "recipe" / f"{recipe}.json").read_text(encoding="utf-8"))
+    result = data.get("result")
+    return int(result.get("count", 1)) if isinstance(result, dict) else 1
+
+
+def grid(name, path):
+    """Le bloc de code qui dessine les crafts, sous son titre."""
+    text = path.read_text(encoding="utf-8")
+    heading = GRID_HEADING[name]
+    if heading not in text:
+        fail(name, f"section des crafts introuvable : « {heading} »")
+        return ""
+    parts = text[text.index(heading):].split("```")
+    if len(parts) < 3:
+        fail(name, "la section des crafts n'a plus de bloc de code")
+        return ""
+    return parts[1]
+
+
+def check_yields():
+    """La grille annonce « (×N) » ; la recette décide de N.
+
+    Un rendement se change en une ligne de JSON et se documente à trois
+    endroits. Celui de l'Atterrisseur est passé de deux à un : sans ce
+    contrôle, la grille aurait continué d'annoncer « ×2 » pour toujours, et
+    un joueur aurait cru avoir raté son craft.
+    """
+    expected = sorted(n for recipe in DOCUMENTED if (n := yield_of(recipe)) > 1)
+    for name, path in (("README.fr.md", FR), ("README.md", EN)):
+        found = sorted(int(n) for n in re.findall(r"\(×(\d+)\)", grid(name, path)))
+        if found != expected:
+            fail(name, f"la grille des crafts annonce les rendements {found}, "
+                       f"les recettes donnent {expected}")
 
 
 # ------------------------------------------------------------------ charpente
@@ -195,6 +236,7 @@ def main():
     check_book_pages()
     check_version()
     check_recipes()
+    check_yields()
     check_structure()
     if problems:
         for problem in problems:

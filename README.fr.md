@@ -1,6 +1,6 @@
 # World of Ender
 
-*[English version](README.md)* · Mod **Minecraft 1.21.1 / NeoForge** · version **0.29.2**
+*[English version](README.md)* · Mod **Minecraft 1.21.1 / NeoForge** · version **0.30.0**
 
 Vous forgez une porte d'obsidienne, vous l'éveillez au prix d'un rituel, et elle
 s'ouvre sur un monde qui n'existait pas. Derrière elle, une parcelle entière vous
@@ -104,7 +104,7 @@ bibliothécaire, jamais à la table d'enchantement.
 | --- | --- |
 | Clic droit sur la porte, **à la main** | Elle s'ouvre, ou se referme. |
 | Clic droit sur la porte, **la clé en main** | Pareil — la clé ne vous oblige pas à la ranger. |
-| **Clé** + clic droit **par terre** | La porte se matérialise à l'endroit visé, et disparaît de son ancien emplacement. |
+| **Clé** + **accroupi** + clic droit **par terre** | La porte se matérialise à l'endroit visé, et disparaît de son ancien emplacement. |
 | **Clé** + **accroupi** + clic droit sur la porte | Elle se dématérialise : votre base repart dans votre poche. |
 | **Clé** + clic droit **dans le vide** | Lie la clé à votre porte. |
 | Clic droit sur la **porte intérieure**, porte rangée | Elle se rematérialise dehors, ouverte : c'est votre sortie. |
@@ -251,7 +251,7 @@ La clé ne prend que vous. Pour emmener une bête dans l'Ender, il faut deux
 pièces :
 
 * **L'Atterrisseur d'entité** (6 obsidiennes pleureuses, 2 cristaux, 1 bloc de
-  slime — il en sort deux) se pose **dans l'Ender**, là où la bête doit arriver.
+  slime) se pose **dans l'Ender**, là où la bête doit arriver.
 * **Le Téléporteur d'entité** (5 obsidiennes pleureuses, 1 perle de l'Ender) est
   une coque qui se pose et se charge **comme une barque**.
 
@@ -404,7 +404,7 @@ I R I                 Q C Q                q q q                  C C C
 I E I                 C E C                r C r                  C L C
 I I I                 Q C Q                q q q                  C C C
 
-Téléporteur d'entité   Atterrisseur (×2)    Bloc de l'Ender    Briques (×4)
+Téléporteur d'entité   Atterrisseur         Bloc de l'Ender    Briques (×4)
 . . .                  O S O                C C                B B
 O p O                  O C O                C C                B B
 O O O                  O C O
@@ -535,7 +535,7 @@ Pour compiler — prérequis **Java 21** :
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.29.2.jar
+# → build/libs/enderportals-0.30.0.jar
 ```
 
 Le build est géré par **ModDevGradle** ; NeoForge et les mappings officiels sont

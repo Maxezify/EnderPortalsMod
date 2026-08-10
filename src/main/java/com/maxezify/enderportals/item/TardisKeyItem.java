@@ -36,7 +36,8 @@ import java.util.UUID;
  * La Clé du TARDIS.
  * <ul>
  *   <li>Clic droit sur une porte active non liée : lie la clé.</li>
- *   <li>Clic droit par terre : matérialise la porte à l'endroit visé (fondu).</li>
+ *   <li>Accroupi, clic droit par terre : matérialise la porte à l'endroit visé
+ *       (fondu).</li>
  *   <li>Clic droit sur la porte extérieure : l'ouvre ; re-clic : la referme
  *       et la fait disparaître en fondu.</li>
  *   <li>Clic droit sur la porte intérieure : rappelle ou dématérialise la
@@ -146,6 +147,19 @@ public class TardisKeyItem extends Item {
         }
         if (!isOwner(player, data)) {
             player.displayClientMessage(Component.translatable("enderportals.message.not_your_door"), true);
+            return;
+        }
+        // Déplacer sa base est un geste voulu, pas un clic qui traîne. Sans
+        // l'accroupissement, la porte suivait chaque clic droit au sol — on
+        // pose une torche, on ouvre une carte, et la base a changé de place.
+        // Le même geste dématérialise la porte : les deux moitiés de la même
+        // action se demandent maintenant de la même façon.
+        //
+        // Le contrôle vient après l'identité et avant l'état : un joueur dont
+        // la clé n'est liée à rien mérite qu'on le lui dise plutôt qu'on lui
+        // apprenne un geste qui ne servirait à rien.
+        if (!player.isShiftKeyDown()) {
+            player.displayClientMessage(Component.translatable("enderportals.message.key_needs_sneak"), true);
             return;
         }
         // Même délai que sur la porte elle-même : reposer la porte ailleurs

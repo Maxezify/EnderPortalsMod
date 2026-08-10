@@ -1,6 +1,6 @@
 # World of Ender
 
-*[Version française](README.fr.md)* · A **Minecraft 1.21.1 / NeoForge** mod · version **0.29.2**
+*[Version française](README.fr.md)* · A **Minecraft 1.21.1 / NeoForge** mod · version **0.30.0**
 
 You forge an obsidian door, you wake it at the cost of a ritual, and it opens
 onto a world that was not there before. Behind it, an entire plot of land is
@@ -102,7 +102,7 @@ table.
 | --- | --- |
 | Right-click the door, **bare-handed** | It opens, or closes. |
 | Right-click the door, **holding the key** | The same — the key does not make you put it away. |
-| **Key** + right-click **on the ground** | The door materialises where you aimed, and vanishes from wherever it stood before. |
+| **Key** + **sneak** + right-click **on the ground** | The door materialises where you aimed, and vanishes from wherever it stood before. |
 | **Key** + **sneak** + right-click the door | It dematerialises: your base goes back into your pocket. |
 | **Key** + right-click **in the air** | Binds the key to your door. |
 | Right-click the **inner door** while the door is stowed | It rematerialises outside, open: that is your way out. |
@@ -243,8 +243,8 @@ filters and upgrades**: a filtered Sophisticated barrel sorts what you pour in.
 
 The key only takes you. To bring an animal into the Ender you need two pieces:
 
-* **The Entity Lander** (6 crying obsidian, 2 crystals, 1 slime block — you get
-  two) is placed **inside the Ender**, where the animal should arrive.
+* **The Entity Lander** (6 crying obsidian, 2 crystals, 1 slime block) is placed
+  **inside the Ender**, where the animal should arrive.
 * **The Entity Teleporter** (5 crying obsidian, 1 ender pearl) is a hull you
   place and board **like a boat**.
 
@@ -391,7 +391,7 @@ I R I                 Q C Q                q q q                  C C C
 I E I                 C E C                r C r                  C L C
 I I I                 Q C Q                q q q                  C C C
 
-Entity Teleporter      Entity Lander (×2)   Ender Block        Bricks (×4)
+Entity Teleporter      Entity Lander        Ender Block        Bricks (×4)
 . . .                  O S O                C C                B B
 O p O                  O C O                C C                B B
 O O O                  O C O
@@ -520,7 +520,7 @@ To build — **Java 21** required:
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.29.2.jar
+# → build/libs/enderportals-0.30.0.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are
