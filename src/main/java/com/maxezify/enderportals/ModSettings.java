@@ -29,17 +29,33 @@ public final class ModSettings {
                     "Teleporter).")
             .define("blockTeleports", true);
 
+    /**
+      * Renommée depuis {@code operatorBypass} (0.31.0), et pas par coquetterie.
+      *
+      * <p>Cette option valait {@code true} par défaut, ce qui n'a rien bloqué
+      * sur un serveur où le joueur est aussi l'administrateur. Corriger le
+      * défaut ne suffisait pas : un fichier de configuration déjà écrit garde
+      * sa valeur, et la correction n'aurait servi qu'aux mondes neufs. Sous un
+      * nom neuf, la clé périmée est retirée au chargement et la nouvelle naît
+      * avec son défaut — l'ancien réglage ne survit à personne.</p>
+      */
     private static final ModConfigSpec.BooleanValue OPERATOR_BYPASS = BUILDER
             .comment("Les opérateurs (niveau de permission 2) échappent au refus ci-dessus.",
                     "",
-                    "ATTENTION — sur un serveur de test où tout le monde est opérateur, cela",
-                    "revient à ne rien bloquer du tout, et le mod aura l'air de ne pas",
-                    "fonctionner. Pour vérifier que le garde-fou agit : /deop <pseudo>, ou",
-                    "passer cette option a false.",
+                    "Faux par défaut, et c'est un choix. Sur la plupart des serveurs, celui",
+                    "qui joue est aussi celui qui administre : laisser les opérateurs passer",
+                    "revenait à ne rien bloquer pour personne, et le garde-fou semblait cassé",
+                    "alors qu'il obéissait. Un réglage dont la valeur par défaut annule la",
+                    "fonction n'est pas un réglage, c'est un piege.",
                     "",
-                    "Operators (permission level 2) bypass the refusal above. On a test server",
-                    "where everyone is an operator, this blocks nothing at all.")
-            .define("operatorBypass", true);
+                    "Passez-le a true si vous devez deplacer un joueur a la commande : tant",
+                    "qu'il est faux, /tp vers l'Ender est refuse aux operateurs comme aux",
+                    "autres.",
+                    "",
+                    "Operators (permission level 2) bypass the refusal above. False by default:",
+                    "on most servers the person playing is also the person running it, so a",
+                    "true default would silently disable the whole feature.")
+            .define("allowOperatorTeleports", false);
 
     public static final ModConfigSpec SPEC = BUILDER.build();
 
@@ -49,7 +65,7 @@ public final class ModSettings {
     }
 
     /** Les opérateurs y échappent-ils ? */
-    public static boolean operatorBypass() {
+    public static boolean allowOperatorTeleports() {
         return OPERATOR_BYPASS.get();
     }
 

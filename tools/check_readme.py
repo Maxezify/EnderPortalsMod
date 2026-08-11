@@ -159,8 +159,24 @@ def check_settings():
     for name, default in declared.items():
         row = f"`{name}` | `{default}`"
         require(f"réglage {name}", row, row)
+    # Le tableau se relit ligne par ligne, sur le texte brut — pas sur la
+    # version aplatie. Une ligne tronquée reste un tableau valide en markdown :
+    # elle s'affiche avec une colonne vide, et personne ne le remarque. C'est
+    # arrivé, et deux versions sont sorties avec un réglage documenté sans son
+    # effet. Sur le texte aplati, la cellule manquante se prolongeait dans le
+    # paragraphe suivant jusqu'à la barre verticale d'après, et le contrôle
+    # trouvait une cellule bien remplie là où il n'y avait plus de cellule.
+    row = re.compile(r"\|\s*`(\w+)`\s*\|\s*`(true|false)`\s*\|(.*)\|\s*$")
     for name, path in (("README.fr.md", FR), ("README.md", EN)):
-        documented = dict(re.findall(r"\| `(\w+)` \| `(true|false)` \|", flat(path)))
+        documented = {}
+        for line in path.read_text(encoding="utf-8").splitlines():
+            match = row.match(line)
+            if not match:
+                continue
+            key, default, effect = match.groups()
+            documented[key] = default
+            if not effect.strip():
+                fail(name, f"réglage {key} : documenté sans dire ce qu'il fait")
         if documented != declared:
             fail(name, f"réglages documentés {documented}, déclarés {declared}")
 

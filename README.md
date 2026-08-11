@@ -1,6 +1,6 @@
 # World of Ender
 
-*[Version française](README.fr.md)* · A **Minecraft 1.21.1 / NeoForge** mod · version **0.32.0**
+*[Version française](README.fr.md)* · A **Minecraft 1.21.1 / NeoForge** mod · version **0.33.0**
 
 You forge an obsidian door, you wake it at the cost of a ritual, and it opens
 onto a world that was not there before. Behind it, an entire plot of land is
@@ -198,25 +198,40 @@ Still allowed: the mod's own trips — door, Allies' Passage, Entity Teleporter 
 and **jumps inside your own plot**. An ender pearl, a chorus fruit or a waypoint
 placed at home excuse you from nothing, since you had to get in first.
 
-The refusal rests on **two independent checks**. The first one *prevents*:
-NeoForge announces every world change before it happens, and that one is
-cancelled — nether portals go through it too. The second one *undoes*: every
-tick, each player's position is compared with the previous tick's, and a move
-that no one could have walked sends them back where they came from. The second
-exists because the first only sees what takes the normal path, and a guard whose
-reach you cannot state is not a guard.
+The refusal rests on **two independent checks**, and it is the second one that
+does the heavy lifting.
 
-**Operators are exempt** (permission level 2). Two settings, in your save's
-`serverconfig/enderportals-server.toml`:
+The first one *prevents*: NeoForge announces every world change before it
+happens, and that one is cancelled. Nether portals go through it — but Waystones
+does not, because it moves the player through `Entity#teleportTo`, a method
+NeoForge does not patch. Nothing is announced there, so there is nothing to
+cancel.
+
+The second one *undoes*. Every tick, each player's position is compared with the
+previous tick's; a move no one could have walked sends them back where they came
+from. It no longer matters which code moved them. The accepted cost: one tick of
+latency, and a mod that has already charged its price does not refund it.
+
+Two settings, in your save's `serverconfig/enderportals-server.toml`:
 
 | Setting | Default | Effect |
 | --- | --- | --- |
 | `blockTeleports` | `true` | The refusal described above |
-| `operatorBypass` | `true` |
+| `allowOperatorTeleports` | `false` | Operators are not affected |
 
-> On a test server **where everyone is an operator**, the refusal applies to no
-> one and the mod looks like it does nothing. To see it work: `/deop <name>`, or
-> set `operatorBypass` to `false`.
+> **Why the operator bypass defaults to false.** On most servers the person
+> playing is also the person running it: at `true`, the refusal applies to nobody
+> and the mod looks like it does nothing. Set it to `true` only when you need to
+> move a player by command — while it is `false`, a `/tp` into the Ender is
+> refused to operators like anyone else.
+>
+> The option was called `operatorBypass` in 0.31.0 and defaulted to `true`. The
+> name changed so that existing saves benefit: a config file already on disk
+> keeps its values, and only an unknown key gets replaced by the new one with its
+> default. Nothing for you to do.
+
+Every refusal leaves a line in the server log, naming which of the two checks
+acted. If the guard looks inactive, that is the first place to look.
 
 ---
 
@@ -564,7 +579,7 @@ To build — **Java 21** required:
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.32.0.jar
+# → build/libs/enderportals-0.33.0.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are

@@ -1,6 +1,6 @@
 # World of Ender
 
-*[English version](README.md)* · Mod **Minecraft 1.21.1 / NeoForge** · version **0.32.0**
+*[English version](README.md)* · Mod **Minecraft 1.21.1 / NeoForge** · version **0.33.0**
 
 Vous forgez une porte d'obsidienne, vous l'éveillez au prix d'un rituel, et elle
 s'ouvre sur un monde qui n'existait pas. Derrière elle, une parcelle entière vous
@@ -205,25 +205,42 @@ Téléporteur d'entité — et **les sauts à l'intérieur de votre propre parce
 Une perle de l'Ender, un fruit chorus ou un point de voyage posé chez vous ne
 dispensent de rien, puisqu'il a fallu entrer d'abord.
 
-Le refus s'appuie sur **deux contrôles indépendants**. Le premier *empêche* :
-NeoForge annonce tout changement de monde avant qu'il n'ait lieu, et celui-là est
-annulé — les portails du Nether y passent aussi. Le second *défait* : à chaque
-tick, la position de chaque joueur est comparée à celle du tick précédent, et un
-déplacement impossible à pied le renvoie d'où il venait. Le second existe parce
-que le premier ne voit que ce qui emprunte le chemin normal, et qu'une garde dont
-on ignore la portée n'en est pas une.
+Le refus s'appuie sur **deux contrôles indépendants**, et c'est le second qui
+fait le gros du travail.
 
-**Les opérateurs y échappent** (niveau de permission 2). Deux réglages, dans le
-fichier `serverconfig/enderportals-server.toml` de votre sauvegarde :
+Le premier *empêche* : NeoForge annonce tout changement de monde avant qu'il
+n'ait lieu, et celui-là est annulé. Les portails du Nether y passent — mais pas
+Waystones, qui déplace le joueur par `Entity#teleportTo`, une méthode que
+NeoForge ne patche pas. Rien n'y est annoncé, donc il n'y a rien à annuler.
+
+Le second *défait*. À chaque tick, la position de chaque joueur est comparée à
+celle du tick précédent ; un déplacement qu'aucun trajet à pied n'aurait pu
+produire le renvoie d'où il venait. Peu importe alors par quel code il a bougé.
+Contrepartie assumée : un tick de latence, et un mod qui a déjà encaissé son prix
+ne le rend pas.
+
+Deux réglages, dans le fichier `serverconfig/enderportals-server.toml` de votre
+sauvegarde :
 
 | Réglage | Défaut | Effet |
 | --- | --- | --- |
 | `blockTeleports` | `true` | Le refus décrit ci-dessus |
-| `operatorBypass` | `true` | Les opérateurs ne sont pas concernés |
+| `allowOperatorTeleports` | `false` | Les opérateurs ne sont pas concernés |
 
-> Sur un serveur de test **où tout le monde est opérateur**, le refus ne
-> s'applique à personne et le mod a l'air de ne rien faire. Pour le voir agir :
-> `/deop <pseudo>`, ou passer `operatorBypass` à `false`.
+> **Pourquoi le contournement d'opérateur est faux par défaut.** Sur la plupart
+> des serveurs, celui qui joue est aussi celui qui administre : à `true`, le
+> refus ne s'applique à personne et le mod a l'air de ne rien faire. Passez-le à
+> `true` seulement si vous devez déplacer un joueur à la commande — tant qu'il
+> est `false`, un `/tp` vers l'Ender est refusé aux opérateurs comme aux autres.
+>
+> L'option s'appelait `operatorBypass` en 0.31.0 et valait `true`. Le nom a
+> changé pour que les sauvegardes existantes en profitent : un fichier déjà
+> écrit garde ses valeurs, et seule une clé inconnue est remplacée par la
+> nouvelle avec son défaut. Vous n'avez rien à faire.
+
+Chaque refus laisse une ligne dans le journal du serveur, en précisant lequel des
+deux contrôles a agi. Si le garde-fou semble inactif, c'est là qu'il faut
+regarder d'abord.
 
 ---
 
@@ -583,7 +600,7 @@ Pour compiler — prérequis **Java 21** :
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.32.0.jar
+# → build/libs/enderportals-0.33.0.jar
 ```
 
 Le build est géré par **ModDevGradle** ; NeoForge et les mappings officiels sont

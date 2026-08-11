@@ -1,5 +1,6 @@
 package com.maxezify.enderportals.tardis;
 
+import com.maxezify.enderportals.EnderPortalsMod;
 import com.maxezify.enderportals.ModDimensions;
 import com.maxezify.enderportals.ModSettings;
 import com.maxezify.enderportals.world.EnderWorldChunkGenerator;
@@ -42,13 +43,18 @@ import java.util.UUID;
  * qui change de monde par le chemin normal y passe, portails du Nether
  * compris. On y refuse, et rien ne se produit.</p>
  *
- * <p><b>Le filet.</b> La prévention ne vaut que pour qui emprunte ce chemin. Je
- * n'ai pas pu établir, depuis les sources accessibles, que toutes les autres
- * façons de déplacer un joueur y aboutissent en 1.21.1 — et une garde dont on
- * ne sait pas ce qu'elle couvre n'est pas une garde. {@link #tick} relit donc
- * la position de chaque joueur et compare avec le tick précédent : peu importe
- * par quel code il a bougé, s'il est arrivé là où il n'avait pas le droit
- * d'arriver, il repart d'où il venait.</p>
+ * <p><b>Le filet.</b> La prévention ne vaut que pour qui emprunte ce chemin, et
+ * Waystones ne l'emprunte pas : il appelle
+ * {@code Entity#teleportTo(ServerLevel, …)}, méthode que NeoForge ne patche pas
+ * — aucun hunk {@code teleportTo} dans {@code Entity.java.patch}. Aucun
+ * événement n'est donc annoncé, et il n'y a rien à annuler. C'était prévu :
+ * {@link #tick} relit la position de chaque joueur et la compare à celle du
+ * tick précédent. Peu importe par quel code il a bougé — s'il est arrivé là où
+ * il n'avait pas le droit d'arriver, il repart d'où il venait.</p>
+ *
+ * <p>Le filet est donc la garde <b>principale</b>, et la prévention un confort
+ * pour les mods qui passent par le chemin normal. Contrepartie assumée : un
+ * tick de latence, et un mod qui a déjà encaissé son prix ne le rend pas.</p>
  *
  * <p>Le filet ne surveille que ce qui est <b>impossible autrement</b> : entrer
  * dans l'Ender, en sortir, franchir un mur de parcelle. Un saut à l'intérieur
@@ -67,11 +73,13 @@ import java.util.UUID;
  *
  * <h2>Les opérateurs</h2>
  *
- * <p>Ils passent outre, comme demandé, mais c'est réglable
- * ({@link ModSettings#operatorBypass()}) et ce n'est pas de la coquetterie : la
- * garde de parcelle a déjà été rendue inopérante par un contournement
- * d'opérateur écrit en dur, sur un serveur de test où tout le monde était
- * opérateur. Ce qui se désactive doit pouvoir se réactiver.</p>
+ * <p>Ils peuvent passer outre, mais {@link ModSettings#allowOperatorTeleports()} est
+ * <b>faux par défaut</b>. La 0.31.0 le mettait à vrai : sur un serveur où celui
+ * qui joue est aussi celui qui administre, cela n'a bloqué personne, et le
+ * garde-fou a semblé cassé alors qu'il obéissait à la lettre. C'est la deuxième
+ * fois qu'un contournement d'opérateur annule une garde de ce mod — la première
+ * était écrit en dur dans la garde de parcelle. Une porte dérobée ouverte par
+ * défaut n'est pas une porte dérobée, c'est l'entrée principale.</p>
  */
 public final class TeleportGuard {
 
@@ -136,7 +144,7 @@ public final class TeleportGuard {
             return;
         }
         event.setCanceled(true);
-        refuse(entity);
+        refuse(entity, "changement de monde annulé");
     }
 
     /** L'un des deux bouts du trajet est-il le monde de l'Ender ? */
@@ -204,7 +212,7 @@ public final class TeleportGuard {
         }
         travel(player, new DimensionTransition(level, anchor.pos(), Vec3.ZERO,
                 anchor.yRot(), anchor.xRot(), DimensionTransition.DO_NOTHING));
-        refuse(player);
+        refuse(player, "déplacement défait après coup");
     }
 
     // ------------------------------------------------------------------
@@ -246,16 +254,26 @@ public final class TeleportGuard {
     private static boolean permitted(Entity entity) {
         return !ModSettings.blockTeleports()
                 || ALLOWED.contains(entity.getUUID())
-                || (ModSettings.operatorBypass() && entity instanceof ServerPlayer player
+                || (ModSettings.allowOperatorTeleports() && entity instanceof ServerPlayer player
                         && player.hasPermissions(2));
     }
 
-    private static void refuse(Entity entity) {
+    /**
+     * Refuse, et le dit — au joueur, et au journal du serveur.
+     *
+     * <p>La ligne de journal n'est pas du bavardage. Un refus est rare, et
+     * quand la garde a l'air de ne rien faire, la seule question qui compte est
+     * : n'a-t-elle rien vu, ou a-t-elle vu et laissé passer ? Le journal
+     * tranche, et nomme laquelle des deux couches a agi.</p>
+     */
+    private static void refuse(Entity entity, String how) {
         if (entity instanceof ServerPlayer player) {
             player.displayClientMessage(
                     Component.translatable("enderportals.message.teleport_refused"), true);
             player.level().playSound(null, player.blockPosition(), SoundEvents.CHAIN_HIT,
                     SoundSource.PLAYERS, 0.8f, 0.6f);
+            EnderPortalsMod.LOGGER.info("Téléportation refusée à {} ({}) — {}",
+                    player.getGameProfile().getName(), player.level().dimension().location(), how);
         }
     }
 
