@@ -467,7 +467,7 @@ public final class TardisHelper {
         BlockPos front = data.interiorDoorPos.relative(data.interiorFacing);
         player.setPortalCooldown(PORTAL_COOLDOWN_TICKS);
         EnderPortalsTiming.measure("traversée vers l'Ender", () ->
-                player.changeDimension(new DimensionTransition(enderWorld, Vec3.atBottomCenterOf(front),
+                TeleportGuard.travel(player, new DimensionTransition(enderWorld, Vec3.atBottomCenterOf(front),
                         Vec3.ZERO, data.interiorFacing.toYRot(), 0.0f, DimensionTransition.DO_NOTHING)));
         enderWorld.playSound(null, front, SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 0.8f, 0.9f);
     }
@@ -483,7 +483,7 @@ public final class TardisHelper {
         }
         BlockPos front = data.exteriorPos.relative(data.exteriorFacing);
         player.setPortalCooldown(PORTAL_COOLDOWN_TICKS);
-        player.changeDimension(new DimensionTransition(level, Vec3.atBottomCenterOf(front),
+        TeleportGuard.travel(player, new DimensionTransition(level, Vec3.atBottomCenterOf(front),
                 Vec3.ZERO, data.exteriorFacing.toYRot(), 0.0f, DimensionTransition.DO_NOTHING));
         level.playSound(null, front, SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 0.8f, 0.9f);
     }

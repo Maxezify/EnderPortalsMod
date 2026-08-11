@@ -376,7 +376,7 @@ public final class AllyPassageHelper {
         }
         BlockPos landing = arrival.pos.relative(arrival.facing);
         player.setPortalCooldown(PORTAL_COOLDOWN_TICKS);
-        player.changeDimension(new DimensionTransition(level, Vec3.atBottomCenterOf(landing),
+        TeleportGuard.travel(player, new DimensionTransition(level, Vec3.atBottomCenterOf(landing),
                 Vec3.ZERO, arrival.facing.toYRot(), 0.0f, DimensionTransition.DO_NOTHING));
         level.playSound(null, landing, SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 0.8f, 1.2f);
         player.displayClientMessage(Component.translatable("enderportals.message.passage_crossed",

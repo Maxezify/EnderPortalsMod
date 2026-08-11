@@ -117,6 +117,29 @@ def check_book_pages():
     require("pages du livre", f"**{pages} pages**", f"**{pages}-page**")
 
 
+def check_settings():
+    """Les réglages documentés, et ceux que le code déclare.
+
+    Un nom d'option se renomme en une ligne de Java. Le tableau du README, lui,
+    ne bouge pas tout seul — et une option mal recopiée ne proteste pas : le
+    fichier de configuration accepte la ligne, l'ignore, et le joueur croit
+    avoir réglé quelque chose. La comparaison porte donc dans les deux sens :
+    rien de déclaré ne doit manquer au README, rien de documenté ne doit être
+    absent du code.
+    """
+    text = (JAVA / "ModSettings.java").read_text(encoding="utf-8")
+    declared = dict(re.findall(r'\.define\("(\w+)",\s*(true|false)\)', text))
+    if not declared:
+        raise SystemExit("aucun réglage trouvé dans ModSettings.java")
+    for name, default in declared.items():
+        row = f"`{name}` | `{default}`"
+        require(f"réglage {name}", row, row)
+    for name, path in (("README.fr.md", FR), ("README.md", EN)):
+        documented = dict(re.findall(r"\| `(\w+)` \| `(true|false)` \|", flat(path)))
+        if documented != declared:
+            fail(name, f"réglages documentés {documented}, déclarés {declared}")
+
+
 def check_version():
     text = (ROOT / "gradle.properties").read_text(encoding="utf-8")
     version = re.search(r"^mod_version=(.+)$", text, re.M).group(1).strip()
@@ -234,6 +257,7 @@ def main():
     check_numbers()
     check_ore()
     check_book_pages()
+    check_settings()
     check_version()
     check_recipes()
     check_yields()

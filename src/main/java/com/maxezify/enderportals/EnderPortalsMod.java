@@ -5,6 +5,7 @@ import com.maxezify.enderportals.compat.ImmPtlCompat;
 import com.maxezify.enderportals.network.ConsoleServerLogic;
 import com.maxezify.enderportals.tardis.PlotGuard;
 import com.maxezify.enderportals.tardis.TardisStateManager;
+import com.maxezify.enderportals.tardis.TeleportGuard;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -14,9 +15,11 @@ import net.minecraft.world.InteractionHand;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
 import net.minecraft.stats.Stats;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.util.TriState;
+import net.neoforged.neoforge.event.entity.EntityTravelToDimensionEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
@@ -61,6 +64,13 @@ public class EnderPortalsMod {
         NeoForge.EVENT_BUS.addListener(this::onPlotBreak);
         NeoForge.EVENT_BUS.addListener(this::onPlotPlace);
         NeoForge.EVENT_BUS.addListener(this::onPlotRightClick);
+        NeoForge.EVENT_BUS.addListener(this::onTravelToDimension);
+        NeoForge.EVENT_BUS.addListener(this::onPlayerLoggedIn);
+        NeoForge.EVENT_BUS.addListener(this::onPlayerRespawn);
+
+        // Réglages serveur : ils vivent dans la sauvegarde, pas dans
+        // l'installation. Voir ModSettings.
+        container.registerConfig(ModConfig.Type.SERVER, ModSettings.SPEC);
 
         LOGGER.info("World of Ender (NeoForge) initialisé — le vortex vous attend.");
         LOGGER.info("Immersive Portals détecté : {}", ImmPtlCompat.isLoaded());
@@ -91,7 +101,33 @@ public class EnderPortalsMod {
     private void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             ConsoleServerLogic.stopViewing(TardisStateManager.get(player.server), player.getUUID());
+            TeleportGuard.forget(player.getUUID());
         }
+    }
+
+    /**
+     * Le monde de l'Ender ne s'atteint que par une porte ou un passage : tout
+     * changement de monde qui le touche passe par ici. Voir {@link TeleportGuard}.
+     */
+    private void onTravelToDimension(EntityTravelToDimensionEvent event) {
+        TeleportGuard.onTravelToDimension(event);
+    }
+
+    /**
+     * Apparaître n'est pas se déplacer.
+     *
+     * <p>Se connecter et renaître posent un joueur quelque part sans qu'aucun
+     * trajet ait eu lieu. Le filet de {@link TeleportGuard}, qui compare deux
+     * ticks consécutifs, y verrait sans cela un saut : renaître dans un lit
+     * posé au fond de sa parcelle — la dimension le permet — serait pris pour
+     * une intrusion, et le joueur renvoyé là où il vient de mourir.</p>
+     */
+    private void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        TeleportGuard.reseed(event.getEntity());
+    }
+
+    private void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        TeleportGuard.reseed(event.getEntity());
     }
 
     /**
@@ -105,6 +141,7 @@ public class EnderPortalsMod {
      */
     private void onServerTick(ServerTickEvent.Post event) {
         ConsoleServerLogic.tick(event.getServer());
+        TeleportGuard.tick(event.getServer());
     }
 
     /**

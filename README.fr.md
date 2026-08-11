@@ -1,6 +1,6 @@
 # World of Ender
 
-*[English version](README.md)* · Mod **Minecraft 1.21.1 / NeoForge** · version **0.30.0**
+*[English version](README.md)* · Mod **Minecraft 1.21.1 / NeoForge** · version **0.31.0**
 
 Vous forgez une porte d'obsidienne, vous l'éveillez au prix d'un rituel, et elle
 s'ouvre sur un monde qui n'existait pas. Derrière elle, une parcelle entière vous
@@ -185,6 +185,45 @@ jamais tomber sur la base de quelqu'un d'autre, ni qu'on tombe sur la vôtre. Le
 Passage des Alliés est la porte que l'on ouvre volontairement dans ce mur.
 
 Le pseudo du propriétaire s'affiche sur un petit panneau à l'avant de la porte.
+
+### La téléportation est refusée
+
+Le mod tient sur deux gestes : **matérialiser sa porte** pour rentrer chez soi,
+**ouvrir un Passage des Alliés** pour aller chez un autre. Un mod de points de
+voyage — Waystones et ses semblables — les rend inutiles tous les deux d'un seul
+coup : on se pose où l'on veut, l'Ender compris, et plus rien n'a besoin d'être
+ouvert ni matérialisé.
+
+Sont donc refusés, quelle qu'en soit l'origine :
+
+* toute téléportation qui **entre** dans le monde de l'Ender ;
+* toute téléportation qui en **sort** ;
+* tout saut qui **franchit un mur de parcelle**.
+
+Restent permis : les trajets du mod lui-même — porte, Passage des Alliés,
+Téléporteur d'entité — et **les sauts à l'intérieur de votre propre parcelle**.
+Une perle de l'Ender, un fruit chorus ou un point de voyage posé chez vous ne
+dispensent de rien, puisqu'il a fallu entrer d'abord.
+
+Le refus s'appuie sur **deux contrôles indépendants**. Le premier *empêche* :
+NeoForge annonce tout changement de monde avant qu'il n'ait lieu, et celui-là est
+annulé — les portails du Nether y passent aussi. Le second *défait* : à chaque
+tick, la position de chaque joueur est comparée à celle du tick précédent, et un
+déplacement impossible à pied le renvoie d'où il venait. Le second existe parce
+que le premier ne voit que ce qui emprunte le chemin normal, et qu'une garde dont
+on ignore la portée n'en est pas une.
+
+**Les opérateurs y échappent** (niveau de permission 2). Deux réglages, dans le
+fichier `serverconfig/enderportals-server.toml` de votre sauvegarde :
+
+| Réglage | Défaut | Effet |
+| --- | --- | --- |
+| `blockTeleports` | `true` | Le refus décrit ci-dessus |
+| `operatorBypass` | `true` | Les opérateurs ne sont pas concernés |
+
+> Sur un serveur de test **où tout le monde est opérateur**, le refus ne
+> s'applique à personne et le mod a l'air de ne rien faire. Pour le voir agir :
+> `/deop <pseudo>`, ou passer `operatorBypass` à `false`.
 
 ---
 
@@ -535,7 +574,7 @@ Pour compiler — prérequis **Java 21** :
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.30.0.jar
+# → build/libs/enderportals-0.31.0.jar
 ```
 
 Le build est géré par **ModDevGradle** ; NeoForge et les mappings officiels sont

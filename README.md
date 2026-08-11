@@ -1,6 +1,6 @@
 # World of Ender
 
-*[Version française](README.fr.md)* · A **Minecraft 1.21.1 / NeoForge** mod · version **0.30.0**
+*[Version française](README.fr.md)* · A **Minecraft 1.21.1 / NeoForge** mod · version **0.31.0**
 
 You forge an obsidian door, you wake it at the cost of a ritual, and it opens
 onto a world that was not there before. Behind it, an entire plot of land is
@@ -180,6 +180,43 @@ else's base, or them into yours. The Allies' Passage is the door you deliberatel
 open in that wall.
 
 The owner's name is shown on a small plate on the front of the door.
+
+### Teleporting is refused
+
+The mod rests on two gestures: **materialising your door** to get home, and
+**opening an Allies' Passage** to visit someone else. A waypoint mod — Waystones
+and its like — makes both of them pointless at a stroke: you land wherever you
+want, the Ender included, and nothing needs opening or materialising any more.
+
+Refused, therefore, whatever the source:
+
+* any teleport that **enters** the Ender world;
+* any teleport that **leaves** it;
+* any jump that **crosses a plot wall**.
+
+Still allowed: the mod's own trips — door, Allies' Passage, Entity Teleporter —
+and **jumps inside your own plot**. An ender pearl, a chorus fruit or a waypoint
+placed at home excuse you from nothing, since you had to get in first.
+
+The refusal rests on **two independent checks**. The first one *prevents*:
+NeoForge announces every world change before it happens, and that one is
+cancelled — nether portals go through it too. The second one *undoes*: every
+tick, each player's position is compared with the previous tick's, and a move
+that no one could have walked sends them back where they came from. The second
+exists because the first only sees what takes the normal path, and a guard whose
+reach you cannot state is not a guard.
+
+**Operators are exempt** (permission level 2). Two settings, in your save's
+`serverconfig/enderportals-server.toml`:
+
+| Setting | Default | Effect |
+| --- | --- | --- |
+| `blockTeleports` | `true` | The refusal described above |
+| `operatorBypass` | `true` |
+
+> On a test server **where everyone is an operator**, the refusal applies to no
+> one and the mod looks like it does nothing. To see it work: `/deop <name>`, or
+> set `operatorBypass` to `false`.
 
 ---
 
@@ -520,7 +557,7 @@ To build — **Java 21** required:
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.30.0.jar
+# → build/libs/enderportals-0.31.0.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are

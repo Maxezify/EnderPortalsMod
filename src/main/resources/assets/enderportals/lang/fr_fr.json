@@ -138,6 +138,7 @@
   "enderportals.tooltip.friendship_console_2": "Il doit en faire autant de son côté, dans les deux minutes",
   "enderportals.message.not_your_door": "Cette porte n'est pas la vôtre.",
   "enderportals.message.key_needs_sneak": "Accroupissez-vous et refaites un clic droit pour poser la porte ici.",
+  "enderportals.message.teleport_refused": "Pas de téléportation ici : l'Ender ne s'atteint que par une porte ou un passage.",
   "enderportals.message.key_no_door": "Vous n'avez pas de porte éveillée.",
   "enderportals.message.key_rebound": "Clé liée à votre porte.",
   "enderportals.message.tardis_recalled_nearby": "Emplacement occupé — la porte s'est matérialisée à côté : %s %s %s",

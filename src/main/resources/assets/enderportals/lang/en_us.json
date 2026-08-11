@@ -138,6 +138,7 @@
   "enderportals.tooltip.friendship_console_2": "They must do the same on their side, within two minutes",
   "enderportals.message.not_your_door": "This door is not yours.",
   "enderportals.message.key_needs_sneak": "Sneak and right-click again to place the door here.",
+  "enderportals.message.teleport_refused": "No teleporting here: the Ender is reached only by a door or a passage.",
   "enderportals.message.key_no_door": "You have no awakened door.",
   "enderportals.message.key_rebound": "Key bound to your door.",
   "enderportals.message.tardis_recalled_nearby": "Spot taken — the door materialised nearby: %s %s %s",

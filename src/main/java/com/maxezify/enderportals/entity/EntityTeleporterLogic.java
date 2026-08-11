@@ -6,6 +6,7 @@ import com.maxezify.enderportals.ModDimensions;
 import com.maxezify.enderportals.ModItems;
 import com.maxezify.enderportals.tardis.EnderChunks;
 import com.maxezify.enderportals.tardis.EnderXp;
+import com.maxezify.enderportals.tardis.TeleportGuard;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -256,12 +257,12 @@ public final class EntityTeleporterLogic {
         for (Entity rider : riders) {
             rider.stopRiding();
         }
-        Entity moved = machine.changeDimension(transition(enderWorld, arrival, machine.getYRot()));
+        Entity moved = TeleportGuard.travel(machine, transition(enderWorld, arrival, machine.getYRot()));
         if (!(moved instanceof EntityTeleporterEntity arrived)) {
             return null;
         }
         for (Entity rider : riders) {
-            Entity landed = rider.changeDimension(transition(enderWorld, arrival, rider.getYRot()));
+            Entity landed = TeleportGuard.travel(rider, transition(enderWorld, arrival, rider.getYRot()));
             if (landed != null) {
                 landed.startRiding(arrived, true);
             }
