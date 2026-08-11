@@ -43,18 +43,23 @@ import java.util.UUID;
  * qui change de monde par le chemin normal y passe, portails du Nether
  * compris. On y refuse, et rien ne se produit.</p>
  *
- * <p><b>Le filet.</b> La prévention ne vaut que pour qui emprunte ce chemin, et
- * Waystones ne l'emprunte pas : il appelle
- * {@code Entity#teleportTo(ServerLevel, …)}, méthode que NeoForge ne patche pas
- * — aucun hunk {@code teleportTo} dans {@code Entity.java.patch}. Aucun
- * événement n'est donc annoncé, et il n'y a rien à annuler. C'était prévu :
- * {@link #tick} relit la position de chaque joueur et la compare à celle du
- * tick précédent. Peu importe par quel code il a bougé — s'il est arrivé là où
- * il n'avait pas le droit d'arriver, il repart d'où il venait.</p>
+ * <p><b>Le filet.</b> La prévention ne voit que ce qui passe par
+ * {@code changeDimension}, et cela ne couvre pas tout. Waystones appelle
+ * {@code ServerPlayer#teleportTo(ServerLevel, …, Set, …)}, dont le désassemblage
+ * des classes de 1.21.1 montre qu'elle se dédouble : vers un <b>autre monde</b>
+ * elle retombe sur la surcharge qui appelle {@code changeDimension} — la
+ * prévention agit, proprement — mais <b>dans le même monde</b> elle écrit
+ * directement au client par {@code ServerGamePacketListenerImpl.teleport},
+ * sans qu'aucun événement n'existe. Il n'y a alors rien à annuler.</p>
  *
- * <p>Le filet est donc la garde <b>principale</b>, et la prévention un confort
- * pour les mods qui passent par le chemin normal. Contrepartie assumée : un
- * tick de latence, et un mod qui a déjà encaissé son prix ne le rend pas.</p>
+ * <p>{@link #tick} relit donc la position de chaque joueur et la compare à
+ * celle du tick précédent : peu importe par quel code il a bougé, franchir un
+ * mur de parcelle le renvoie d'où il venait. Contrepartie assumée : un tick de
+ * latence, et un mod qui a déjà encaissé son prix ne le rend pas.</p>
+ *
+ * <p>Les deux couches se partagent donc le travail proprement — la première
+ * pour les changements de monde, la seconde pour les sauts entre parcelles —
+ * et aucune des deux ne suffirait seule.</p>
  *
  * <p>Le filet ne surveille que ce qui est <b>impossible autrement</b> : entrer
  * dans l'Ender, en sortir, franchir un mur de parcelle. Un saut à l'intérieur

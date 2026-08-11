@@ -1,6 +1,6 @@
 # World of Ender
 
-*[Version française](README.fr.md)* · A **Minecraft 1.21.1 / NeoForge** mod · version **0.33.0**
+*[Version française](README.fr.md)* · A **Minecraft 1.21.1 / NeoForge** mod · version **0.33.1**
 
 You forge an obsidian door, you wake it at the cost of a ritual, and it opens
 onto a world that was not there before. Behind it, an entire plot of land is
@@ -198,19 +198,23 @@ Still allowed: the mod's own trips — door, Allies' Passage, Entity Teleporter 
 and **jumps inside your own plot**. An ender pearl, a chorus fruit or a waypoint
 placed at home excuse you from nothing, since you had to get in first.
 
-The refusal rests on **two independent checks**, and it is the second one that
-does the heavy lifting.
+The refusal rests on **two independent checks**, and each catches one half of
+the problem.
 
-The first one *prevents*: NeoForge announces every world change before it
-happens, and that one is cancelled. Nether portals go through it — but Waystones
-does not, because it moves the player through `Entity#teleportTo`, a method
-NeoForge does not patch. Nothing is announced there, so there is nothing to
-cancel.
+The first one *prevents*. NeoForge announces every `changeDimension` before it
+happens, and that one is cancelled. That is the path a **world change** takes:
+Waystones calls `ServerPlayer#teleportTo`, which for a destination in another
+world falls through to that method. The player simply does not move, with no
+visible jolt.
 
-The second one *undoes*. Every tick, each player's position is compared with the
-previous tick's; a move no one could have walked sends them back where they came
-from. It no longer matters which code moved them. The accepted cost: one tick of
-latency, and a mod that has already charged its price does not refund it.
+The second one *undoes*. For a destination **in the same world**, that same
+`teleportTo` writes straight to the client without announcing anything — no event
+exists, so there is nothing to cancel. Every tick, each player's position is
+therefore compared with the previous tick's, and crossing a plot wall sends them
+back where they came from. The cost: one tick of latency, and a mod that has
+already charged its price does not refund it.
+
+Neither check would be enough on its own.
 
 Two settings, in your save's `serverconfig/enderportals-server.toml`:
 
@@ -579,7 +583,7 @@ To build — **Java 21** required:
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.33.0.jar
+# → build/libs/enderportals-0.33.1.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are

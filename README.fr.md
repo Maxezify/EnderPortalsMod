@@ -1,6 +1,6 @@
 # World of Ender
 
-*[English version](README.md)* · Mod **Minecraft 1.21.1 / NeoForge** · version **0.33.0**
+*[English version](README.md)* · Mod **Minecraft 1.21.1 / NeoForge** · version **0.33.1**
 
 Vous forgez une porte d'obsidienne, vous l'éveillez au prix d'un rituel, et elle
 s'ouvre sur un monde qui n'existait pas. Derrière elle, une parcelle entière vous
@@ -205,19 +205,23 @@ Téléporteur d'entité — et **les sauts à l'intérieur de votre propre parce
 Une perle de l'Ender, un fruit chorus ou un point de voyage posé chez vous ne
 dispensent de rien, puisqu'il a fallu entrer d'abord.
 
-Le refus s'appuie sur **deux contrôles indépendants**, et c'est le second qui
-fait le gros du travail.
+Le refus s'appuie sur **deux contrôles indépendants**, et chacun attrape une
+moitié du problème.
 
-Le premier *empêche* : NeoForge annonce tout changement de monde avant qu'il
-n'ait lieu, et celui-là est annulé. Les portails du Nether y passent — mais pas
-Waystones, qui déplace le joueur par `Entity#teleportTo`, une méthode que
-NeoForge ne patche pas. Rien n'y est annoncé, donc il n'y a rien à annuler.
+Le premier *empêche*. NeoForge annonce tout passage par `changeDimension` avant
+qu'il n'ait lieu, et celui-là est annulé. C'est par là que passe un **changement
+de monde** : Waystones appelle `ServerPlayer#teleportTo`, qui pour une
+destination dans un autre monde retombe sur cette méthode. Le joueur ne bouge
+pas, sans le moindre à-coup.
 
-Le second *défait*. À chaque tick, la position de chaque joueur est comparée à
-celle du tick précédent ; un déplacement qu'aucun trajet à pied n'aurait pu
-produire le renvoie d'où il venait. Peu importe alors par quel code il a bougé.
-Contrepartie assumée : un tick de latence, et un mod qui a déjà encaissé son prix
-ne le rend pas.
+Le second *défait*. Pour une destination **dans le même monde**, ce même
+`teleportTo` écrit directement au client sans rien annoncer — aucun événement
+n'existe, il n'y a rien à annuler. À chaque tick, la position de chaque joueur
+est donc comparée à celle du tick précédent, et un franchissement de mur de
+parcelle le renvoie d'où il venait. Contrepartie : un tick de latence, et un mod
+qui a déjà encaissé son prix ne le rend pas.
+
+Aucune des deux couches ne suffirait seule.
 
 Deux réglages, dans le fichier `serverconfig/enderportals-server.toml` de votre
 sauvegarde :
@@ -600,7 +604,7 @@ Pour compiler — prérequis **Java 21** :
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.33.0.jar
+# → build/libs/enderportals-0.33.1.jar
 ```
 
 Le build est géré par **ModDevGradle** ; NeoForge et les mappings officiels sont
