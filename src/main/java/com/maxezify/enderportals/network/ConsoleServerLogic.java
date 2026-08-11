@@ -588,8 +588,7 @@ public final class ConsoleServerLogic {
 
     /** Un code d'ami se dicte par groupes de quatre, comme il s'affiche. */
     private static String formatCode(int code) {
-        String digits = Integer.toString(code);
-        return digits.length() == 8 ? digits.substring(0, 4) + " " + digits.substring(4) : digits;
+        return FriendCode.format(code);
     }
 
     private ConsoleServerLogic() {

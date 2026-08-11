@@ -5,6 +5,7 @@ import com.maxezify.enderportals.network.ConsoleActionPayload;
 import com.maxezify.enderportals.network.ConsoleStatePayload;
 import com.maxezify.enderportals.tardis.AllyLinks;
 import com.maxezify.enderportals.tardis.ConsoleLog;
+import com.maxezify.enderportals.tardis.FriendCode;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -63,7 +64,7 @@ public class FriendshipConsoleScreen extends Screen {
     private static final int SHEET_H = 256;
 
     /** Longueur d'un code d'ami. Voir {@code TardisStateManager}. */
-    private static final int CODE_LENGTH = 8;
+    private static final int CODE_LENGTH = FriendCode.DIGITS;
 
     // Carnet, à gauche.
     private static final int LIST_X = 8;
@@ -329,10 +330,7 @@ public class FriendshipConsoleScreen extends Screen {
     }
 
     private static String formatCode(int code) {
-        String digits = Integer.toString(code);
-        return digits.length() == CODE_LENGTH
-                ? digits.substring(0, 4) + " " + digits.substring(4)
-                : digits;
+        return FriendCode.format(code);
     }
 
     private void renderList(GuiGraphics guiGraphics, int mouseX, int mouseY) {

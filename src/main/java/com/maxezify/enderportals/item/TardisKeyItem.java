@@ -5,6 +5,7 @@ import com.maxezify.enderportals.ModComponents;
 import com.maxezify.enderportals.ModDimensions;
 import com.maxezify.enderportals.block.TardisDoorBlock;
 import com.maxezify.enderportals.block.entity.TardisDoorBlockEntity;
+import com.maxezify.enderportals.tardis.FriendCode;
 import com.maxezify.enderportals.tardis.TardisData;
 import com.maxezify.enderportals.tardis.TardisHelper;
 import com.maxezify.enderportals.tardis.TardisStateManager;
@@ -250,10 +251,8 @@ public class TardisKeyItem extends Item {
                     bound.substring(0, Math.min(8, bound.length()))).withStyle(ChatFormatting.AQUA));
             Integer code = stack.get(ModComponents.FRIEND_CODE.get());
             if (code != null && code != 0) {
-                String digits = Integer.toString(code);
                 tooltip.add(Component.translatable("enderportals.tooltip.friend_code",
-                                digits.length() == 8 ? digits.substring(0, 4) + " " + digits.substring(4) : digits)
-                        .withStyle(ChatFormatting.GOLD));
+                        FriendCode.format(code)).withStyle(ChatFormatting.GOLD));
             }
         } else {
             tooltip.add(Component.translatable("enderportals.tooltip.key_unbound").withStyle(ChatFormatting.GRAY));

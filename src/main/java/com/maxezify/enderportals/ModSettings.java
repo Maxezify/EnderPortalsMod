@@ -30,26 +30,26 @@ public final class ModSettings {
             .define("blockTeleports", true);
 
     /**
-      * Renommée depuis {@code operatorBypass} (0.31.0), et pas par coquetterie.
-      *
-      * <p>Cette option valait {@code true} par défaut, ce qui n'a rien bloqué
-      * sur un serveur où le joueur est aussi l'administrateur. Corriger le
-      * défaut ne suffisait pas : un fichier de configuration déjà écrit garde
-      * sa valeur, et la correction n'aurait servi qu'aux mondes neufs. Sous un
-      * nom neuf, la clé périmée est retirée au chargement et la nouvelle naît
-      * avec son défaut — l'ancien réglage ne survit à personne.</p>
-      */
-    private static final ModConfigSpec.BooleanValue OPERATOR_BYPASS = BUILDER
+     * Renommée depuis {@code operatorBypass} (0.31.0), et pas par coquetterie.
+     *
+     * <p>Cette option valait {@code true} par défaut, ce qui n'a rien bloqué
+     * sur un serveur où le joueur est aussi l'administrateur. Corriger le
+     * défaut ne suffisait pas : un fichier de configuration déjà écrit garde
+     * sa valeur, et la correction n'aurait servi qu'aux mondes neufs. Sous un
+     * nom neuf, la clé périmée est retirée au chargement et la nouvelle naît
+     * avec son défaut — l'ancien réglage ne survit à personne.</p>
+     */
+    private static final ModConfigSpec.BooleanValue ALLOW_OPERATOR_TELEPORTS = BUILDER
             .comment("Les opérateurs (niveau de permission 2) échappent au refus ci-dessus.",
                     "",
                     "Faux par défaut, et c'est un choix. Sur la plupart des serveurs, celui",
                     "qui joue est aussi celui qui administre : laisser les opérateurs passer",
                     "revenait à ne rien bloquer pour personne, et le garde-fou semblait cassé",
                     "alors qu'il obéissait. Un réglage dont la valeur par défaut annule la",
-                    "fonction n'est pas un réglage, c'est un piege.",
+                    "fonction n'est pas un réglage, c'est un piège.",
                     "",
-                    "Passez-le a true si vous devez deplacer un joueur a la commande : tant",
-                    "qu'il est faux, /tp vers l'Ender est refuse aux operateurs comme aux",
+                    "Passez-le à true si vous devez déplacer un joueur à la commande : tant",
+                    "qu'il est faux, /tp vers l'Ender est refusé aux opérateurs comme aux",
                     "autres.",
                     "",
                     "Operators (permission level 2) bypass the refusal above. False by default:",
@@ -66,7 +66,7 @@ public final class ModSettings {
 
     /** Les opérateurs y échappent-ils ? */
     public static boolean allowOperatorTeleports() {
-        return OPERATOR_BYPASS.get();
+        return ALLOW_OPERATOR_TELEPORTS.get();
     }
 
     private ModSettings() {

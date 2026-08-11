@@ -39,11 +39,8 @@ public class TardisStateManager extends SavedData {
     private static final SavedData.Factory<TardisStateManager> FACTORY =
             new SavedData.Factory<>(TardisStateManager::new, TardisStateManager::load, null);
 
-    /**
-     * Longueur du code d'ami. Fixe, donc la frappe au pavé fait toujours
-     * exactement huit touches et il n'y a aucune longueur variable à gérer.
-     */
-    public static final int CODE_DIGITS = 8;
+    /** Longueur du code d'ami. Sa forme complète vit dans {@link FriendCode}. */
+    public static final int CODE_DIGITS = FriendCode.DIGITS;
 
     /**
      * Les codes ne sont tirés que dans <b>1 à 9</b> : aucun zéro, nulle part.

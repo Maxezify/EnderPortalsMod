@@ -22,6 +22,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.EntityTravelToDimensionEvent;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -194,9 +195,12 @@ public final class TeleportGuard {
      * arriver. Appelé une fois par tick de serveur.
      */
     public static void tick(MinecraftServer server) {
-        // Une copie : renvoyer un joueur d'un monde à l'autre remue les listes
-        // du serveur, et la liste parcourue ne doit pas être l'une d'elles.
-        for (ServerPlayer player : List.copyOf(server.getPlayerList().getPlayers())) {
+        // Le relevé ne déplace personne : la liste vivante du serveur peut donc
+        // être parcourue telle quelle. Les rares fautifs sont mis de côté et
+        // traités ensuite — c'est le renvoi qui remue les listes, pas la
+        // lecture. Le cas courant, celui où personne n'a triché, n'alloue rien.
+        List<ServerPlayer> caught = null;
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             Anchor now = anchorOf(player);
             Anchor last = LAST.get(player.getUUID());
             if (last == null || permitted(player) || !suspicious(last, now)
@@ -204,7 +208,18 @@ public final class TeleportGuard {
                 LAST.put(player.getUUID(), now);
                 continue;
             }
-            sendBack(player, last);
+            if (caught == null) {
+                caught = new ArrayList<>(1);
+            }
+            caught.add(player);
+        }
+        if (caught == null) {
+            return;
+        }
+        for (ServerPlayer player : caught) {
+            // LAST n'a pas été touché pour eux : il porte encore l'ancre d'où
+            // ils viennent.
+            sendBack(player, LAST.get(player.getUUID()));
         }
     }
 
@@ -282,9 +297,18 @@ public final class TeleportGuard {
             LAST.put(player.getUUID(), anchorOf(player));
             return;
         }
-        travel(player, new DimensionTransition(level, anchor.pos(), Vec3.ZERO,
-                anchor.yRot(), anchor.xRot(), DimensionTransition.DO_NOTHING));
-        refuse(player, "déplacement défait après coup");
+        if (travel(player, new DimensionTransition(level, anchor.pos(), Vec3.ZERO,
+                anchor.yRot(), anchor.xRot(), DimensionTransition.DO_NOTHING)) != null) {
+            refuse(player, "déplacement défait après coup");
+            return;
+        }
+        // Le retour a échoué — entité déjà retirée, par exemple. Prendre acte
+        // de la position actuelle : sinon le même saut serait jugé fautif au
+        // tick suivant, et à tous les suivants, et le joueur recevrait le même
+        // refus vingt fois par seconde jusqu'à ce qu'il bouge.
+        LAST.put(player.getUUID(), anchorOf(player));
+        EnderPortalsMod.LOGGER.warn("Retour impossible pour {} : sa position actuelle fait foi.",
+                player.getGameProfile().getName());
     }
 
     // ------------------------------------------------------------------
