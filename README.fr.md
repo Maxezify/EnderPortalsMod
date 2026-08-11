@@ -1,6 +1,6 @@
 # World of Ender
 
-*[English version](README.md)* · Mod **Minecraft 1.21.1 / NeoForge** · version **0.33.1**
+*[English version](README.md)* · Mod **Minecraft 1.21.1 / NeoForge** · version **0.33.2**
 
 Vous forgez une porte d'obsidienne, vous l'éveillez au prix d'un rituel, et elle
 s'ouvre sur un monde qui n'existait pas. Derrière elle, une parcelle entière vous
@@ -204,6 +204,13 @@ Restent permis : les trajets du mod lui-même — porte, Passage des Alliés,
 Téléporteur d'entité — et **les sauts à l'intérieur de votre propre parcelle**.
 Une perle de l'Ender, un fruit chorus ou un point de voyage posé chez vous ne
 dispensent de rien, puisqu'il a fallu entrer d'abord.
+
+Et surtout : **toute traversée amorcée sur le seuil d'une porte ou d'un
+passage**, quel que soit le code qui l'exécute. C'est indispensable avec
+Immersive Portals, qui transforme la porte en vrai portail et fait passer le
+joueur lui-même, sans jamais demander son avis au mod. La règle est celle qu'on
+énonçait depuis le début — on n'entre que par une porte — et elle se vérifie en
+regardant les blocs, sans rien connaître du mod d'en face.
 
 Le refus s'appuie sur **deux contrôles indépendants**, et chacun attrape une
 moitié du problème.
@@ -604,7 +611,7 @@ Pour compiler — prérequis **Java 21** :
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.33.1.jar
+# → build/libs/enderportals-0.33.2.jar
 ```
 
 Le build est géré par **ModDevGradle** ; NeoForge et les mappings officiels sont

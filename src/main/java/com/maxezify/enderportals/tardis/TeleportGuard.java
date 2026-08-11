@@ -1,9 +1,11 @@
 package com.maxezify.enderportals.tardis;
 
 import com.maxezify.enderportals.EnderPortalsMod;
+import com.maxezify.enderportals.ModBlocks;
 import com.maxezify.enderportals.ModDimensions;
 import com.maxezify.enderportals.ModSettings;
 import com.maxezify.enderportals.world.EnderWorldChunkGenerator;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -14,6 +16,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.portal.DimensionTransition;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.EntityTravelToDimensionEvent;
@@ -67,6 +70,27 @@ import java.util.UUID;
  * point de voyage posé chez soi : rien de tout cela ne dispense de matérialiser
  * sa porte ni d'ouvrir un passage, puisqu'il a fallu entrer d'abord. Une garde
  * qui interdit aussi ce qui ne casse rien finit par être désactivée en entier.</p>
+ *
+ * <h2>Le seuil</h2>
+ *
+ * <p>Le laissez-passer ci-dessous ne couvre que les trajets que ce mod exécute
+ * lui-même. Or il n'exécute pas toujours les siens : quand Immersive Portals
+ * est présent, la porte devient un vrai portail et c'est <b>lui</b> qui fait
+ * passer le joueur — {@code TardisDoorBlock.entityInside} sort sans rien faire.
+ * La garde a donc commencé par refuser la porte du mod, ce qui est le contraire
+ * du but.</p>
+ *
+ * <p>D'où une seconde façon d'avoir raison, qui ne demande rien à personne :
+ * <b>une traversée amorcée sur le seuil d'une porte ou d'un passage est
+ * légitime</b>, quel que soit le code qui l'exécute. C'est ce qu'on voulait
+ * dire depuis le début — « on n'entre que par une porte » — et c'est vérifiable
+ * sans connaître le mod d'en face : on regarde si le joueur se tenait contre un
+ * bloc de ce mod au moment de partir.</p>
+ *
+ * <p>Le contrôle porte sur le <b>départ</b>, jamais sur l'arrivée. Le départ
+ * est la seule des deux positions que les deux couches connaissent — la
+ * prévention agit avant que l'arrivée n'existe — et c'est aussi le bon endroit
+ * moralement : ce qu'on exige, c'est d'être passé par une porte.</p>
  *
  * <h2>Le laissez-passer</h2>
  *
@@ -148,6 +172,10 @@ public final class TeleportGuard {
         if (!touchesEnderWorld(entity.level().dimension(), event.getDimension()) || permitted(entity)) {
             return;
         }
+        MinecraftServer server = entity.getServer();
+        if (server != null && atThreshold(server, entity.level().dimension(), entity.position())) {
+            return;
+        }
         event.setCanceled(true);
         refuse(entity, "changement de monde annulé");
     }
@@ -171,7 +199,8 @@ public final class TeleportGuard {
         for (ServerPlayer player : List.copyOf(server.getPlayerList().getPlayers())) {
             Anchor now = anchorOf(player);
             Anchor last = LAST.get(player.getUUID());
-            if (last == null || permitted(player) || !suspicious(last, now)) {
+            if (last == null || permitted(player) || !suspicious(last, now)
+                    || atThreshold(server, last.dimension(), last.pos())) {
                 LAST.put(player.getUUID(), now);
                 continue;
             }
@@ -197,6 +226,44 @@ public final class TeleportGuard {
             return true;
         }
         return enclosure(last.pos()) != enclosure(now.pos());
+    }
+
+    /**
+     * Distance à laquelle un bloc du mod vaut seuil, en blocs.
+     *
+     * <p>Trois suffisent largement et n'ouvrent rien. Un joueur qui franchit un
+     * portail est collé au bloc ; la position comparée date d'un tick, soit un
+     * demi-bloc en sprint. À l'inverse, s'en servir pour tricher demanderait de
+     * se tenir contre une porte — d'où l'on peut déjà passer à pied.</p>
+     */
+    private static final int THRESHOLD_RADIUS = 3;
+
+    /**
+     * Y avait-il une porte ou un passage de ce mod à portée de cette position ?
+     *
+     * <p>On lit les blocs plutôt que d'interroger le mod qui a déplacé le
+     * joueur : cela vaut pour Immersive Portals comme pour n'importe quel autre,
+     * connu ou non. Les chunks non chargés sont sautés au lieu d'être chargés —
+     * une vérification ne doit pas faire tourner le monde.</p>
+     */
+    private static boolean atThreshold(MinecraftServer server, ResourceKey<Level> dimension, Vec3 pos) {
+        ServerLevel level = server.getLevel(dimension);
+        if (level == null) {
+            return false;
+        }
+        BlockPos centre = BlockPos.containing(pos);
+        for (BlockPos block : BlockPos.betweenClosed(
+                centre.offset(-THRESHOLD_RADIUS, -THRESHOLD_RADIUS, -THRESHOLD_RADIUS),
+                centre.offset(THRESHOLD_RADIUS, THRESHOLD_RADIUS, THRESHOLD_RADIUS))) {
+            if (!level.hasChunkAt(block)) {
+                continue;
+            }
+            BlockState state = level.getBlockState(block);
+            if (state.is(ModBlocks.TARDIS_DOOR.get()) || state.is(ModBlocks.ALLY_PASSAGE.get())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Les deux rangs d'enclos d'une position, empaquetés pour comparaison. */

@@ -1,6 +1,6 @@
 # World of Ender
 
-*[Version française](README.fr.md)* · A **Minecraft 1.21.1 / NeoForge** mod · version **0.33.1**
+*[Version française](README.fr.md)* · A **Minecraft 1.21.1 / NeoForge** mod · version **0.33.2**
 
 You forge an obsidian door, you wake it at the cost of a ritual, and it opens
 onto a world that was not there before. Behind it, an entire plot of land is
@@ -197,6 +197,13 @@ Refused, therefore, whatever the source:
 Still allowed: the mod's own trips — door, Allies' Passage, Entity Teleporter —
 and **jumps inside your own plot**. An ender pearl, a chorus fruit or a waypoint
 placed at home excuse you from nothing, since you had to get in first.
+
+And above all: **any crossing that starts on the threshold of a door or a
+passage**, whatever code carries it out. That is essential with Immersive
+Portals, which turns the door into a real portal and moves the player itself,
+never asking the mod. The rule is the one stated from the start — you only get in
+through a door — and it is checked by looking at blocks, knowing nothing about
+the mod on the other side.
 
 The refusal rests on **two independent checks**, and each catches one half of
 the problem.
@@ -583,7 +590,7 @@ To build — **Java 21** required:
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.33.1.jar
+# → build/libs/enderportals-0.33.2.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are
