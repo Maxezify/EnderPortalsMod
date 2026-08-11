@@ -6,6 +6,7 @@ import com.maxezify.enderportals.block.AllyPassageBlock;
 import com.maxezify.enderportals.tardis.AllyLinks;
 import com.maxezify.enderportals.tardis.AllyPassageHelper;
 import com.maxezify.enderportals.tardis.ConsoleLog;
+import com.maxezify.enderportals.tardis.FriendCode;
 import com.maxezify.enderportals.tardis.PassageData;
 import com.maxezify.enderportals.tardis.TardisData;
 import com.maxezify.enderportals.tardis.TardisStateManager;

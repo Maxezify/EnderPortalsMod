@@ -40,6 +40,13 @@ jobs:
       - name: Vérifier les README
         run: python3 tools/check_readme.py
 
+      # Un import manquant vers une classe du mod se noie dans le bruit d'une
+      # compilation sans Minecraft : même message que les centaines de symboles
+      # introuvables du jeu. Il a déjà cassé un build. Ce contrôle-ci ne compile
+      # rien et ne peut donc pas être trompé par ce bruit.
+      - name: Vérifier les imports du mod
+        run: python3 tools/check_imports.py
+
       - name: Build
         run: ./gradlew build --stacktrace --no-daemon
 
