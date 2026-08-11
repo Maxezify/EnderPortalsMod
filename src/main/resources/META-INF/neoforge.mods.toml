@@ -16,7 +16,12 @@ logoFile = "assets/enderportals/icon.png"
 [[dependencies.enderportals]]
 modId = "neoforge"
 type = "required"
-versionRange = "[21.1,)"
+# 21.1.238 est le build qui a introduit TooltipFlag#shouldDisplayAllInformation,
+# dont EnderTooltip se sert pour livrer aux visualiseurs de recettes le mode
+# d'emploi replié derrière Maj. En deçà, la méthode n'existe pas et le survol
+# d'un objet lèverait NoSuchMethodError : le plancher est donc réel, pas
+# prudentiel.
+versionRange = "[21.1.238,)"
 ordering = "NONE"
 side = "BOTH"
 

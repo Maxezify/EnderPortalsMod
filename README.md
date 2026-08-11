@@ -1,6 +1,6 @@
 # World of Ender
 
-*[Version française](README.fr.md)* · A **Minecraft 1.21.1 / NeoForge** mod · version **0.31.0**
+*[Version française](README.fr.md)* · A **Minecraft 1.21.1 / NeoForge** mod · version **0.32.0**
 
 You forge an obsidian door, you wake it at the cost of a ritual, and it opens
 onto a world that was not there before. Behind it, an entire plot of land is
@@ -479,6 +479,13 @@ What stays visible without pressing anything is **the state of that particular
 item**: the door this key is bound to and its friend code, the Lander this
 teleporter is aiming at. That is what tells two items apart in a chest.
 
+**Recipe viewers see everything.** JEI, EMI and REI read tooltips to index them,
+and their search only finds what they were able to read: folded behind a key
+nobody is holding at indexing time, the instructions were invisible to them. They
+now announce that they want the full version, and they get it — searching for
+"lander" brings up the teleporter aiming at one. This is what sets the floor at
+**NeoForge 21.1.238**.
+
 ---
 
 ## Server and compatibility
@@ -549,7 +556,7 @@ It is paid **once per session**, and not at all without shaders.
 
 ## Installing and building
 
-Put the jar in `mods/`, with **NeoForge 21.1.x** for **Minecraft 1.21.1**. Every
+Put the jar in `mods/`, with **NeoForge 21.1.238** or newer, for **Minecraft 1.21.1**. Every
 build is published to the [`dev-latest`](../../releases/tag/dev-latest)
 pre-release.
 
@@ -557,7 +564,7 @@ To build — **Java 21** required:
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.31.0.jar
+# → build/libs/enderportals-0.32.0.jar
 ```
 
 The build is handled by **ModDevGradle**; NeoForge and the official mappings are

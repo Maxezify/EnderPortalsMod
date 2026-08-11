@@ -1,6 +1,6 @@
 # World of Ender
 
-*[English version](README.md)* · Mod **Minecraft 1.21.1 / NeoForge** · version **0.31.0**
+*[English version](README.md)* · Mod **Minecraft 1.21.1 / NeoForge** · version **0.32.0**
 
 Vous forgez une porte d'obsidienne, vous l'éveillez au prix d'un rituel, et elle
 s'ouvre sur un monde qui n'existait pas. Derrière elle, une parcelle entière vous
@@ -494,6 +494,14 @@ Ce qui reste visible sans rien appuyer, c'est **l'état de cet exemplaire-là** 
 la porte à laquelle cette clé est liée et son code d'ami, l'Atterrisseur que vise
 ce téléporteur. C'est ce qui distingue deux objets dans un coffre.
 
+**Les visualiseurs de recettes voient tout.** JEI, EMI et REI lisent les
+infobulles pour les indexer, et leur recherche ne trouve que ce qu'ils ont pu
+lire : replié derrière une touche que personne ne tient au moment de
+l'indexation, le mode d'emploi leur était invisible. Ils annoncent désormais
+qu'ils veulent la version complète, et ils l'obtiennent — chercher
+« atterrisseur » ramène le téléporteur qui le vise. C'est ce qui fixe le plancher
+de **NeoForge 21.1.238**.
+
 ---
 
 ## Serveur et compatibilité
@@ -566,7 +574,8 @@ Elle ne se paie **qu'une fois par session**, et pas du tout sans shaders.
 
 ## Installer et compiler
 
-Placez le jar dans `mods/`, avec **NeoForge 21.1.x** pour **Minecraft 1.21.1**.
+Placez le jar dans `mods/`, avec **NeoForge 21.1.238** ou plus récent, pour
+**Minecraft 1.21.1**.
 Chaque build est publié dans la pré-release
 [`dev-latest`](../../releases/tag/dev-latest).
 
@@ -574,7 +583,7 @@ Pour compiler — prérequis **Java 21** :
 
 ```bash
 ./gradlew build
-# → build/libs/enderportals-0.31.0.jar
+# → build/libs/enderportals-0.32.0.jar
 ```
 
 Le build est géré par **ModDevGradle** ; NeoForge et les mappings officiels sont

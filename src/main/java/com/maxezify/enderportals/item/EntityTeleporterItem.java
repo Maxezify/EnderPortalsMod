@@ -95,7 +95,7 @@ public class EntityTeleporterItem extends Item {
         // Le prix vient de la logique, pas d'un nombre recopié dans les trois
         // fichiers de langue : une infobulle qui ment sur un coût est pire que
         // pas d'infobulle du tout.
-        EnderTooltip.details(tooltip,
+        EnderTooltip.details(tooltip, flag,
                 EnderTooltip.head("enderportals.tooltip.entity_teleporter_1"),
                 EnderTooltip.line("enderportals.tooltip.entity_teleporter_2"),
                 EnderTooltip.line("enderportals.tooltip.entity_teleporter_3"),

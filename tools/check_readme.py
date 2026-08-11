@@ -117,6 +117,31 @@ def check_book_pages():
     require("pages du livre", f"**{pages} pages**", f"**{pages}-page**")
 
 
+def check_neoforge_floor():
+    """La version minimale de NeoForge, telle que le chargeur l'exige.
+
+    C'est le seul chiffre du README qu'un joueur applique avant même d'avoir
+    lancé le jeu. S'il est trop bas, le mod refuse de se charger et le README a
+    menti ; s'il est trop haut, on écarte des installations qui marcheraient.
+    La source de vérité est la plage déclarée au chargeur, pas la prose.
+    """
+    toml = (ROOT / "src/main/resources/META-INF/neoforge.mods.toml").read_text(encoding="utf-8")
+    section = toml.split('modId = "neoforge"', 1)
+    if len(section) < 2:
+        raise SystemExit("dépendance neoforge introuvable dans neoforge.mods.toml")
+    match = re.search(r'versionRange = "\[([0-9.]+),', section[1])
+    if not match:
+        raise SystemExit("plancher de version NeoForge illisible dans neoforge.mods.toml")
+    floor = match.group(1)
+    require("plancher NeoForge", f"**NeoForge {floor}**", f"**NeoForge {floor}**")
+
+    compiled = re.search(r"^neo_version=(.+)$", (ROOT / "gradle.properties")
+                         .read_text(encoding="utf-8"), re.M).group(1).strip()
+    if tuple(int(p) for p in compiled.split(".")) < tuple(int(p) for p in floor.split(".")):
+        fail("build", f"compilé contre NeoForge {compiled}, mais le mod en exige {floor} : "
+                      "le build ne prouve rien de ce qu'il promet")
+
+
 def check_settings():
     """Les réglages documentés, et ceux que le code déclare.
 
@@ -257,6 +282,7 @@ def main():
     check_numbers()
     check_ore()
     check_book_pages()
+    check_neoforge_floor()
     check_settings()
     check_version()
     check_recipes()

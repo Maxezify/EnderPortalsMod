@@ -3,6 +3,7 @@ package com.maxezify.enderportals.item;
 import com.maxezify.enderportals.client.ClientShift;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.TooltipFlag;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
 
@@ -36,16 +37,29 @@ public final class EnderTooltip {
     private static final String HINT_KEY = "enderportals.tooltip.shift_key";
 
     /**
-     * Le joueur demande-t-il le détail ?
+     * Faut-il montrer le détail ?
      *
-     * <p>Le test de {@code Dist} n'est pas décoratif : {@link ClientShift}
-     * touche {@code Screen}, absent d'un serveur dédié. Tant que la branche ne
+     * <p>Deux raisons de le montrer, et elles ne se ressemblent pas.</p>
+     *
+     * <p>La première est le joueur qui appuie sur Maj. Le test de {@code Dist}
+     * qui l'accompagne n'est pas décoratif : {@link ClientShift} touche
+     * {@code Screen}, absent d'un serveur dédié. Tant que la branche ne
      * s'exécute pas, la classe n'est pas chargée — et une infobulle construite
      * côté serveur, ce qui n'arrive pas en jeu normal mais reste permis par
      * l'API, se contente alors de la forme repliée.</p>
+     *
+     * <p>La seconde n'a pas de joueur du tout. Un visualiseur de recettes — JEI,
+     * EMI, REI — lit les infobulles pour les indexer, et sa recherche ne trouve
+     * que ce qu'il a pu lire. Replié derrière une touche que personne ne tient
+     * au moment de l'indexation, tout le mode d'emploi du mod lui était
+     * invisible : chercher « atterrisseur » ne ramenait pas le téléporteur qui
+     * le vise. {@code shouldDisplayAllInformation} est le signal que NeoForge a
+     * ajouté pour cela — le lecteur annonce qu'il veut tout, y compris ce qui
+     * se replie, et on le lui donne.</p>
      */
-    public static boolean expanded() {
-        return FMLEnvironment.dist == Dist.CLIENT && ClientShift.down();
+    public static boolean expanded(TooltipFlag flag) {
+        return flag.shouldDisplayAllInformation()
+                || (FMLEnvironment.dist == Dist.CLIENT && ClientShift.down());
     }
 
     /**
@@ -54,8 +68,8 @@ public final class EnderTooltip {
      * <p>À appeler en dernier : l'invite doit fermer l'infobulle, pas s'insérer
      * au milieu de ce qui reste affiché.</p>
      */
-    public static void details(List<Component> tooltip, Component... lines) {
-        if (expanded()) {
+    public static void details(List<Component> tooltip, TooltipFlag flag, Component... lines) {
+        if (expanded(flag)) {
             tooltip.addAll(List.of(lines));
         } else {
             tooltip.add(Component.translatable(HINT,

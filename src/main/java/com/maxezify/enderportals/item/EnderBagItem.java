@@ -91,7 +91,7 @@ public class EnderBagItem extends Item {
                                 TooltipFlag flag) {
         // Le prix vient de la logique : une infobulle qui ment sur un coût est
         // pire que pas d'infobulle du tout.
-        EnderTooltip.details(tooltip,
+        EnderTooltip.details(tooltip, flag,
                 EnderTooltip.head("enderportals.tooltip.ender_bag"),
                 EnderTooltip.head("enderportals.tooltip.ender_bag_reverse"),
                 EnderTooltip.line("enderportals.tooltip.ender_bag_price",

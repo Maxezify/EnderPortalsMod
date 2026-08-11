@@ -262,7 +262,7 @@ public class TardisKeyItem extends Item {
         // c'est le geste de la main, et l'écrire ici laisserait croire qu'il
         // faut la clé pour ça. La liaison et le code, eux, restent affichés :
         // ils décrivent cette clé-ci, pas le fonctionnement des clés.
-        EnderTooltip.details(tooltip,
+        EnderTooltip.details(tooltip, flag,
                 EnderTooltip.line("enderportals.tooltip.key_place"),
                 EnderTooltip.line("enderportals.tooltip.key_dismiss"));
         super.appendHoverText(stack, context, tooltip, flag);

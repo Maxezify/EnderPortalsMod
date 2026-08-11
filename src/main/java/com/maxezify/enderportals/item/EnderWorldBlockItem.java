@@ -42,7 +42,7 @@ public class EnderWorldBlockItem extends BlockItem {
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
                                 TooltipFlag flag) {
-        EnderTooltip.details(tooltip,
+        EnderTooltip.details(tooltip, flag,
                 EnderTooltip.head(tooltipKey + "_1"),
                 EnderTooltip.line(tooltipKey + "_2"));
         super.appendHoverText(stack, context, tooltip, flag);

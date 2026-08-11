@@ -26,7 +26,7 @@ public class CentralizerBlockItem extends BlockItem {
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
                                 TooltipFlag flag) {
-        EnderTooltip.details(tooltip,
+        EnderTooltip.details(tooltip, flag,
                 EnderTooltip.head("enderportals.tooltip.centralizer_1"),
                 EnderTooltip.line("enderportals.tooltip.centralizer_2"));
         super.appendHoverText(stack, context, tooltip, flag);
